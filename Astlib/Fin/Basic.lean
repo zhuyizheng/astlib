@@ -4,6 +4,13 @@ variable {α : Type*} {m n p : ℕ} (a : Fin m → α) (b : Fin n → α) (c : F
 
 open Fin
 
+@[simp]
+theorem Fin.val_last_plus_one_minus_one : (last (n + 1) - 1).val = n := by
+    simp only [last, sub_def, coe_ofNat_eq_mod, Nat.one_mod, Nat.add_one_sub_one]
+    rw [Nat.mod_eq_sub_mod (by omega)]
+    convert Nat.mod_eq_of_lt ?_ <;> grind
+
+
 theorem Fin.append_nat (i : Fin (m + n)) :
     append a b i = if hi : i < m then a ⟨i, hi⟩ else b ⟨i.val - m, by omega⟩ := by
   split_ifs with hi

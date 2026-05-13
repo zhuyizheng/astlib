@@ -72,7 +72,7 @@ theorem BoundedFormula.liftAt_mem_boundedFormula (t₁ t₂ : L.Term (α ⊕ (Fi
     (t₁ ∈' t₂).liftAt n' m = (t₁.liftAt n' m) ∈' (t₂.liftAt n' m) := by
   simp [mem_boundedFormula]
 
-variable {L : Language} [HasMem L]
+variable {L : Language} [HasMem L] {α : Type*} {n : ℕ}
 
 /-- `t₁ ⊆ t₂`. -/
 def Term.subset (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
@@ -82,20 +82,37 @@ def Term.subset (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
 infix:88 " ⊆' " => FirstOrder.Language.Term.subset
 
 /-- `t = ∅` -/
-def Term.isEmptyset {α n} (t : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+def Term.isEmptyset (t : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
   ∀' ∼(&-1 ∈' t.castSucc)
 
+
+/-- `t₁ = {t₂}` -/
+def Term.eqSingleton (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∀' (&-1 ∈' t₁.castSucc ⇔ &-1 =' t₂.castSucc)
+
+/-- `t₁ = {t₂, t₃}` -/
+def Term.eqUnoderedPair (t₁ t₂ t₃ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∀' (&-1 ∈' t₁.castSucc ⇔ &-1 =' t₂.castSucc ⊔ &-1 =' t₃.castSucc)
+
+/-- `t₁ ∈ t₂ ∪ {t₃}` -/
+def Term.memUnionSingleton (t₁ t₂ t₃ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  t₁ ∈' t₂ ⊔ t₁ =' t₃
+
+/-- `t₁ = t₂ ∪ {t₃}` -/
+def Term.eqUnionSingleton (t₁ t₂ t₃ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∀' (&-1 ∈' t₁.castSucc ⇔ (&-1).memUnionSingleton t₂.castSucc t₃.castSucc)
+
 /-- `t₁ ∈ t₂ ∪ {t₂}` -/
-def Term.memSucc {α n} (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
-  t₁ =' t₂ ⊔ t₁ ∈' t₂
+def Term.memSucc (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  t₁.memUnionSingleton t₂ t₂
 
 /-- `t₁ = t₂ ∪ {t₂}` -/
-def Term.eqSucc {α n} (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
-  ∀' (&-1 ∈' t₁.castSucc ⇔ (&-1).memSucc t₂.castSucc)
+def Term.eqSucc (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  t₁.eqUnionSingleton t₂ t₂
 
 /-- `∀ x ∈ t, φ (..., x)` -/
 @[match_pattern]
-def BoundedFormula.allMem {α n}
+def BoundedFormula.allMem
   (t : L.Term (α ⊕ (Fin n))) (φ : L.BoundedFormula α (n + 1)) : L.BoundedFormula α n :=
   ∀' (&-1 ∈' t.castSucc ⟹ φ)
 
@@ -104,12 +121,50 @@ notation "∀'∈ " x:arg y:50 => FirstOrder.Language.BoundedFormula.allMem x y
 
 /-- `∃ x ∈ t, φ (..., x)` -/
 @[match_pattern]
-def BoundedFormula.exMem {α n}
+def BoundedFormula.exMem
   (t : L.Term (α ⊕ (Fin n))) (φ : L.BoundedFormula α (n + 1)) : L.BoundedFormula α n :=
   ∼(∀'∈ t (∼φ))
 
 @[inherit_doc] scoped[Language]
 notation "∃'∈ " x:arg y:50 => FirstOrder.Language.BoundedFormula.exMem x y
+
+/-- `t₁ = (t₂, t₃)` -/
+def Term.eqOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∀' (&-1 ∈' t₁.castSucc ⇔
+    (&-1).eqSingleton t₂.castSucc ⊔ (&-1).eqUnoderedPair t₂.castSucc t₃.castSucc)
+
+/-- `t` is an ordered pair -/
+def Term.isOrderedPair (t : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∃' ∃' (t.castSucc.castSucc.eqOrderedPair &-1 &-2)
+
+/-- `t` is a binary relation -/
+def Term.isRel (t : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∀'∈ t (&-1.isOrderedPair)
+
+/-- `t₁` is in the domain of `t₂` -/
+def Term.memDom (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∃' (t₂.castSucc.eqOrderedPair t₁.castSucc &-1)
+
+/-- `t₁ = dom t₂` -/
+def Term.eqDom (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∀' (&-1 ∈' t₁.castSucc ⇔ &-1.memDom t₂.castSucc)
+
+/-- `t₁` is in the range of `t₂` -/
+def Term.memRan (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∃' (t₂.castSucc.eqOrderedPair &-1 t₁.castSucc)
+
+/-- `t₁ = ran t₂` -/
+def Term.eqRan (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∀' (&-1 ∈' t₁.castSucc ⇔ &-1.memRan t₂.castSucc)
+
+/-- `t` is a function -/
+def Term.isFun (t : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  t.isRel ⊓ ∀'∈ t ∀'∈ t.castSucc ∀' ∀' ∀'
+    ( (&-5).eqOrderedPair (&-3) (&-2) ⟹ (&-4).eqOrderedPair (&-3) (&-1) ⟹ &-2 =' &-1)
+
+/-- `t₁ = t₂ t₃` -/
+def Term.eqVal (t₁ t₂ t₃ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
+  ∃'∈ t₁ ((&-1).eqOrderedPair t₂.castSucc t₃.castSucc)
 
 end Language
 

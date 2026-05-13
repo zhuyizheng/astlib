@@ -32,5 +32,12 @@ def regularity : L.Sentence := ∀' ((&0).isEmptyset ⊔ ∃'∈ &0 ∼(∃'∈ 
 /-- The power set axiom -/
 def power : L.Sentence := ∀' ∃' ∀' (&2 ⊆' &0 ⟹ &2 ∈' &1)
 
+/-- The axiom of choice -/
+def choice : L.Sentence :=
+  ∀' (∼(&-1).isEmptyset ⟹ ∃' ((&-2).isFun ⊓ (&-1).eqDom (&-2) ⊓
+    ∀' ∃' ((&-3).memDom (&-2) ⟹ ∼(&-3).isEmptyset ⟹ ((&-4).eqVal &-2 &-3 ⊓ &-4 ∈' &-3))))
+
 /-- There exists an empty set -/
 def exEmptyset : L.Sentence := ∃' ((&0).isEmptyset)
+
+end Axiom
