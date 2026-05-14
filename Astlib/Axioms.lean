@@ -1,8 +1,10 @@
 import Astlib.Syntax
 
-namespace Axiom
+namespace FirstOrder
 
-open STLanguage FirstOrder Language
+namespace Language
+
+open FirstOrder Language BoundedFormula
 
 variable {L : FirstOrder.Language} [HasMem L]
 
@@ -14,7 +16,7 @@ def comprehension (φ : L.BoundedFormula α (n + 2)) : L.Formula α :=
   ∀'' ∃' ∀' (&-1 ∈' &-2 ⇔ (&-1 ∈' &0 ⊓ φ.liftAt 1 (n + 1)))
 
 /-- The pairing axiom -/
-def pair : L.Sentence := ∀' ∀' ∃' (&2 ∈' &0 ⊓ &2 ∈' &1)
+def pair : L.Sentence := ∀' ∀' ∃' (&2 ∈' &0 ⊔ &2 ∈' &1)
 
 /-- The union axiom -/
 def union : L.Sentence := ∀' ∃' ∀' ∀' ((&3 ∈' &2 ⊓ &2 ∈' &0) ⟹ &3 ∈' &1)
@@ -40,4 +42,12 @@ def choice : L.Sentence :=
 /-- There exists an empty set -/
 def exEmptyset : L.Sentence := ∃' ((&0).isEmptyset)
 
-end Axiom
+/-- Every set has a union -/
+def exUnion : L.Sentence := ∀' ∃' ∀' (&2 ∈' &1 ⇔ ∃' ((&3 ∈' &0 ⊓ &2 ∈' &3)))
+
+/-- Closed under unordered pairing -/
+def exUnorderedPair : L.Sentence := ∀' ∀' ∃' ∀' (&3 ∈' &2 ⇔ (&3 =' &0 ⊔ &3 =' &1))
+
+end Language
+
+end FirstOrder

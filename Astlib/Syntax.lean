@@ -78,7 +78,7 @@ variable {L : Language} [HasMem L] {α : Type*} {n : ℕ}
 def Term.subset (t₁ t₂ : L.Term (α ⊕ (Fin n))) : L.BoundedFormula α n :=
   ∀' (&-1 ∈' t₁.castSucc ⟹ &-1 ∈' t₂.castSucc)
 
-@[inherit_doc] scoped[STLanguage]
+@[inherit_doc] scoped[FirstOrder]
 infix:88 " ⊆' " => FirstOrder.Language.Term.subset
 
 /-- `t = ∅` -/
@@ -116,7 +116,7 @@ def BoundedFormula.allMem
   (t : L.Term (α ⊕ (Fin n))) (φ : L.BoundedFormula α (n + 1)) : L.BoundedFormula α n :=
   ∀' (&-1 ∈' t.castSucc ⟹ φ)
 
-@[inherit_doc, match_pattern] scoped[Language]
+@[inherit_doc, match_pattern] scoped[FirstOrder]
 notation "∀'∈ " x:arg y:50 => FirstOrder.Language.BoundedFormula.allMem x y
 
 /-- `∃ x ∈ t, φ (..., x)` -/
@@ -125,7 +125,7 @@ def BoundedFormula.exMem
   (t : L.Term (α ⊕ (Fin n))) (φ : L.BoundedFormula α (n + 1)) : L.BoundedFormula α n :=
   ∼(∀'∈ t (∼φ))
 
-@[inherit_doc] scoped[Language]
+@[inherit_doc] scoped[FirstOrder]
 notation "∃'∈ " x:arg y:50 => FirstOrder.Language.BoundedFormula.exMem x y
 
 /-- `t₁ = (t₂, t₃)` -/

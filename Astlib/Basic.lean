@@ -3,7 +3,7 @@ import Astlib.ModelTheory.Semantics
 import Astlib.Axioms
 import Astlib.Fin.Basic
 
-open STLanguage FirstOrder Language BoundedFormula Axiom Fin
+open FirstOrder Language BoundedFormula Fin
 
 section ExUnique
 variable {L : Language} [L.Structure M]
@@ -17,34 +17,41 @@ theorem exists_of_ex {φ : L.BoundedFormula α (n + 1)} {v : α → M}
     ∃ a : M, φ.Realize v (snoc xs a) := by
   simpa using h
 
-theorem exists_of_ex_empty {φ : L.BoundedFormula Empty (n + 1)}
-    {xs : Fin n → M} (h : (∃' φ).Realize default xs) :
-    ∃ a : M, φ.Realize default (snoc xs a) :=
-  exists_of_ex h
+-- theorem exists_of_ex_empty {φ : L.BoundedFormula Empty (n + 1)}
+--     {xs : Fin n → M} (h : (∃' φ).Realize default xs) :
+--     ∃ a : M, φ.Realize default (snoc xs a) :=
+--   exists_of_ex h
 
-theorem exists_of_ex_empty_one {φ : L.BoundedFormula Empty 1}
-    (h : (∃' φ).Realize default (default : _ → M)) :
-    ∃ a : M, φ.Realize default ![a] := by
-  convert exists_of_ex_empty h
-  ext i; simp [snoc]
+-- -- theorem exists_of_ex_empty_one {φ : L.BoundedFormula Empty 1}
+-- --     -- (h : Sentence.Realize M (∃' φ)) :
+-- --     ∃ a : M, φ.Realize default ![a] := by
+-- --   convert exists_of_ex_empty h
+-- --   ext i; simp [snoc]
+-- --   -- exists_of_ex h
 
-theorem exists_of_ex_empty_two {φ : L.BoundedFormula Empty 2}
-    (h : (∃' φ).Realize default ![x]) :
-    ∃ a : M, φ.Realize default ![x, a] := by
-  convert exists_of_ex_empty h
-  ext i; fin_cases i <;> simp
+-- theorem exists_of_ex_empty_one {φ : L.BoundedFormula Empty 1}
+--     (h : (∃' φ).Realize default (default : _ → M)) :
+--     ∃ a : M, φ.Realize default ![a] := by
+--   convert exists_of_ex_empty h
+--   ext i; simp [snoc]
 
-theorem exists_of_ex_empty_three {φ : L.BoundedFormula Empty 3}
-    (h : (∃' φ).Realize default ![x₁, x₂]) :
-    ∃ a : M, φ.Realize default ![x₁, x₂, a] := by
-  convert exists_of_ex_empty h
-  ext i; fin_cases i <;> simp
+-- theorem exists_of_ex_empty_two {φ : L.BoundedFormula Empty 2}
+--     (h : (∃' φ).Realize default ![x]) :
+--     ∃ a : M, φ.Realize default ![x, a] := by
+--   convert exists_of_ex_empty h
+--   ext i; fin_cases i <;> simp
 
-theorem exists_of_ex_empty_four {φ : L.BoundedFormula Empty 4}
-    (h : (∃' φ).Realize default ![x₁, x₂, x₃]) :
-    ∃ a : M, φ.Realize default ![x₁, x₂, x₃, a] := by
-  convert exists_of_ex_empty h
-  ext i; fin_cases i <;> simp
+-- theorem exists_of_ex_empty_three {φ : L.BoundedFormula Empty 3}
+--     (h : (∃' φ).Realize default ![x₁, x₂]) :
+--     ∃ a : M, φ.Realize default ![x₁, x₂, a] := by
+--   convert exists_of_ex_empty h
+--   ext i; fin_cases i <;> simp
+
+-- theorem exists_of_ex_empty_four {φ : L.BoundedFormula Empty 4}
+--     (h : (∃' φ).Realize default ![x₁, x₂, x₃]) :
+--     ∃ a : M, φ.Realize default ![x₁, x₂, x₃, a] := by
+--   convert exists_of_ex_empty h
+--   ext i; fin_cases i <;> simp
 
 theorem existsUnique_of_exUnique {φ : L.BoundedFormula α (n + 1)} {v : α → M}
     {xs : Fin n → M} (h : (∃!' φ).Realize v xs) :
@@ -75,8 +82,7 @@ end ExUnique
 
 
 
-open STLanguage FirstOrder Language
-open Axiom
+open FirstOrder Language
 
 variable (L : FirstOrder.Language) [HasMem L]
 
@@ -110,16 +116,23 @@ def of (M : Type w) [L.Structure M] [L.HasMem] [Nonempty M] : MemStructure :=
 instance instNonempty (M : MemStructure) : Nonempty M :=
   inferInstance
 
+noncomputable instance (M : MemStructure) : Inhabited M :=
+  Classical.inhabited_of_nonempty'
+
 instance (M : MemStructure) :
   Membership M M where
-  mem := fun x y ↦ FirstOrder.Language.Structure.RelMap (memSymb (L := M.L)) ![y, x]
+  mem := fun x y ↦ Structure.RelMap (M.hasMem.memSymb) ![y, x]
 
+instance (M : MemStructure) :
+  HasSubset M where
+  Subset := fun x y ↦ ∀ z ∈ x, z ∈ y
 
 @[simp]
 theorem realize_mem {M : MemStructure} (t₁ t₂ : M.L.Term (α ⊕ Fin n)) {v : α → M} {xs : Fin n → M} :
     (t₁ ∈' t₂).Realize v xs ↔ t₁.realize (Sum.elim v xs) ∈ t₂.realize (Sum.elim v xs):= by
   simp [mem_boundedFormula, Membership.mem]
 
+/- `M` is extensional -/
 class Extensional (M : MemStructure) where
   extensional : ∀ x y : M, ((∀ z : M, (z ∈ x ↔ z ∈ y)) → x = y)
 
@@ -130,22 +143,33 @@ theorem Extensional.ext (M : MemStructure) [Extensional M] {x y : M}
     (h : ∀ z, z ∈ x ↔ z ∈ y) : x = y :=
   extensional x y h
 
-instance (M : MemStructure) (hM : M ⊨ extensionality (L := M.L)) : Extensional M where
+instance (M : MemStructure) (hM : M ⊨ M.L.extensionality) : Extensional M where
   extensional := by simpa [Sentence.Realize, Formula.Realize, extensionality] using hM
 
-class HasEmptyset (M : MemStructure) where
-  emptyset : M
-  emptyset_prop : ∀ x : M, x ∉ emptyset
-
-export HasEmptyset (emptyset)
+/- `M` has an empty set `∅` -/
+class HasEmptyset (M : MemStructure) extends EmptyCollection M where
+  -- /-- The empty set -/
+  -- emptyset : M
+  emptyset_prop : ∀ x : M, x ∉ (∅ : M)
 
 @[grind .]
-theorem notin_emptyset (M : MemStructure) [HasEmptyset M] (x : M) : x ∉ emptyset :=
+theorem notin_emptyset (M : MemStructure) [HasEmptyset M] (x : M) : x ∉ (∅ : M) :=
   HasEmptyset.emptyset_prop x
+
+-- export HasEmptyset (emptyset)
+
+-- @[inherit_doc] notation "∅"  => HasEmptyset.emptyset
+
+
+noncomputable instance (M : MemStructure) (hM : M ⊨ M.L.exEmptyset) : HasEmptyset M where
+  emptyCollection := Classical.choose (exists_of_ex hM)
+  emptyset_prop := by simpa [Term.isEmptyset] using Classical.choose_spec (exists_of_ex hM)
+
+
 
 theorem test (M : MemStructure) [Extensional M] [HasEmptyset M] :
     ∃! x : M, (∀ z : M, z ∉ x) := by
-  use emptyset
+  use ∅
   constructor
   · grind
   · intro y hy
@@ -156,21 +180,85 @@ theorem test (M : MemStructure) [Extensional M] [HasEmptyset M] :
     -- have : ∀ z : M, z ∉ emptyset := by grind
     grind
 
+/- `M` is closed under `⋃` -/
+class HasUnion (M : MemStructure) where
+  union : M → M
+  union_prop : ∀ x y : M, y ∈ union x ↔ (∃ z ∈ x, y ∈ z)
+
+prefix:110 "⋃ " => HasUnion.union
+
+@[simp, grind =, push]
+theorem mem_union_iff (M : MemStructure) [HasUnion M] (x a : M) : x ∈ ⋃ a ↔ ∃ y ∈ a, x ∈ y :=
+  HasUnion.union_prop _ _
+
+
+-- lemma test2 (M : MemStructure) (hM : M ⊨ M.L.exUnion) : True := by
+  -- have := realize_all.mp hM
+
+noncomputable instance (M : MemStructure) (hM : M ⊨ M.L.exUnion) : HasUnion M where
+  union x := Classical.choose (exists_of_ex (realize_all.mp hM x))
+  union_prop := fun x ↦ by simpa using Classical.choose_spec (exists_of_ex (realize_all.mp hM x))
+
+
+theorem test2 (M : MemStructure) [Extensional M] [HasEmptyset M] [HasUnion M] :
+    ⋃ ⋃ (∅ : M) = ∅ := by
+  ext
+  grind
+
+
+/- `M` is closed under unordered pairing -/
+class HasUnorderedPair (M : MemStructure) where
+  unorderedPair : M → M → M
+  unorderedPair_prop : ∀ x y z : M, z ∈ unorderedPair x y ↔ (z = x ∨ z = y)
+
+instance (M : MemStructure) [HasUnorderedPair M] : Singleton M M where
+  singleton x := HasUnorderedPair.unorderedPair x x
+
+instance (M : MemStructure) [HasUnion M] [HasUnorderedPair M] : Union M where
+  union x y := ⋃ (HasUnorderedPair.unorderedPair x y)
+
+instance (M : MemStructure) [HasUnion M] [HasUnorderedPair M] : Insert M M where
+  insert x xs := xs ∪ {x}
+
+
+-- lemma test2 (M : MemStructure) (hM : M ⊨ M.L.exUnion) : True := by
+  -- have := realize_all.mp hM
+
+noncomputable instance (M : MemStructure) (hM : M ⊨ M.L.exUnorderedPair) : HasUnorderedPair M where
+  unorderedPair x y := Classical.choose (exists_of_ex (realize_all.mp (realize_all.mp hM x) y))
+  unorderedPair_prop := fun x y ↦ by
+    simpa using Classical.choose_spec (exists_of_ex (realize_all.mp (realize_all.mp hM x) y))
+
+@[simp, grind =, push]
+theorem mem_singleton_iff {M : MemStructure} [HasUnorderedPair M] (x y : M) :
+    y ∈ ({x} : M) ↔ y = x := by
+  simpa using HasUnorderedPair.unorderedPair_prop x x y
+
+theorem notMem_singleton_iff {M : MemStructure} [HasUnorderedPair M] (x y : M) :
+    y ∉ ({x} : M) ↔ y ≠ x := by simp
+
+theorem mem_singleton {M : MemStructure} [HasUnorderedPair M] (x : M) :
+    x ∈ ({x} : M) := by simp
+
+@[simp]
+theorem singleton_eq_singleton_iff {M : MemStructure} [HasUnorderedPair M] (x y : M) :
+    ({x} : M) = {y} ↔ x = y := by grind [mem_singleton]
+
+@[simp]
+theorem singleton_ne_empty {M : MemStructure} [HasEmptyset M] [HasUnorderedPair M] (x : M) :
+    ({x} : M) ≠ ∅ := by grind [mem_singleton]
+
+@[simp, grind =]
+theorem singleton_subset_iff {M : MemStructure} [HasUnorderedPair M] (x y : M) :
+    ({x} : M) ⊆ y ↔ x ∈ y := by simp [Subset]
+
+@[gcongr]
+theorem singleton_subset_singleton {M : MemStructure} [HasUnorderedPair M] (x y : M) :
+    ({x} : M) ⊆ {y} ↔ x = y := by grind [mem_singleton]
+
 
 end MemStructure
 
 end Language
 
 end FirstOrder
-
-variable {L : Language}
--- variable [HasMem L]
-
--- noncomputable def emptySet (M : Type*) [L.HasMem] [L.ExEmptyset M] : M :=
---   Classical.choose (exists_of_ex_empty_one (ExEmptyset.exEmptyset (L := L)))
-
--- -- variable [HasMem L]
--- theorem uniqSetProp (M : Type*) [L.HasMem] [L.ExUniqueEmptyset M] :
---     ((&0).isEmptyset).Realize (L := L) (α := Empty) default ![uniqSet M (L := L)] :=
---   Classical.choose_spec (existsUnique_of_exUnique_sentence
---     (ExUniqueEmptyset.exUniqueEmptyset (L := L))) |>.left

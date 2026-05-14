@@ -2,7 +2,7 @@ import Astlib.Syntax
 import Astlib.ModelTheory.Satisfiability
 import Astlib.ModelTheory.Bundled
 
-open STLanguage FirstOrder Language BoundedFormula Theory
+open FirstOrder Language BoundedFormula Theory
 
 variable {α : Type*}
 -- [DecidableEq α]
