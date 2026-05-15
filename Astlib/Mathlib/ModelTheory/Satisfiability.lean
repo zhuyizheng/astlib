@@ -1,7 +1,7 @@
 import Mathlib.ModelTheory.Bundled
 import Mathlib.ModelTheory.Satisfiability
-import Astlib.ModelTheory.Syntax
-import Astlib.ModelTheory.Semantics
+import Astlib.Mathlib.ModelTheory.Syntax
+import Astlib.Mathlib.ModelTheory.Semantics
 
 open FirstOrder Language Theory
 

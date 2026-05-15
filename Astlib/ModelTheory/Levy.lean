@@ -1,6 +1,6 @@
-import Astlib.Syntax
-import Astlib.ModelTheory.Satisfiability
-import Astlib.ModelTheory.Bundled
+import Astlib.ModelTheory.Syntax
+import Astlib.Mathlib.ModelTheory.Satisfiability
+import Astlib.Mathlib.ModelTheory.Bundled
 
 open FirstOrder Language BoundedFormula Theory
 

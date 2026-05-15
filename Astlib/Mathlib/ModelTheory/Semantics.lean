@@ -1,7 +1,7 @@
 import Mathlib.ModelTheory.Semantics
 
-import Astlib.ModelTheory.Syntax
-import Astlib.Fin.Basic
+import Astlib.Mathlib.ModelTheory.Syntax
+import Astlib.Mathlib.Fin.Basic
 
 namespace FirstOrder
 
