@@ -28,8 +28,8 @@ def replacement (φ : L.BoundedFormula α (n + 3)) : L.Formula α :=
 /-- The infinity axiom -/
 def infinity : L.Sentence := ∃' ((∃'∈ &0 (&1).isEmpty) ⊓ ∀'∈ &0 (∃'∈ &0 ((&2).eqSucc &1)))
 
-/-- The regularity axiom -/
-def regularity : L.Sentence := ∀' ((&0).isEmpty ⊔ ∃'∈ &0 ∼(∃'∈ &1 (&2 ∈' &0)))
+/-- The foundation axiom -/
+def foundation : L.Sentence := ∀' ((&0).isEmpty ⊔ ∃'∈ &0 ∼(∃'∈ &0 (&2 ∈' &1)))
 
 /-- The power set axiom -/
 def power : L.Sentence := ∀' ∃' ∀' (&2 ⊆' &0 ⟹ &2 ∈' &1)

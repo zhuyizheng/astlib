@@ -6,8 +6,9 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable (M : MemStructure)
+variable {M : MemStructure} (x y a : M)
 
+variable (M) in
 /- `M` is closed under `⋃` -/
 class HasSUnion where
   /-- `⋃ x` in set theory, denoted by `⋃₀ x` in lean -/
@@ -22,15 +23,17 @@ noncomputable instance (hM : M ⊨ M.L.exSUnion) : HasSUnion M where
   sUnion x := Classical.choose (exists_of_ex (realize_all.mp hM x))
   sUnion_prop := fun x ↦ by simpa using Classical.choose_spec (exists_of_ex (realize_all.mp hM x))
 
-variable {M}
-
 @[simp, grind =, push]
-theorem mem_sUnion_iff [HasSUnion M] (x a : M) : x ∈ ⋃₀ a ↔ ∃ y ∈ a, x ∈ y :=
+theorem mem_sUnion_iff [HasSUnion M] : x ∈ ⋃₀ a ↔ ∃ y ∈ a, x ∈ y :=
   sUnion_prop _ _
 
 @[simp, grind! ., push]
-theorem sUnion_empty [Extensional M] [HasEmpty M] [HasSUnion M] :
-    ⋃₀ (∅ : M) = ∅ := by
+theorem sUnion_empty [Extensional M] [HasEmpty M] [HasSUnion M] : ⋃₀ (∅ : M) = ∅ := by
   ext; grind
+
+theorem sUnion_mono [HasEmpty M] [HasSUnion M] {x y : M} (h : x ⊆ y) : ⋃₀ x ⊆ ⋃₀ y := by
+  intro z
+  simp only [mem_sUnion_iff]
+  exact fun ⟨w, hw₁, hw₂⟩ ↦ ⟨w, h hw₁, hw₂⟩
 
 end FirstOrder.Language.MemStructure

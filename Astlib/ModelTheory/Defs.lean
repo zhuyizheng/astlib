@@ -62,11 +62,25 @@ protected def Subset (x y : M) : Prop :=
 instance instHasSubset : HasSubset M where
   Subset := M.Subset
 
+@[grind =]
+theorem subset_iff (x y : M) : x ⊆ y ↔ ∀ z : M, (z ∈ x → z ∈ y) := ⟨id, id⟩
+
+@[grind .]
+theorem subset_refl (x : M) : x ⊆ x := fun _ h ↦ h
+
 instance instReflSubset : Std.Refl (α := M) Subset where
-  refl := fun _ _ h ↦  h
+  refl := subset_refl _
+
+@[grind .]
+theorem subset_trans (x y z : M) (hxy : x ⊆ y) (hyz : y ⊆ z) : x ⊆ z :=
+  fun _ hw ↦ hyz (hxy hw)
 
 instance instIsTransSubset : IsTrans M Subset where
-  trans := fun _ _ _ hxy hyz _ hw ↦ hyz (hxy hw)
+  trans := subset_trans _
+
+@[grind .]
+theorem subset_trans_mem (x y z : M) (hxy : x ∈ y) (hyz : y ⊆ z) : x ∈ z :=
+  hyz hxy
 
 instance instIsTransMemSubsetMem : Trans (α := M) (β := M) (γ := M)
   (fun x y ↦ Membership.mem y x) Subset (fun x y ↦ Membership.mem y x) where

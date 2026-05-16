@@ -4,8 +4,9 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable (M : MemStructure)
+variable {M : MemStructure} (x y : M)
 
+variable (M) in
 /- `M` is closed under `⋃` -/
 class HasPowerset where
   /-- The power set operator -/
@@ -21,25 +22,19 @@ noncomputable instance (hM : M ⊨ M.L.exPowerSet) : HasPowerset M where
   powerset_prop := fun x ↦ by
     simpa [Term.subset] using Classical.choose_spec (exists_of_ex (realize_all.mp hM x))
 
-variable {M}
-
 @[simp, grind =, push]
-theorem mem_powerset_iff [HasPowerset M] (x a : M) : x ∈ 𝒫 a ↔ x ⊆ a :=
+theorem mem_powerset_iff [HasPowerset M] : y ∈ 𝒫 x ↔ y ⊆ x :=
   powerset_prop _ _
 
 @[grind! .]
-theorem mem_powerset_self [HasPowerset M] (x : M) : x ∈ 𝒫 x := by simp
+theorem mem_powerset_self [HasPowerset M] : x ∈ 𝒫 x := by simp
 
 @[grind! .]
-theorem empty_mem_powerset [HasEmpty M] [HasPowerset M] (x : M) : ∅ ∈ 𝒫 x := by grind
+theorem empty_mem_powerset [HasEmpty M] [HasPowerset M] : ∅ ∈ 𝒫 x := by grind
 
-theorem powerset_mono [HasPowerset M] (x y : M) (h : x ⊆ y) : 𝒫 x ⊆ 𝒫 y := by
-  intro z hz
-  simp only [mem_powerset_iff] at hz ⊢
-  exact hz.trans h
+theorem powerset_mono [HasPowerset M] {x y : M} (h : x ⊆ y) : 𝒫 x ⊆ 𝒫 y := by grind
 
-theorem powerset_injective [Extensional M] [HasPowerset M] : Function.Injective M.powerset := by
-  intro _ _ _
-  grind [eq_of_subset_of_subset]
+theorem powerset_injective [Extensional M] [HasPowerset M] : Function.Injective M.powerset :=
+  fun _ _ _ ↦ by ext; grind
 
 end FirstOrder.Language.MemStructure
