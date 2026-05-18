@@ -14,11 +14,11 @@ noncomputable instance (hM : M ⊨ M.L.exEmptyset) : HasEmpty M where
   emptyCollection := Classical.choose (exists_of_ex hM)
   empty_prop := by simpa [Term.isEmpty] using Classical.choose_spec (exists_of_ex hM)
 
-@[grind .]
+@[simp, grind .]
 theorem notin_empty [HasEmpty M] : x ∉ (∅ : M) := HasEmpty.empty_prop x
 
-theorem empty_iff [Extensional M] [HasEmpty M] : x = ∅ ↔ ∀ y, y ∉ x :=
-  ⟨by grind, fun _ ↦ by ext; grind⟩
+theorem empty_iff [Extensional M] [HasEmpty M] : x = ∅ ↔ ∀ y, y ∉ x := by
+  rw [eq_iff]; grind
 
 theorem ne_empty_iff [Extensional M] [HasEmpty M] : x ≠ ∅ ↔ ∃ y, y ∈ x := by
   simp [empty_iff]

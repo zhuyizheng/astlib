@@ -1,7 +1,8 @@
 import Astlib.Basic.Axioms
+import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Extensional
-import Astlib.Basic.SetOperation.Foundation
-import Astlib.Basic.SetOperation.HasEmpty
+import Astlib.Basic.SetOperation.Foundational
+import Astlib.Basic.SetOperation.Empty
 import Astlib.Basic.SetOperation.Insert
 import Astlib.Basic.SetOperation.Pair
 import Astlib.Basic.SetOperation.Powerset

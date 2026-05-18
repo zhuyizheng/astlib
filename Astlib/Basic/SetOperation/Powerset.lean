@@ -1,4 +1,4 @@
-import Astlib.Basic.SetOperation.HasEmpty
+import Astlib.Basic.SetOperation.Empty
 
 open FirstOrder.Language.BoundedFormula
 
@@ -6,35 +6,33 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y : M)
 
-variable (M) in
-/- `M` is closed under `⋃` -/
-class HasPowerset where
-  /-- The power set operator -/
-  powerset : M → M
-  powerset_prop : ∀ x y : M, y ∈ powerset x ↔ y ⊆ x
+class HasPowerset (x : M) where
+  hasPowerset : ∃ y : M, ∀ z, z ∈ y ↔ z ⊆ x
 
-export HasPowerset (powerset powerset_prop)
+export HasPowerset (hasPowerset)
+
+/-- The power set of `x` -/
+noncomputable def powerset (x : M) [hx : HasPowerset x] := Classical.choose hx.hasPowerset
 
 @[inherit_doc] prefix:100 "𝒫 " => powerset
 
-noncomputable instance (hM : M ⊨ M.L.exPowerSet) : HasPowerset M where
-  powerset x := Classical.choose (exists_of_ex (realize_all.mp hM x))
-  powerset_prop := fun x ↦ by
-    simpa [Term.subset] using Classical.choose_spec (exists_of_ex (realize_all.mp hM x))
-
 @[simp, grind =, push]
-theorem mem_powerset_iff [HasPowerset M] : y ∈ 𝒫 x ↔ y ⊆ x :=
-  powerset_prop _ _
+theorem mem_powerset_iff {x : M} [hx : HasPowerset x] (z : M) : z ∈ 𝒫 x ↔ z ⊆ x :=
+  Classical.choose_spec hx.hasPowerset z
+
+instance instHasPowerSet (hM : M ⊨ M.L.allExPowerset) (x : M) : HasPowerset x where
+  hasPowerset := by simpa [Term.subset] using realize_all.mp hM x
 
 @[grind! .]
-theorem mem_powerset_self [HasPowerset M] : x ∈ 𝒫 x := by simp
+theorem mem_powerset_self [HasPowerset x] : x ∈ 𝒫 x := by simp
 
 @[grind! .]
-theorem empty_mem_powerset [HasEmpty M] [HasPowerset M] : ∅ ∈ 𝒫 x := by grind
+theorem empty_mem_powerset [HasEmpty M] [HasPowerset x] : ∅ ∈ 𝒫 x := by grind
 
-theorem powerset_mono [HasPowerset M] {x y : M} (h : x ⊆ y) : 𝒫 x ⊆ 𝒫 y := by grind
+theorem powerset_mono {x y : M} (h : x ⊆ y) [HasPowerset x] [HasPowerset y] : 𝒫 x ⊆ 𝒫 y := by grind
 
-theorem powerset_injective [Extensional M] [HasPowerset M] : Function.Injective M.powerset :=
-  fun _ _ _ ↦ by ext; grind
+theorem eq_of_powerset_eq [Extensional M] {x y : M} [HasPowerset x] [HasPowerset y]
+    (h : 𝒫 x = 𝒫 y) : x = y := by
+  ext; grind
 
 end FirstOrder.Language.MemStructure

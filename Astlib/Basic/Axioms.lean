@@ -1,4 +1,5 @@
 import Astlib.ModelTheory.Syntax
+import Astlib.ModelTheory.Levy
 
 namespace FirstOrder
 
@@ -11,9 +12,12 @@ variable {L : FirstOrder.Language} [HasMem L]
 /-- The extensionality axiom -/
 def extensionality : L.Sentence := ∀' ∀' (∀' (&2 ∈' &0 ⇔ &2 ∈' &1) ⟹ &0 =' &1)
 
+-- def comprehension' (φ : L.BoundedFormula α (n + 2)) : L.BoundedFormula α (n + 2) :=
+--   ∀' (&-1 ∈' &-2 ⇔ (&-1 ∈' &0 ⊓ φ.liftAt 1 (n + 1)))
+
 /-- The comprehension axiom -/
-def comprehension (φ : L.BoundedFormula α (n + 2)) : L.Formula α :=
-  ∀'' ∃' ∀' (&-1 ∈' &-2 ⇔ (&-1 ∈' &0 ⊓ φ.liftAt 1 (n + 1)))
+def BoundedFormula.comprehension (φ : L.BoundedFormula α (n + 2)) : L.Formula α :=
+  ∀'' ∃' ∀' (&-1 ∈' &-2 ⇔ (&-1 ∈' &-3 ⊓ φ.liftAt 1 (n + 1)))
 
 /-- The pairing axiom -/
 def pair : L.Sentence := ∀' ∀' ∃' (&2 ∈' &0 ⊔ &2 ∈' &1)
@@ -43,13 +47,19 @@ def choice : L.Sentence :=
 def exEmptyset : L.Sentence := ∃' ((&0).isEmpty)
 
 /-- Every set has a union -/
-def exSUnion : L.Sentence := ∀' ∃' ∀' (&2 ∈' &1 ⇔ ∃' ((&3 ∈' &0 ⊓ &2 ∈' &3)))
+def allExSUnion : L.Sentence := ∀' ∃' ∀' (&2 ∈' &1 ⇔ ∃' ((&3 ∈' &0 ⊓ &2 ∈' &3)))
 
 /-- Closed under unordered pairing -/
-def exUnorderedPair : L.Sentence := ∀' ∀' ∃' ∀' (&3 ∈' &2 ⇔ (&3 =' &0 ⊔ &3 =' &1))
+def allAllExPair : L.Sentence := ∀' ∀' ∃' ∀' (&3 ∈' &2 ⇔ (&3 =' &0 ⊔ &3 =' &1))
 
 /-- Closed under power set -/
-def exPowerSet : L.Sentence := ∀' ∃' ∀' (&2 ∈' &1 ⇔ &2 ⊆' &0)
+def allExPowerset : L.Sentence := ∀' ∃' ∀' (&2 ∈' &1 ⇔ &2 ⊆' &0)
+
+def deltaZeroComprehensionSchema : Set (L.Sentence) :=
+  {ψ | ∃ n, ∃ φ : L.BoundedFormula Empty (n + 2), DeltaZero φ ∧ ψ = φ.comprehension}
+
+def comprehensionSchema : Set (L.Sentence) :=
+  {ψ | ∃ n, ∃ φ : L.BoundedFormula Empty (n + 2), ψ = φ.comprehension}
 
 end Language
 

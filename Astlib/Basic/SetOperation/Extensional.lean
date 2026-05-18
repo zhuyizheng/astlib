@@ -18,6 +18,9 @@ instance instExtensional (hM : M ⊨ M.L.extensionality) : Extensional M where
 theorem ext [Extensional M] {x y : M} (h : ∀ z, z ∈ x ↔ z ∈ y) : x = y :=
   extensional x y h
 
+theorem eq_iff [Extensional M] {x y : M} : x = y ↔ (∀ z, z ∈ x ↔ z ∈ y) :=
+  ⟨by grind, fun h ↦ by ext; exact h _⟩
+
 theorem eq_of_subset_of_subset [Extensional M] {x y : M} (h : x ⊆ y) (h' : y ⊆ x) :
     x = y := by
   ext; grind
