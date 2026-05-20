@@ -20,20 +20,20 @@ namespace Language
 
 namespace Term
 
-/-- Cast a `L.Term (α ⊕ (Fin m))` to `L.Term (α ⊕ (Fin n))` given a proof of `m ≤ n` -/
+/-- Cast a `L.Term (α ⊕ (Fin m))` to `L.Term (α ⊕ Fin n)` given a proof of `m ≤ n` -/
 def castLE (_h : m ≤ n) (t : L.Term (α ⊕ (Fin m))) :
-  L.Term (α ⊕ (Fin n)):= t.relabel (Sum.map id (Fin.castLE _h))
+  L.Term (α ⊕ Fin n):= t.relabel (Sum.map id (Fin.castLE _h))
 
-/-- Cast a `L.Term (α ⊕ (Fin m))` to `L.Term (α ⊕ (Fin n))` given a proof of `m = n` -/
+/-- Cast a `L.Term (α ⊕ (Fin m))` to `L.Term (α ⊕ Fin n)` given a proof of `m = n` -/
 @[simp]
 def cast (_h : m = n) (t : L.Term (α ⊕ (Fin m))) := t.castLE _h.le
 
-/-- Cast a `L.Term (α ⊕ (Fin n))` to `L.Term (α ⊕ (Fin (n + 1)))` -/
+/-- Cast a `L.Term (α ⊕ Fin n)` to `L.Term (α ⊕ (Fin (n + 1)))` -/
 @[simp]
-def castSucc (t : L.Term (α ⊕ (Fin n))) := t.castLE (n.le_succ)
+def castSucc (t : L.Term (α ⊕ Fin n)) := t.castLE (n.le_succ)
 
 @[simp]
-theorem castLE_castLE (h : n ≤ n') (h' : n' ≤ n'') (t : L.Term (α ⊕ (Fin n))) :
+theorem castLE_castLE (h : n ≤ n') (h' : n' ≤ n'') (t : L.Term (α ⊕ Fin n)) :
     (t.castLE h).castLE h' = t.castLE (h.trans h') := by
   simp [castLE]
 
@@ -103,7 +103,7 @@ theorem castLE_rel (h : n ≤ n') (R : L.Relations l)
 
 @[simp 1100]
 theorem castLE_rel_boundedFormula₁ (h : n ≤ n') (R : L.Relations 1)
-    (t : L.Term (α ⊕ (Fin n))) :
+    (t : L.Term (α ⊕ Fin n)) :
     (R.boundedFormula₁ t).castLE h = R.boundedFormula₁ (t.castLE h) := by
   simp only [Relations.boundedFormula₁, Relations.boundedFormula, BoundedFormula.castLE_rel,
     Matrix.cons_val_fin_one, BoundedFormula.rel.injEq, heq_eq_eq, true_and]
@@ -111,7 +111,7 @@ theorem castLE_rel_boundedFormula₁ (h : n ≤ n') (R : L.Relations 1)
 
 @[simp 1100]
 theorem castLE_rel_boundedFormula₂ (h : n ≤ n') (R : L.Relations 2)
-    (t₁ t₂ : L.Term (α ⊕ (Fin n))) :
+    (t₁ t₂ : L.Term (α ⊕ Fin n)) :
     (R.boundedFormula₂ t₁ t₂).castLE h = R.boundedFormula₂ (t₁.castLE h) (t₂.castLE h) := by
   simp only [Relations.boundedFormula₂, Relations.boundedFormula, BoundedFormula.castLE_rel,
     BoundedFormula.rel.injEq, heq_eq_eq, true_and]
@@ -143,7 +143,7 @@ theorem liftAt_rel (R : L.Relations l) (ts : Fin l → L.Term (α ⊕ Fin n)) :
 
 @[simp 1100]
 theorem liftAt_rel_boundedFormula₁ (R : L.Relations 1)
-    (t : L.Term (α ⊕ (Fin n))) :
+    (t : L.Term (α ⊕ Fin n)) :
     (R.boundedFormula₁ t).liftAt n' m = R.boundedFormula₁ (t.liftAt n' m) := by
   simp only [Relations.boundedFormula₁, Relations.boundedFormula, liftAt_rel,
     Matrix.cons_val_fin_one, rel.injEq, heq_eq_eq, true_and]
@@ -151,7 +151,7 @@ theorem liftAt_rel_boundedFormula₁ (R : L.Relations 1)
 
 @[simp 1100]
 theorem liftAt_rel_boundedFormula₂ (R : L.Relations 2)
-    (t₁ t₂ : L.Term (α ⊕ (Fin n))) :
+    (t₁ t₂ : L.Term (α ⊕ Fin n)) :
     (R.boundedFormula₂ t₁ t₂).liftAt n' m =
       R.boundedFormula₂ (t₁.liftAt n' m) (t₂.liftAt n' m) := by
   simp only [Relations.boundedFormula₂, Relations.boundedFormula, liftAt_rel, rel.injEq, heq_eq_eq,

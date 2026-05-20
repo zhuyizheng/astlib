@@ -5,6 +5,9 @@ variable {α : Type*} {m n p : ℕ} (a : Fin m → α) (b : Fin n → α) (c : F
 open Fin
 
 @[simp]
+theorem Fin.castLE_succ_castSucc (n : ℕ) : Fin.castLE n.le_succ = Fin.castSucc := by rfl
+
+@[simp]
 theorem Fin.val_last_plus_one_minus_one : (last (n + 1) - 1).val = n := by
     simp only [last, sub_def, coe_ofNat_eq_mod, Nat.one_mod, Nat.add_one_sub_one]
     rw [Nat.mod_eq_sub_mod (by omega)]

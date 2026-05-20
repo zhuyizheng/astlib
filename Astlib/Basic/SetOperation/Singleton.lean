@@ -7,36 +7,36 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y : M)
 
 variable (M) in
-instance [ClosedUnderPair M] : Singleton M M where
+instance [M.ClosedUnderPair] : Singleton M M where
   singleton x := unorderedPair x x
 
 @[simp, grind =, push]
-theorem mem_singleton_iff [ClosedUnderPair M] : y ∈ ({x} : M) ↔ y = x := by
+theorem mem_singleton_iff [M.ClosedUnderPair] : y ∈ ({x} : M) ↔ y = x := by
   convert mem_unorderedPair_iff x x y using 1
   tauto
 
-theorem notMem_singleton_iff [ClosedUnderPair M] : y ∉ ({x} : M) ↔ y ≠ x := by simp
+theorem notMem_singleton_iff [M.ClosedUnderPair] : y ∉ ({x} : M) ↔ y ≠ x := by simp
 
-theorem mem_singleton [ClosedUnderPair M] : x ∈ ({x} : M) := by simp
+theorem mem_singleton [M.ClosedUnderPair] : x ∈ ({x} : M) := by simp
 
 @[simp, grind =, push]
-theorem singleton_eq_singleton_iff [ClosedUnderPair M] : ({x} : M) = {y} ↔ x = y := by
+theorem singleton_eq_singleton_iff [M.ClosedUnderPair] : ({x} : M) = {y} ↔ x = y := by
   grind [mem_singleton]
 
 @[simp]
-theorem singleton_ne_empty [HasEmpty M] [ClosedUnderPair M] : ({x} : M) ≠ ∅ := by
+theorem singleton_ne_empty [M.HasEmpty] [M.ClosedUnderPair] : ({x} : M) ≠ ∅ := by
   grind [mem_singleton]
 
 @[simp, grind =]
-theorem singleton_subset_iff [ClosedUnderPair M] : ({x} : M) ⊆ y ↔ x ∈ y := by
+theorem singleton_subset_iff [M.ClosedUnderPair] : ({x} : M) ⊆ y ↔ x ∈ y := by
   simp [Subset, MemStructure.Subset]
 
 @[gcongr]
-theorem singleton_subset_singleton [ClosedUnderPair M] : ({x} : M) ⊆ {y} ↔ x = y := by
+theorem singleton_subset_singleton [M.ClosedUnderPair] : ({x} : M) ⊆ {y} ↔ x = y := by
   grind [mem_singleton]
 
 @[simp, grind =, push]
-theorem sUnion_singleton [Extensional M] [ClosedUnderSUnion M] [ClosedUnderPair M] : ⋃₀ {x} = x := by
+theorem sUnion_singleton [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] : ⋃₀ {x} = x := by
   ext; grind
 
 end FirstOrder.Language.MemStructure

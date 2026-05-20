@@ -4,7 +4,7 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} [ClosedUnderDeltaZeroComprehension M] (x y z : M)
+variable {M : MemStructure} [M.ClosedUnderDeltaZeroComprehension] (x y z : M)
 
 variable (M) in
 noncomputable instance : SDiff M where
@@ -15,69 +15,79 @@ theorem mem_sdiff : x ∈ y \ z ↔ x ∈ y ∧ x ∉ z := by
   simp [SDiff.sdiff]
 
 @[simp, grind =, push]
-theorem empty_sdiff [Extensional M] [HasEmpty M] :
+theorem empty_sdiff [M.Extensional] [M.HasEmpty] :
     (∅ : M) \ x = ∅ := by
   ext; grind
 
 @[simp, grind =, push]
-theorem sdiff_empty [Extensional M] [HasEmpty M] :
+theorem sdiff_empty [M.Extensional] [M.HasEmpty] :
     x \ (∅ : M) = x := by
   ext; grind
 
 @[simp, grind =, push]
-theorem sdiff_self [Extensional M] [HasEmpty M] :
+theorem sdiff_self [M.Extensional] [M.HasEmpty] :
     x \ x = ∅ := by
   ext; grind
 
 @[grind! .]
-theorem sdiff_subset_left [ClosedUnderSUnion M] [ClosedUnderPair M] :
+theorem sdiff_subset_left [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
     x \ y ⊆ x := by
   grind
 
 @[simp, grind! ., push]
-theorem sdiff_inter_right [Extensional M] [HasEmpty M] [ClosedUnderSUnion M] [ClosedUnderPair M] :
+theorem sdiff_inter_right [M.Extensional] [M.HasEmpty] [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
     (x \ y) ∩ y = ∅ := by
   ext; grind
 
 @[simp, grind! ., push]
-theorem sdiff_union_right [Extensional M] [ClosedUnderSUnion M] [ClosedUnderPair M] :
+theorem sdiff_union_right [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
     (x \ y) ∪ (x ∩ y) = x := by
   ext; grind
 
-variable [Extensional M]
+variable [M.Extensional]
 
 @[simp, grind =]
-theorem sdiff_of_subset_right [HasEmpty M]
-    {x y : M} (h : x ⊆ y) : x \ y = ∅ := by
+theorem sdiff_empty_of_subset [M.HasEmpty] {x y : M} (h : x ⊆ y) : x \ y = ∅ := by
+  ext; grind
+
+@[grind →]
+theorem subset_of_sdiff_empty [M.HasEmpty] {x y : M} (h : x \ y = ∅) : x ⊆ y := by
+  intro z hz
+  contrapose! h
+  rw [ne_empty_iff]
+  exact ⟨z, by grind⟩
+
+theorem sdiff_empty_iff_subset [M.HasEmpty] {x y : M} : x \ y = ∅ ↔ x ⊆ y := by
+  grind
+
+@[simp, grind =]
+theorem sdiff_eq_left_of_inter_empty [M.HasEmpty] {x y : M} (h : x ∩ y = ∅) : x \ y = x := by
   ext; grind
 
 @[simp, grind =]
-theorem sdiff_of_inter_empty [HasEmpty M]
-    {x y : M} (h : x ∩ y = ∅) : x \ y = x := by
+theorem inter_empty_of_sdiff_eq_left [M.HasEmpty] {x y : M} (h : x \ y = x) : x ∩ y = ∅ := by
   ext; grind
 
--- @[simp, grind ., push]
--- theorem inter_eq_right_iff_subset :
---     x ∩ y = y ↔ y ⊆ x := by
---   grind
+@[simp, grind ., push]
+theorem sdiff_eq_left_iff_inter_empty [M.HasEmpty] :
+    x \ y = x ↔ x ∩ y = ∅ := by
+  grind
 
--- @[simp, grind ., push]
--- theorem inter_eq_left_iff_subset :
---     x ∩ y = x ↔ x ⊆ y := by
---   grind
+variable [M.ClosedUnderSUnion] [M.ClosedUnderPair]
 
--- variable [ClosedUnderSUnion M] [ClosedUnderPair M]
+theorem sdiff_union_sdiff_inter_sdiff : x \ (y ∪ z) = (x \ y) ∩ (x \ z) := by
+  ext; grind
 
--- theorem inter_union_distrib_left : x ∩ (y ∪ z) = x ∩ y ∪ x ∩ z := by
---   ext; grind
+theorem sdiff_union_sdiff_sdiff : x \ (y ∪ z) = (x \ y) \ z := by
+  ext; grind
 
--- theorem union_inter_distrib_right : (x ∪ y) ∩ z = x ∩ z ∪ y ∩ z := by
---   ext; grind
+theorem union_sdiff_distrib : (x ∪ y) \ z = x \ z ∪ y \ z := by
+  ext; grind
 
--- theorem union_inter_distrib_left : x ∪ y ∩ z = (x ∪ y) ∩ (x ∪ z) := by
---   ext; grind
+theorem sdiff_inter_sdiff_union_sdiff : x \ (y ∩ z) = (x \ y) ∪ (x \ z) := by
+  ext; grind
 
--- theorem inter_union_distrib_right : x ∩ y ∪ z = (x ∪ z) ∩ (y ∪ z) := by
---   ext; grind
+theorem inter_sdiff_distrib : (x ∩ y) \ z = (x \ z) ∩ (y \ z) := by
+  ext; grind
 
 end FirstOrder.Language.MemStructure

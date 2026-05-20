@@ -37,54 +37,20 @@ def of (M : Type w) [L.Structure M] [L.HasMem] [Nonempty M] : MemStructure :=
 
 variable (M : MemStructure)
 
-instance instNonempty : Nonempty M :=
-  inferInstance
+instance : Nonempty M := inferInstance
 
-noncomputable instance instInhabited : Inhabited M :=
-  Classical.inhabited_of_nonempty'
+noncomputable instance : Inhabited M := Classical.inhabited_of_nonempty'
 
 /-- Membership in a set -/
 protected def Mem (x y : M) : Prop :=
   Structure.RelMap (M.hasMem.memSymb) ![y, x]
 
-instance instMembership : Membership M M where
-  mem := M.Mem
+instance : Membership M M := ⟨M.Mem⟩
 
 @[simp]
 theorem realize_mem {M : MemStructure} (t₁ t₂ : M.L.Term (α ⊕ Fin n)) {v : α → M} {xs : Fin n → M} :
     (t₁ ∈' t₂).Realize v xs ↔ t₁.realize (Sum.elim v xs) ∈ t₂.realize (Sum.elim v xs) := by
   simp [mem_boundedFormula, Membership.mem, MemStructure.Mem]
-
-/-- Subset relation -/
-protected def Subset (x y : M) : Prop :=
-  ∀ ⦃a⦄, a ∈ x → a ∈ y
-
-instance instHasSubset : HasSubset M where
-  Subset := M.Subset
-
-@[grind =]
-theorem subset_iff (x y : M) : x ⊆ y ↔ ∀ z : M, (z ∈ x → z ∈ y) := ⟨id, id⟩
-
-@[grind .]
-theorem subset_refl (x : M) : x ⊆ x := fun _ h ↦ h
-
-instance instReflSubset : Std.Refl (α := M) Subset where
-  refl := subset_refl _
-
-@[grind .]
-theorem subset_trans (x y z : M) (hxy : x ⊆ y) (hyz : y ⊆ z) : x ⊆ z :=
-  fun _ hw ↦ hyz (hxy hw)
-
-instance instIsTransSubset : IsTrans M Subset where
-  trans := subset_trans _
-
-@[grind .]
-theorem subset_trans_mem (x y z : M) (hxy : x ∈ y) (hyz : y ⊆ z) : x ∈ z :=
-  hyz hxy
-
-instance instIsTransMemSubsetMem : Trans (α := M) (β := M) (γ := M)
-  (fun x y ↦ Membership.mem y x) Subset (fun x y ↦ Membership.mem y x) where
-  trans := fun hxy hyz ↦ hyz hxy
 
 end MemStructure
 

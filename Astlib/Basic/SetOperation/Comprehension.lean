@@ -8,9 +8,7 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y z : M)
 
 class HasComprehension (x : M) (φ : M.L.BoundedFormula α (n + 2)) (v : α → M) (xs : Fin n → M) where
-  hasComprehension : ∃ y : M, ∀ z, z ∈ y ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z)
-
-export HasComprehension (hasComprehension)
+  protected hasComprehension : ∃ y : M, ∀ z, z ∈ y ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z)
 
 /-- The subset of `x` containing `z` for which `φ.Realize v (snoc (snoc xs x) z)` holds -/
 noncomputable def subsetComprehension (x : M) (φ : M.L.BoundedFormula α (n + 2))
@@ -35,17 +33,17 @@ noncomputable abbrev subsetComprehension_empty_three (x : M)
     [HasComprehension x φ default ![w] ] :=
   subsetComprehension x φ default ![w]
 
-@[inherit_doc] scoped[FirstOrder.Language.MemStructure] notation:max
-  "{∈" x " | " φ "〘"v ", " xs "〙}" => subsetComprehension x φ v xs
+@[inherit_doc] scoped[FirstOrder.Language] notation:max
+  "{∈" x " | " φ "〘"v ", " xs "〙}" => MemStructure.subsetComprehension x φ v xs
 
-@[inherit_doc] scoped[FirstOrder.Language.MemStructure] notation:max
-  "{∈" x " | " φ "〘" xs "〙}" => subsetComprehension_empty x φ xs
+@[inherit_doc] scoped[FirstOrder.Language] notation:max
+  "{∈" x " | " φ "〘" xs "〙}" => MemStructure.subsetComprehension_empty x φ xs
 
-@[inherit_doc] scoped[FirstOrder.Language.MemStructure] notation:max
-  "{∈" x " | " φ "}" => subsetComprehension_empty_two x φ
+@[inherit_doc] scoped[FirstOrder.Language] notation:max
+  "{∈" x " | " φ "}" => MemStructure.subsetComprehension_empty_two x φ
 
-@[inherit_doc] scoped[FirstOrder.Language.MemStructure] notation:max
-  "{∈" x " | " φ "〘" w "〙}" => subsetComprehension_empty_three x φ w
+@[inherit_doc] scoped[FirstOrder.Language] notation:max
+  "{∈" x " | " φ "〘" w "〙}" => MemStructure.subsetComprehension_empty_three x φ w
 
 @[simp, grind =, push]
 theorem mem_subsetComprehension_iff (x : M) (φ : M.L.BoundedFormula α (n + 2))
@@ -64,29 +62,29 @@ theorem subsetComprehension_subset (x : M) (φ : M.L.BoundedFormula α (n + 2))
     {∈ x | φ 〘v, xs〙} ⊆ x := by
   grind
 
-theorem subsetComprehension_top [Extensional M] (x : M)
+theorem subsetComprehension_top [M.Extensional] (x : M)
     (v : α → M) (xs : Fin n → M) [HasComprehension x ⊤ v xs] :
     {∈ x | ⊤ 〘v, xs〙} = x := by
   ext; simp
 
-theorem subsetComprehension_bot [Extensional M] [HasEmpty M] {x : M}
+theorem subsetComprehension_bot [M.Extensional] [M.HasEmpty] {x : M}
     (v : α → M) (xs : Fin n → M) [HasComprehension x ⊥ v xs] :
     {∈ x | ⊥ 〘v, xs〙} = ∅ := by
   ext; simp
 
-theorem subsetComprehension_eq_iff [Extensional M] (x : M) (φ ψ : M.L.BoundedFormula α (n + 2))
+theorem subsetComprehension_eq_iff [M.Extensional] (x : M) (φ ψ : M.L.BoundedFormula α (n + 2))
     (v w : α → M) (xs ys : Fin n → M) [HasComprehension x φ v xs] [HasComprehension x ψ w ys] :
     {∈ x | φ 〘v, xs〙} = {∈ x | ψ 〘w, ys〙} ↔
       ∀ z ∈ x, φ.Realize v (snoc (snoc xs x) z) ↔ ψ.Realize w (snoc (snoc ys x ) z) := by
   simp [eq_iff]
 
-theorem subsetComprehension_eq_univ_iff [Extensional M] (x : M) (φ : M.L.BoundedFormula α (n + 2))
+theorem subsetComprehension_eq_univ_iff [M.Extensional] (x : M) (φ : M.L.BoundedFormula α (n + 2))
     (v : α → M) (xs : Fin n → M) [HasComprehension x φ v xs] :
     {∈ x | φ 〘v, xs〙} = x ↔
       ∀ z ∈ x, φ.Realize v (snoc (snoc xs x) z) := by
   simp [eq_iff]
 
-theorem subsetComprehension_eq_empty_iff [Extensional M] [HasEmpty M] (x : M)
+theorem subsetComprehension_eq_empty_iff [M.Extensional] [M.HasEmpty] (x : M)
     (φ : M.L.BoundedFormula α (n + 2))
     (v : α → M) (xs : Fin n → M) [HasComprehension x φ v xs] :
     {∈ x | φ 〘v, xs〙} = ∅ ↔
@@ -100,29 +98,9 @@ class ClosedUnderDeltaZeroComprehension where
 
 export ClosedUnderDeltaZeroComprehension (hasDeltaZeroComprehension)
 
-instance instHasComprehension_of_deltaZero [ClosedUnderDeltaZeroComprehension M] (x : M)
+instance [M.ClosedUnderDeltaZeroComprehension] (x : M)
   (φ : M.L.BoundedFormula Empty (n + 2)) [φ.DeltaZero] (xs : Fin n → M) :
-  HasComprehension x φ default xs where
-  hasComprehension := hasDeltaZeroComprehension x φ xs
-
-instance instClosedUnderDeltaZeroComprehension (hM : M ⊨ M.L.deltaZeroComprehensionSchema) :
-  ClosedUnderDeltaZeroComprehension M where
-  hasDeltaZeroComprehension := by
-    intro n x φ hφ xs
-    simp +contextual only [deltaZeroComprehensionSchema, BoundedFormula.comprehension,
-      Function.comp_apply, Theory.model_iff, Set.mem_setOf_eq, Sentence.Realize,
-      forall_exists_index, BoundedFormula.realize_alls, BoundedFormula.realize_ex,
-      Nat.succ_eq_add_one, BoundedFormula.realize_all, BoundedFormula.realize_iff, realize_mem,
-      Term.realize_var, Sum.elim_inr, snoc, val_last_plus_one_minus_one, lt_add_iff_pos_right,
-      Order.lt_one_iff, ↓reduceDIte, castSucc_castLT, val_castLT, lt_self_iff_false, cast_eq,
-      val_last, BoundedFormula.realize_inf, val_last_plus_two_minus_two, Order.lt_add_one_iff,
-      le_add_iff_nonneg_right, _root_.zero_le, BoundedFormula.realize_liftAt', addNat_one,
-      and_imp] at hM
-    specialize hM (φ.comprehension) n φ hφ rfl (snoc xs x)
-    simp only [snoc, val_castLT, val_last_plus_two_minus_two, lt_self_iff_false, ↓reduceDIte,
-      cast_eq, Pi.default_def] at hM ⊢
-    convert hM
-    grind [Fin.snoc_nat]
+  HasComprehension x φ default xs := ⟨hasDeltaZeroComprehension x φ xs⟩
 
 variable (M) in
 class ClosedUnderComprehension where
@@ -131,22 +109,58 @@ class ClosedUnderComprehension where
 
 export ClosedUnderComprehension (hasComprehension)
 
-instance instHasComprehension [ClosedUnderComprehension M] (x : M)
+instance [M.ClosedUnderComprehension] (x : M)
   {φ : M.L.BoundedFormula Empty (n + 2)} (xs : Fin n → M) :
   HasComprehension x φ default xs where
   hasComprehension := hasComprehension x φ xs
 
-instance instClosedUnderComprehension (hM : M ⊨ M.L.comprehensionSchema) :
-  ClosedUnderComprehension M where
+end MemStructure
+
+variable {L : FirstOrder.Language} [HasMem L]
+
+/-- The comprehension axiom -/
+def BoundedFormula.comprehension (φ : L.BoundedFormula α (n + 2)) : L.Formula α :=
+  ∀'' ∃' ∀' (&-1 ∈' &-2 ⇔ (&-1 ∈' &-3 ⊓ φ.liftAt 1 (n + 1)))
+
+def deltaZeroComprehensionSchema : Set (L.Sentence) :=
+  {ψ | ∃ n, ∃ φ : L.BoundedFormula Empty (n + 2), ∃ _ : φ.DeltaZero, ψ = φ.comprehension}
+  -- {ψ | ∃ n, ∃ φ : L.BoundedFormula Empty (n + 2), DeltaZero φ ∧ ψ = φ.comprehension}
+
+def comprehensionSchema : Set (L.Sentence) :=
+  {ψ | ∃ n, ∃ φ : L.BoundedFormula Empty (n + 2), ψ = φ.comprehension}
+
+variable {M : MemStructure}
+
+instance (hM : M ⊨ M.L.deltaZeroComprehensionSchema) :
+  M.ClosedUnderDeltaZeroComprehension where
+  hasDeltaZeroComprehension := by
+    intro n x φ hφ xs
+    simp +contextual only [deltaZeroComprehensionSchema, BoundedFormula.comprehension,
+      Function.comp_apply, exists_prop, Theory.model_iff, Set.mem_setOf_eq, Sentence.Realize,
+      forall_exists_index, BoundedFormula.realize_alls, BoundedFormula.realize_ex,
+      Nat.succ_eq_add_one, BoundedFormula.realize_all, BoundedFormula.realize_iff,
+      MemStructure.realize_mem, Term.realize_var, Sum.elim_inr, snoc, val_last_plus_one_minus_one,
+      lt_add_iff_pos_right, Order.lt_one_iff, ↓reduceDIte, castSucc_castLT, val_castLT,
+      lt_self_iff_false, cast_eq, val_last, BoundedFormula.realize_inf, val_last_plus_two_minus_two,
+      Order.lt_add_one_iff, le_add_iff_nonneg_right, _root_.zero_le, BoundedFormula.realize_liftAt',
+      addNat_one, and_imp] at hM
+    specialize hM (φ.comprehension) n φ hφ rfl (snoc xs x)
+    simp only [snoc, val_castLT, val_last_plus_two_minus_two, lt_self_iff_false, ↓reduceDIte,
+      cast_eq, Pi.default_def] at hM ⊢
+    convert hM
+    grind [Fin.snoc_nat]
+
+instance (hM : M ⊨ M.L.comprehensionSchema) :
+  M.ClosedUnderComprehension where
   hasComprehension := by
     intro n x φ xs
     simp +contextual only [comprehensionSchema, BoundedFormula.comprehension, Function.comp_apply,
       Theory.model_iff, Set.mem_setOf_eq, Sentence.Realize, forall_exists_index,
       BoundedFormula.realize_alls, BoundedFormula.realize_ex, Nat.succ_eq_add_one,
-      BoundedFormula.realize_all, BoundedFormula.realize_iff, realize_mem, Term.realize_var,
-      Sum.elim_inr, snoc, val_last_plus_one_minus_one, lt_add_iff_pos_right, Order.lt_one_iff,
-      ↓reduceDIte, castSucc_castLT, val_castLT, lt_self_iff_false, cast_eq, val_last,
-      BoundedFormula.realize_inf, val_last_plus_two_minus_two, Order.lt_add_one_iff,
+      BoundedFormula.realize_all, BoundedFormula.realize_iff, MemStructure.realize_mem,
+      Term.realize_var, Sum.elim_inr, snoc, val_last_plus_one_minus_one, lt_add_iff_pos_right,
+      Order.lt_one_iff, ↓reduceDIte, castSucc_castLT, val_castLT, lt_self_iff_false, cast_eq,
+      val_last, BoundedFormula.realize_inf, val_last_plus_two_minus_two, Order.lt_add_one_iff,
       le_add_iff_nonneg_right, _root_.zero_le, BoundedFormula.realize_liftAt', addNat_one] at hM
     specialize hM (φ.comprehension) n φ rfl (snoc xs x)
     simp only [snoc, val_castLT, val_last_plus_two_minus_two, lt_self_iff_false, ↓reduceDIte,
@@ -154,11 +168,10 @@ instance instClosedUnderComprehension (hM : M ⊨ M.L.comprehensionSchema) :
     convert hM
     grind [Fin.snoc_nat]
 
-
--- noncomputable instance instHasEmpty (x : M)
---     [hx : HasComprehension (α := Empty) (n := 0) x ⊥ default default] : HasEmpty M where
+-- noncomputable instance (x : M)
+--     [hx : M.HasComprehension (α := Empty) (n := 0) x ⊥ default default] : M.HasEmpty where
 --   emptyCollection := {∈ x | ⊥}
 --   empty_prop (x) := by simp
 
 
-end FirstOrder.Language.MemStructure
+end FirstOrder.Language

@@ -2,12 +2,19 @@ import Astlib.Basic.SetOperation.Empty
 
 open FirstOrder.Language.BoundedFormula
 
-namespace FirstOrder.Language.MemStructure
+namespace FirstOrder.Language
+
+variable {L : FirstOrder.Language} [HasMem L]
+
+/-- Closed under power set -/
+def allExPowerset : L.Sentence := ∀' ∃' ∀' (&2 ∈' &1 ⇔ &2 ⊆' &0)
+
+namespace MemStructure
 
 variable {M : MemStructure} (x y : M)
 
 class HasPowerset (x : M) where
-  hasPowerset : ∃ y : M, ∀ z, z ∈ y ↔ z ⊆ x
+  protected hasPowerset : ∃ y : M, ∀ z, z ∈ y ↔ z ⊆ x
 
 export HasPowerset (hasPowerset)
 
@@ -27,11 +34,11 @@ instance instHasPowerSet (hM : M ⊨ M.L.allExPowerset) (x : M) : HasPowerset x 
 theorem mem_powerset_self [HasPowerset x] : x ∈ 𝒫 x := by simp
 
 @[grind! .]
-theorem empty_mem_powerset [HasEmpty M] [HasPowerset x] : ∅ ∈ 𝒫 x := by grind
+theorem empty_mem_powerset [M.HasEmpty] [HasPowerset x] : ∅ ∈ 𝒫 x := by grind
 
 theorem powerset_mono {x y : M} (h : x ⊆ y) [HasPowerset x] [HasPowerset y] : 𝒫 x ⊆ 𝒫 y := by grind
 
-theorem eq_of_powerset_eq [Extensional M] {x y : M} [HasPowerset x] [HasPowerset y]
+theorem eq_of_powerset_eq [M.Extensional] {x y : M} [HasPowerset x] [HasPowerset y]
     (h : 𝒫 x = 𝒫 y) : x = y := by
   ext; grind
 
