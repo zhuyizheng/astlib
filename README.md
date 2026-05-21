@@ -1,5 +1,7 @@
 # Astlib: Axiomatic Set Theory Library
 
+Documentation at https://zhuyizheng.github.io/astlib/docs/
+
 A lean4 library of tools in modern axiomatic set theory. The first few targets are:
 
 1. Gödel's constructible universe

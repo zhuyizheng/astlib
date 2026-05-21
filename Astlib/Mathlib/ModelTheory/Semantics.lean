@@ -15,8 +15,11 @@ variable {m n} {L : Language} {M : Type w} [L.Structure M] {α : Type u'}
 
 namespace Term
 
+abbrev realize' (t : L.Term (α ⊕ Fin n)) (v : α → M) (xs : Fin n → M) :=
+  t.realize (Sum.elim v xs)
+
 @[simp]
-theorem realize_castLE {n n' : ℕ} {t : L.Term (α ⊕ (Fin n))} {h : n ≤ n'}
+theorem realize_castLE {n n' : ℕ} {t : L.Term (α ⊕ Fin n)} {h : n ≤ n'}
     {v : α ⊕ (Fin n') → M} :
     (t.castLE h).realize v =
       t.realize (v ∘ Sum.map id (Fin.castLE h)) :=

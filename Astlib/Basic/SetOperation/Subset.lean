@@ -52,7 +52,7 @@ variable (t₁ t₂ : M.L.Term (α ⊕ Fin n))
 
 @[simp 1100]
 theorem Term.subset_iff : (t₁ ⊆' t₂).Realize v xs ↔
-    t₁.realize (Sum.elim v xs) ⊆ t₂.realize (Sum.elim v xs) := by
-  simp [M.subset_iff]
+    t₁.realize' v xs ⊆ t₂.realize' v xs := by
+  simp [M.subset_iff, Fin.castLE_succ_castSucc]
 
 end FirstOrder.Language

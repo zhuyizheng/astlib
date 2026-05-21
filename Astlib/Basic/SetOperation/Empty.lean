@@ -1,6 +1,6 @@
 import Astlib.Basic.SetOperation.Extensional
 import Astlib.Mathlib.Sum.Basic
-
+import Astlib.ModelTheory.Semantics
 
 namespace FirstOrder.Language.MemStructure
 
@@ -57,7 +57,7 @@ noncomputable instance (hM : M ⊨ M.L.exEmptyset) : M.HasEmpty where
 theorem Term.isEmpty_iff [M.Extensional] [M.HasEmpty]
     (t : M.L.Term (α ⊕ Fin n))
     (v : α → M) (xs : Fin n → M) :
-    t.isEmpty.Realize v xs ↔ t.realize (Sum.elim v xs) = (∅ : M) := by
-  simp [M.empty_iff]
+    t.isEmpty.Realize v xs ↔ t.realize' v xs = (∅ : M) := by
+  simp [M.empty_iff, Fin.castLE_succ_castSucc]
 
 end FirstOrder.Language

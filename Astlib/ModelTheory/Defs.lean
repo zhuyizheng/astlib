@@ -49,7 +49,7 @@ instance : Membership M M := ⟨M.Mem⟩
 
 @[simp]
 theorem realize_mem {M : MemStructure} (t₁ t₂ : M.L.Term (α ⊕ Fin n)) {v : α → M} {xs : Fin n → M} :
-    (t₁ ∈' t₂).Realize v xs ↔ t₁.realize (Sum.elim v xs) ∈ t₂.realize (Sum.elim v xs) := by
+    (t₁ ∈' t₂).Realize v xs ↔ t₁.realize' v xs ∈ t₂.realize' v xs := by
   simp [mem_boundedFormula, Membership.mem, MemStructure.Mem]
 
 end MemStructure

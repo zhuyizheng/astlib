@@ -94,15 +94,21 @@ abbrev Term.eqOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) :=
     ((∃'∈ t₁ (&-1).eqUnorderedPair t₂.castSucc t₂.castSucc) ⊓
     (∃'∈ t₁ (&-1).eqUnorderedPair t₂.castSucc t₃.castSucc))
 
-/-- `t` is an unordered pair -/
-abbrev Term.isOrderedPair (t : L.Term (α ⊕ Fin n)) :=
-  ∃'∈ t ∃'∈ t.castSucc t.castSucc.castSucc.eqUnorderedPair &-2 &-1
+-- /-- `t` is an unordered pair -/
+-- abbrev Term.isOrderedPair (t : L.Term (α ⊕ Fin n)) :=
+--   ∃'∈ t ∃'∈ t.castSucc t.castSucc.castSucc.eqUnorderedPair &-2 &-1
 
--- /-- `t₁` is an ordered pair -/
--- abbrev Term.isOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) := sorry
-  -- (∀'∈ t₁ (&-1).memOrderedPair t₂.castSucc t₃.castSucc) ⊓
-    -- ((∃'∈ t₁ (&-1).eqUnorderedPair t₂.castSucc t₂.castSucc) ⊓
-    -- (∃'∈ t₁ (&-1).eqUnorderedPair t₂.castSucc t₃.castSucc))
+/-- `t₁` is the left component of the ordered pair `t₂` -/
+abbrev Term.eqLeft (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  ∃'∈ t₂ ∃'∈ &-1 (t₂.castSucc.castSucc.eqOrderedPair t₁.castSucc.castSucc &-1)
+
+/-- `t₁` is the right component of the ordered pair `t₂` -/
+abbrev Term.eqRight (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  ∃'∈ t₂ ∃'∈ &-1 (t₂.castSucc.castSucc.eqOrderedPair &-1 t₁.castSucc.castSucc)
+
+-- /-- `t` is an ordered pair -/
+abbrev Term.isOrderedPair (t : L.Term (α ⊕ Fin n)) :=
+  ∃'∈ t ∃'∈ &-1 ((&-1).eqLeft t.castSucc.castSucc)
 
 variable {L : FirstOrder.Language} [HasMem L]
 
@@ -120,36 +126,77 @@ noncomputable instance {M : MemStructure} (hM : M ⊨ M.L.allAllExPair) : M.Clos
       Fin.castSucc_one, realize_all, Fin.reduceCastSucc, realize_imp, MemStructure.realize_mem,
       Term.realize_var, Sum.elim_inr, Fin.snoc, Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.lt_add_one,
       ↓reduceDIte, Fin.reduceCastLT, Nat.mod_succ, lt_self_iff_false, cast_eq, realize_sup,
-      realize_bdEqual, Nat.zero_mod, Nat.ofNat_pos, Fin.castSucc_zero, Order.lt_two_iff, zero_le,
+      realize_bdEqual, Nat.zero_mod, zero_lt_three, Fin.castSucc_zero, Order.lt_two_iff, zero_le,
       Order.lt_one_iff, Nat.one_mod, Nat.one_lt_ofNat, Std.le_refl] at this ⊢
     grind
 
-variable {M : MemStructure} (t₁ t₂ t₃ : M.L.Term (α ⊕ Fin n)) (v : α → M) (xs : Fin n → M)
+variable {M : MemStructure} (t t₁ t₂ t₃ : M.L.Term (α ⊕ Fin n)) (v : α → M) (xs : Fin n → M)
 
 @[simp 1100]
 theorem Term.memUnorderedPair_iff :
     (t₁.memUnorderedPair t₂ t₃).Realize v xs ↔
-      t₁.realize (Sum.elim v xs) = t₂.realize (Sum.elim v xs) ∨
-      t₁.realize (Sum.elim v xs) = t₃.realize (Sum.elim v xs) := by
+      t₁.realize' v xs = t₂.realize' v xs ∨ t₁.realize' v xs = t₃.realize' v xs := by
   simp
 
 @[simp 1100]
 theorem Term.eqUnorderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.eqUnorderedPair t₂ t₃).Realize v xs ↔
-      t₁.realize (Sum.elim v xs) =
-      M.unorderedPair (t₂.realize (Sum.elim v xs)) (t₃.realize (Sum.elim v xs)) := by
+      t₁.realize' v xs = M.unorderedPair (t₂.realize' v xs) (t₃.realize' v xs) := by
   simp [M.eq_unorderedPair_iff]
 
 @[simp 1100]
 theorem Term.memOrderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.memOrderedPair t₂ t₃).Realize v xs ↔
-      t₁.realize (Sum.elim v xs) ∈ !(t₂.realize (Sum.elim v xs), t₃.realize (Sum.elim v xs)) := by
+      t₁.realize' v xs ∈ !(t₂.realize' v xs, t₃.realize' v xs) := by
   simp [M.mem_orderedPair_iff]
 
 @[simp 1100]
 theorem Term.eqOrderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.eqOrderedPair t₂ t₃).Realize v xs ↔
-      t₁.realize (Sum.elim v xs) = !(t₂.realize (Sum.elim v xs), t₃.realize (Sum.elim v xs)) := by
+      t₁.realize' v xs = !(t₂.realize' v xs, t₃.realize' v xs) := by
   simp [M.eq_orderedPair_iff, M.mem_orderedPair_iff]
+
+@[simp 1100]
+theorem Term.eqLeft_iff [M.Extensional] [M.ClosedUnderPair] :
+    (t₁.eqLeft t₂).Realize v xs ↔
+      ∃ a : M, t₂.realize' v xs = !(t₁.realize' v xs, a) := by
+  simp +contextual only [realize_not, Function.comp_apply, Nat.succ_eq_add_one, castSucc,
+    castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
+    Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
+    castLE_var_inr, Fin.snoc_castSucc, eqOrderedPair_iff, Fin.castLE_add_two_castSucc,
+    Sum.elim_comp_map_castSucc_comp, Fin.snoc_comp_castSucc, M.eq_orderedPair_iff, not_and,
+    not_forall, not_not, exists_prop, not_exists]
+  grind
+
+@[simp 1100]
+theorem Term.eqRight_iff [M.Extensional] [M.ClosedUnderPair] :
+    (t₁.eqRight t₂).Realize v xs ↔
+      ∃ a : M, t₂.realize' v xs = !(a, t₁.realize' v xs) := by
+  simp +contextual only [realize_not, Function.comp_apply, Nat.succ_eq_add_one, castSucc,
+    castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
+    Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
+    castLE_var_inr, Fin.snoc_castSucc, eqOrderedPair_iff, Fin.castLE_add_two_castSucc,
+    Sum.elim_comp_map_castSucc_comp, Fin.snoc_comp_castSucc, M.eq_orderedPair_iff, not_and,
+    not_forall, not_not, exists_prop, not_exists]
+  exact ⟨by grind, fun ⟨a, _⟩ ↦ by use M.unorderedPair a a; grind⟩
+
+@[simp 1100]
+theorem Term.isOrderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
+    (t.isOrderedPair).Realize v xs ↔ ∃ a b : M, t.realize' v xs = !(a, b) := by
+  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+    castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
+    Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
+    not_forall, not_not, exists_prop, not_exists, not_and, M.eq_orderedPair_iff]
+  simp only [Fin.castLE_add_three_castSucc, Sum.elim_comp_map_castSucc_comp, castLE_var_inr,
+    Fin.castLE_add_two_castSucc, Function.comp_apply, eqOrderedPair_iff, realize_castLE,
+    Fin.castLE_add_four_castSucc, realize_var, Sum.elim_inr, Fin.snoc_castSucc, Fin.snoc_last]
+  simp only [← Function.comp_assoc, Fin.snoc_comp_castSucc]
+  constructor
+  · intro ⟨u, hu, a, ha, v, hv, b, hb, hx⟩
+    use a, b
+    grind [M.eq_orderedPair_iff]
+  · intro ⟨a, b, h₁, h₂, h₃⟩
+    use M.unorderedPair a a, by grind, a, by grind, M.unorderedPair a b, by grind, b, by grind
+    grind [M.eq_orderedPair_iff]
 
 end FirstOrder.Language

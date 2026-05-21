@@ -633,11 +633,9 @@ class LogicalDelta (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theor
 -- instance [φ.LogicalDelta k T] : φ.LogicalPi k T := by infer_instance
 -- instance [φ.LogicalDelta k T] : φ.LogicalSigma k T := by infer_instance
 
-instance [h : φ.Pi k] : φ.LogicalPi k T where
-  isLogicalPi := h.isPi.isLogicalPi
+instance [h : φ.Pi k] : φ.LogicalPi k T := ⟨h.isPi.isLogicalPi⟩
 
-instance [h : φ.Sigma k] : φ.LogicalSigma k T where
-  isLogicalSigma := h.isSigma.isLogicalSigma
+instance [h : φ.Sigma k] : φ.LogicalSigma k T := ⟨h.isSigma.isLogicalSigma⟩
 
 instance [h : φ.DeltaZero] : φ.LogicalDelta 0 T where
   isLogicalPi := h.isDeltaZero.isLogicalDelta.left
@@ -653,52 +651,38 @@ instance [h : φ.LogicalSigma 0 T] : φ.LogicalDelta 0 T where
 
 variable {φ : L.BoundedFormula α (n + m)}
 
-instance [h : φ.LogicalPi (k + 1) T] :
-  (φ.all' m).LogicalPi (k + 1) T where
-  isLogicalPi := h.isLogicalPi.all'
+instance [h : φ.LogicalPi (k + 1) T] : (φ.all' m).LogicalPi (k + 1) T := ⟨h.isLogicalPi.all'⟩
 
 instance [h : φ.LogicalPi k T] (hk : k ≠ 0) :
-  (φ.all' m).LogicalPi k T where
-  isLogicalPi := h.isLogicalPi.all'₀ hk
+  (φ.all' m).LogicalPi k T := ⟨h.isLogicalPi.all'₀ hk⟩
 
 instance [h : φ.LogicalPi k T] :
-  (φ.ex' m).LogicalSigma (k + 1) T where
-  isLogicalSigma := h.isLogicalPi.ex'
+  (φ.ex' m).LogicalSigma (k + 1) T := ⟨h.isLogicalPi.ex'⟩
 
 instance [h : φ.LogicalSigma (k + 1) T] :
-  (φ.ex' m).LogicalSigma (k + 1) T where
-  isLogicalSigma := h.isLogicalSigma.ex'
+  (φ.ex' m).LogicalSigma (k + 1) T := ⟨h.isLogicalSigma.ex'⟩
 
 instance [h : φ.LogicalSigma k T] (hk : k ≠ 0) :
-  (φ.ex' m).LogicalSigma k T where
-  isLogicalSigma := h.isLogicalSigma.ex'₀ hk
+  (φ.ex' m).LogicalSigma k T := ⟨h.isLogicalSigma.ex'₀ hk⟩
 
 instance [h : φ.LogicalSigma k T] :
-  (φ.all' m).LogicalPi (k + 1) T where
-  isLogicalPi := h.isLogicalSigma.all'
+  (φ.all' m).LogicalPi (k + 1) T := ⟨h.isLogicalSigma.all'⟩
 
 instance {φ : L.BoundedFormula α n} [h : φ.LogicalPi k T] :
-  (∼φ).LogicalSigma k T where
-  isLogicalSigma := h.isLogicalPi.not
+  (∼φ).LogicalSigma k T := ⟨h.isLogicalPi.not⟩
 
 instance {φ : L.BoundedFormula α n} [h : φ.LogicalSigma k T] :
-  (∼φ).LogicalPi k T where
-  isLogicalPi := h.isLogicalSigma.not
+  (∼φ).LogicalPi k T := ⟨h.isLogicalSigma.not⟩
 
-instance {φ : L.BoundedFormula α n} [h : φ.LogicalDelta k T] :
-  (∼φ).LogicalDelta k T where
+instance {φ : L.BoundedFormula α n} [h : φ.LogicalDelta k T] : (∼φ).LogicalDelta k T where
   isLogicalPi := h.isLogicalSigma.not
   isLogicalSigma := h.isLogicalPi.not
 
-instance {φ ψ : L.BoundedFormula α n}
-  [hφ : φ.LogicalPi k T] [hψ : ψ.LogicalSigma k T] :
-  (φ ⟹ ψ).LogicalSigma k T where
-  isLogicalSigma := hφ.isLogicalPi.imp hψ.isLogicalSigma
+instance {φ ψ : L.BoundedFormula α n} [hφ : φ.LogicalPi k T] [hψ : ψ.LogicalSigma k T] :
+  (φ ⟹ ψ).LogicalSigma k T := ⟨hφ.isLogicalPi.imp hψ.isLogicalSigma⟩
 
-instance {φ ψ : L.BoundedFormula α n}
-  [hφ : φ.LogicalSigma k T] [hψ : ψ.LogicalPi k T] :
-  (φ ⟹ ψ).LogicalPi k T where
-  isLogicalPi := hφ.isLogicalSigma.imp hψ.isLogicalPi
+instance {φ ψ : L.BoundedFormula α n} [hφ : φ.LogicalSigma k T] [hψ : ψ.LogicalPi k T] :
+  (φ ⟹ ψ).LogicalPi k T := ⟨hφ.isLogicalSigma.imp hψ.isLogicalPi⟩
 
 instance {k n : ℕ} {φ ψ : L.BoundedFormula α n}
   [hφ : φ.LogicalDelta k T] [hψ : ψ.LogicalDelta k T] :
@@ -708,23 +692,19 @@ instance {k n : ℕ} {φ ψ : L.BoundedFormula α n}
 
 instance {φ ψ : L.BoundedFormula α n}
   [hφ : φ.LogicalPi k T] [hψ : ψ.LogicalPi k T] :
-  (φ ⊔ ψ).LogicalPi k T where
-  isLogicalPi := hφ.isLogicalPi.sup hψ.isLogicalPi
+  (φ ⊔ ψ).LogicalPi k T := ⟨hφ.isLogicalPi.sup hψ.isLogicalPi⟩
 
 instance {φ ψ : L.BoundedFormula α n}
   [hφ : φ.LogicalPi k T] [hψ : ψ.LogicalPi k T] :
-  (φ ⊓ ψ).LogicalPi k T where
-  isLogicalPi := hφ.isLogicalPi.inf hψ.isLogicalPi
+  (φ ⊓ ψ).LogicalPi k T := ⟨hφ.isLogicalPi.inf hψ.isLogicalPi⟩
 
 instance {φ ψ : L.BoundedFormula α n}
   [hφ : φ.LogicalSigma k T] [hψ : ψ.LogicalSigma k T] :
-  (φ ⊔ ψ).LogicalSigma k T where
-  isLogicalSigma := hφ.isLogicalSigma.sup hψ.isLogicalSigma
+  (φ ⊔ ψ).LogicalSigma k T := ⟨hφ.isLogicalSigma.sup hψ.isLogicalSigma⟩
 
 instance {φ ψ : L.BoundedFormula α n}
   [hφ : φ.LogicalSigma k T] [hψ : ψ.LogicalSigma k T] :
-  (φ ⊓ ψ).LogicalSigma k T where
-  isLogicalSigma := hφ.isLogicalSigma.inf hψ.isLogicalSigma
+  (φ ⊓ ψ).LogicalSigma k T := ⟨hφ.isLogicalSigma.inf hψ.isLogicalSigma⟩
 
 instance {φ ψ : L.BoundedFormula α n}
   [hφ : φ.LogicalDelta k T] [hψ : ψ.LogicalDelta k T] :

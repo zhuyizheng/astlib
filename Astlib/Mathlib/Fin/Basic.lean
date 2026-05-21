@@ -7,6 +7,15 @@ open Fin
 @[simp]
 theorem Fin.castLE_succ_castSucc (n : ℕ) : Fin.castLE n.le_succ = Fin.castSucc := by rfl
 
+theorem Fin.castLE_add_two_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 2) (by omega) =
+    Fin.castSucc ∘ Fin.castSucc := by rfl
+
+theorem Fin.castLE_add_three_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 3) (by omega) =
+    Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc := by rfl
+
+theorem Fin.castLE_add_four_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 4) (by omega) =
+    Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc := by rfl
+
 @[simp]
 theorem Fin.val_last_plus_one_minus_one : (last (n + 1) - 1).val = n := by
     simp only [last, sub_def, coe_ofNat_eq_mod, Nat.one_mod, Nat.add_one_sub_one]
@@ -48,3 +57,11 @@ theorem Fin.append_nat (i : Fin (m + n)) :
     rw [append_left]
   · nth_rw 1 [show i = Fin.natAdd (m := n) m ⟨(i.val - m), by omega⟩ by grind]
     rw [append_right]
+
+
+
+-- @[simp]
+-- theorem snoc_comp_castSucc : snoc a x ∘ Fin.castSucc = a := by
+--   simp
+--   -- simp only [snoc, val_castSucc, is_lt, dite_true]
+--   -- convert cast_eq rfl (p i)
