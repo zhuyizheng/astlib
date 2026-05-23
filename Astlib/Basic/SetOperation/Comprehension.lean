@@ -7,7 +7,8 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y z : M)
 
-class HasComprehension (x : M) (φ : M.L.BoundedFormula α (n + 2)) (v : α → M) (xs : Fin n → M) where
+class HasComprehension (x : M) (φ : M.L.BoundedFormula α (n + 2))
+  (v : α → M) (xs : Fin n → M) : Prop where
   protected hasComprehension : ∃ y : M, ∀ z, z ∈ y ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z)
 
 /-- The subset of `x` containing `z` for which `φ.Realize v (snoc (snoc xs x) z)` holds -/
@@ -43,7 +44,7 @@ noncomputable abbrev subsetComprehension_empty_three (x : M)
   "{∈" x " | " φ "}" => MemStructure.subsetComprehension_empty_two x φ
 
 @[inherit_doc] scoped[FirstOrder.Language] notation:max
-  "{∈" x " | " φ "〘" w "〙}" => MemStructure.subsetComprehension_empty_three x φ w
+  "{∈" x " | " φ "〘" w "〙₀}" => MemStructure.subsetComprehension_empty_three x φ w
 
 @[simp, grind =, push]
 theorem mem_subsetComprehension_iff (x : M) (φ : M.L.BoundedFormula α (n + 2))
@@ -92,7 +93,7 @@ theorem subsetComprehension_eq_empty_iff [M.Extensional] [M.HasEmpty] (x : M)
   simp [eq_iff]
 
 variable (M) in
-class ClosedUnderDeltaZeroComprehension where
+class ClosedUnderDeltaZeroComprehension : Prop where
   hasDeltaZeroComprehension (x : M) (φ : M.L.BoundedFormula Empty (n + 2)) [φ.DeltaZero]
     (xs : Fin n → M) : ∃ y : M, ∀ z, z ∈ y ↔ z ∈ x ∧ φ.Realize default (snoc (snoc xs x) z)
 
@@ -103,7 +104,7 @@ instance [M.ClosedUnderDeltaZeroComprehension] (x : M)
   HasComprehension x φ default xs := ⟨hasDeltaZeroComprehension x φ xs⟩
 
 variable (M) in
-class ClosedUnderComprehension where
+class ClosedUnderComprehension : Prop where
   hasComprehension (x : M) (φ : M.L.BoundedFormula Empty (n + 2))
     (xs : Fin n → M) : ∃ y : M, ∀ z, z ∈ y ↔ z ∈ x ∧ φ.Realize default (snoc (snoc xs x) z)
 

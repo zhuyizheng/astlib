@@ -9,7 +9,7 @@ variable {M : MemStructure} [M.ClosedUnderDeltaZeroComprehension] (x y z : M)
 
 variable (M) in
 noncomputable instance : Inter M where
-  inter x y := {∈ x | &2 ∈' &0 〘y〙}
+  inter x y := {∈ x | &2 ∈' &0 〘y〙₀}
 
 @[simp, grind =]
 theorem mem_inter : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by

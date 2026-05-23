@@ -7,7 +7,7 @@ variable {M : MemStructure}
 
 variable (M) in
 /- `M` is extensional -/
-class Extensional where
+class Extensional : Prop where
   protected extensional : ∀ x y : M, ((∀ z : M, (z ∈ x ↔ z ∈ y)) → x = y)
 
 @[ext]

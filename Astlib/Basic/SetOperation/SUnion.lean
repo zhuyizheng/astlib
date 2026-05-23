@@ -45,9 +45,13 @@ variable {L : FirstOrder.Language} [HasMem L] (t₁ t₂ : L.Term (α ⊕ Fin n)
 abbrev Term.memSUnion :=
   ∃'∈ t₂ t₁.castSucc ∈' &-1
 
+instance : (t₁.memSUnion t₂).DeltaZero := by infer_instance
+
 /-- `t₁ = ⋃₀ t₂` -/
 abbrev Term.eqSUnion :=
   (∀'∈ t₁ (&-1).memSUnion t₂.castSucc) ⊓ ∀'∈ t₂ ∀'∈ &-1 (&-1 ∈' t₁.castSucc.castSucc)
+
+instance : (t₁.eqSUnion t₂).DeltaZero := by infer_instance
 
 /-- Every set has a union -/
 def allExSUnion : L.Sentence := ∀' ∃' (&1).eqSUnion &0

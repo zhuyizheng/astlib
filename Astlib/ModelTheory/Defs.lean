@@ -41,6 +41,7 @@ instance : Nonempty M := inferInstance
 
 noncomputable instance : Inhabited M := Classical.inhabited_of_nonempty'
 
+variable {M} in
 /-- Membership in a set -/
 protected def Mem (x y : M) : Prop :=
   Structure.RelMap (M.hasMem.memSymb) ![y, x]

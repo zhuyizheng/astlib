@@ -45,6 +45,9 @@ variable {L : FirstOrder.Language} [HasMem L]
 abbrev Term.subset (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
   ∀'∈ t₁ &-1 ∈' t₂.castSucc
 
+instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.subset t₂).DeltaZero :=
+  by infer_instance
+
 @[inherit_doc] scoped[FirstOrder.Language]
 infix:88 " ⊆' " => FirstOrder.Language.Term.subset
 

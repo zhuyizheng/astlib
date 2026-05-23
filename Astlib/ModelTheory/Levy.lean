@@ -239,7 +239,7 @@ theorem IsSigma.Pi_of_lt (h : φ.IsSigma k) (hkm : k < m) : φ.IsPi m :=
   h.isPi_succ.Pi_of_le (Nat.add_one_le_of_lt hkm)
 
 
-class DeltaZero (φ : L.BoundedFormula α n) where
+class DeltaZero (φ : L.BoundedFormula α n) : Prop where
   isDeltaZero : φ.IsDeltaZero
 
 instance : (falsum : L.BoundedFormula α n).DeltaZero := ⟨IsDeltaZero.falsum⟩
@@ -261,6 +261,10 @@ instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⟹ ψ).DeltaZero :=
 instance {n : ℕ} {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
   (t : L.Term (α ⊕ Fin n)) : (∀' (&-1 ∈' t.castSucc ⟹ φ)).DeltaZero := ⟨hφ.isDeltaZero.bddAll t⟩
 
+instance {n : ℕ} {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
+  (t : L.Term (α ⊕ Fin n)) : (∀'∈ t φ).DeltaZero := by
+  infer_instance
+
 instance [hφ : φ.DeltaZero] : (∼φ).DeltaZero := ⟨hφ.isDeltaZero.not⟩
 
 instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⊔ ψ).DeltaZero :=
@@ -272,10 +276,14 @@ instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⊓ ψ).DeltaZero :=
 instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⇔ ψ).DeltaZero :=
   ⟨(hφ.isDeltaZero.imp hψ.isDeltaZero).inf (hψ.isDeltaZero.imp hφ.isDeltaZero)⟩
 
-class Pi (k : ℕ) (φ : L.BoundedFormula α n) where
+instance {n : ℕ} {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
+  (t : L.Term (α ⊕ Fin n)) : (∃'∈ t φ).DeltaZero := by
+  infer_instance
+
+class Pi (k : ℕ) (φ : L.BoundedFormula α n) : Prop where
   isPi : φ.IsPi k
 
-class Sigma (k : ℕ) (φ : L.BoundedFormula α n) where
+class Sigma (k : ℕ) (φ : L.BoundedFormula α n) : Prop where
   isSigma : φ.IsSigma k
 
 instance [hφ : φ.DeltaZero] : φ.Pi 0 := ⟨by simpa using hφ.isDeltaZero⟩
@@ -621,13 +629,13 @@ theorem IsLogicalDelta.mono (h : φ.IsLogicalDelta k T) (h' : T ⊆ T') : φ.IsL
   obtain ⟨hψ₁, hψ₂⟩ := h
   exact ⟨hψ₁.mono h', hψ₂.mono h'⟩
 
-class LogicalPi (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) where
+class LogicalPi (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop where
   isLogicalPi : φ.IsLogicalPi k T
 
-class LogicalSigma (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) where
+class LogicalSigma (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop where
   isLogicalSigma : φ.IsLogicalSigma k T
 
-class LogicalDelta (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) extends
+class LogicalDelta (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop extends
   φ.LogicalPi k T, φ.LogicalSigma k T
 
 -- instance [φ.LogicalDelta k T] : φ.LogicalPi k T := by infer_instance

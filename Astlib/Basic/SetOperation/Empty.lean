@@ -44,6 +44,8 @@ variable {L : FirstOrder.Language} [HasMem L]
 abbrev Term.isEmpty (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
   ∀'∈ t ⊥
 
+instance (t : L.Term (α ⊕ Fin n)) : (t.isEmpty).DeltaZero := by infer_instance
+
 /-- There exists an empty set -/
 def exEmptyset : L.Sentence := ∃' ((&0).isEmpty)
 

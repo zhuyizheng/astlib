@@ -80,19 +80,31 @@ variable {L : FirstOrder.Language} [HasMem L]
 abbrev Term.memUnorderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) :=
   t₁ =' t₂ ⊔ t₁ =' t₃
 
+instance (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : (t₁.memUnorderedPair t₂ t₃).DeltaZero :=
+  by infer_instance
+
 /-- `t₁ = {t₂, t₃}` -/
 abbrev Term.eqUnorderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) :=
   (∀'∈ t₁ (&-1).memUnorderedPair t₂.castSucc t₃.castSucc) ⊓ (t₂ ∈' t₁ ⊓ t₃ ∈' t₁)
 
+instance (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : (t₁.eqUnorderedPair t₂ t₃).DeltaZero :=
+  by infer_instance
+
 /-- `t₁ ∈ (t₂, t₃)` -/
 abbrev Term.memOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) :=
   t₁.eqUnorderedPair t₂ t₂ ⊔ t₁.eqUnorderedPair t₂ t₃
+
+instance (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : (t₁.memOrderedPair t₂ t₃).DeltaZero :=
+  by infer_instance
 
 /-- `t₁ = (t₂, t₃)` -/
 abbrev Term.eqOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) :=
   (∀'∈ t₁ (&-1).memOrderedPair t₂.castSucc t₃.castSucc) ⊓
     ((∃'∈ t₁ (&-1).eqUnorderedPair t₂.castSucc t₂.castSucc) ⊓
     (∃'∈ t₁ (&-1).eqUnorderedPair t₂.castSucc t₃.castSucc))
+
+instance (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : (t₁.eqOrderedPair t₂ t₃).DeltaZero :=
+  by infer_instance
 
 -- /-- `t` is an unordered pair -/
 -- abbrev Term.isOrderedPair (t : L.Term (α ⊕ Fin n)) :=
@@ -102,13 +114,44 @@ abbrev Term.eqOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) :=
 abbrev Term.eqLeft (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
   ∃'∈ t₂ ∃'∈ &-1 (t₂.castSucc.castSucc.eqOrderedPair t₁.castSucc.castSucc &-1)
 
+instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.eqLeft t₂).DeltaZero :=
+  by infer_instance
+
 /-- `t₁` is the right component of the ordered pair `t₂` -/
 abbrev Term.eqRight (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
   ∃'∈ t₂ ∃'∈ &-1 (t₂.castSucc.castSucc.eqOrderedPair &-1 t₁.castSucc.castSucc)
 
+instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.eqRight t₂).DeltaZero :=
+  by infer_instance
+
 -- /-- `t` is an ordered pair -/
 abbrev Term.isOrderedPair (t : L.Term (α ⊕ Fin n)) :=
   ∃'∈ t ∃'∈ &-1 ((&-1).eqLeft t.castSucc.castSucc)
+
+instance (t : L.Term (α ⊕ Fin n)) : (t.isOrderedPair).DeltaZero :=
+  by infer_instance
+
+/-- `t₁` and `t₂` are ordered pairs with the same left component -/
+abbrev Term.sameLeft (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  ∃'∈ t₁ ∃'∈ &-1 ((&-1).eqLeft t₁.castSucc.castSucc ⊓ (&-1).eqLeft t₂.castSucc.castSucc)
+
+instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.sameLeft t₂).DeltaZero :=
+  by infer_instance
+
+/-- `t₁` and `t₂` are ordered pairs with the same right component -/
+abbrev Term.sameRight (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  ∃'∈ t₁ ∃'∈ &-1 ((&-1).eqRight t₁.castSucc.castSucc ⊓ (&-1).eqRight t₂.castSucc.castSucc)
+
+instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.sameRight t₂).DeltaZero :=
+  by infer_instance
+
+/-- `t₁` and `t₂` are ordered pairs and the right component of `t₁` equals to the left component
+of `t₂` -/
+abbrev Term.rightEqLeft (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  ∃'∈ t₁ ∃'∈ &-1 ((&-1).eqRight t₁.castSucc.castSucc ⊓ (&-1).eqLeft t₂.castSucc.castSucc)
+
+instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.rightEqLeft t₂).DeltaZero :=
+  by infer_instance
 
 variable {L : FirstOrder.Language} [HasMem L]
 
@@ -198,5 +241,60 @@ theorem Term.isOrderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
   · intro ⟨a, b, h₁, h₂, h₃⟩
     use M.unorderedPair a a, by grind, a, by grind, M.unorderedPair a b, by grind, b, by grind
     grind [M.eq_orderedPair_iff]
+
+@[simp 1100]
+theorem Term.sameLeft_iff [M.Extensional] [M.ClosedUnderPair] :
+    (t₁.sameLeft t₂).Realize v xs ↔
+      ∃ a b c : M, t₁.realize' v xs = !(a, b) ∧ t₂.realize' v xs = !(a, c) := by
+  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+    castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
+    Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
+    castLE_var_inr, Fin.snoc_castSucc, not_forall, not_not, exists_prop, not_exists, not_and]
+  simp only [realize_inf, eqLeft_iff, realize_castLE, Fin.castLE_add_two_castSucc,
+    Sum.elim_comp_map_castSucc_comp, Fin.snoc_comp_castSucc, realize_var, Sum.elim_inr,
+    Fin.snoc_last, exists_and_left, exists_and_right]
+  constructor
+  · intro ⟨u, hu, a, ha, ⟨b, hb⟩, ⟨c, hc⟩⟩
+    exact ⟨a, ⟨b, hb⟩, ⟨c, hc⟩⟩
+  · intro ⟨a, ⟨b, hb⟩, ⟨c, hc⟩⟩
+    exact ⟨M.unorderedPair a a, by grind [M.eq_orderedPair_iff],
+      ⟨a, by grind, ⟨b, hb⟩, ⟨c, hc⟩⟩⟩
+
+@[simp 1100]
+theorem Term.sameRight_iff [M.Extensional] [M.ClosedUnderPair] :
+    (t₁.sameRight t₂).Realize v xs ↔
+      ∃ a b c : M, t₁.realize' v xs = !(a, c) ∧ t₂.realize' v xs = !(b, c) := by
+  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+    castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
+    Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
+    castLE_var_inr, Fin.snoc_castSucc, not_forall, not_not, exists_prop, not_exists, not_and]
+  simp only [realize_inf, eqRight_iff, realize_castLE, Fin.castLE_add_two_castSucc,
+    Sum.elim_comp_map_castSucc_comp, Fin.snoc_comp_castSucc, realize_var, Sum.elim_inr,
+    Fin.snoc_last]
+  constructor
+  · intro ⟨u, hu, c, hc, ⟨a, ha⟩, ⟨b, hb⟩⟩
+    exact ⟨a, b, c, ha, hb⟩
+  · intro ⟨a, b, c, ha, hb⟩
+    exact ⟨M.unorderedPair a c, by rw [realize', MemStructure.eq_orderedPair_iff] at ha; grind,
+      ⟨c, by grind, ⟨a, ha⟩, ⟨b, hb⟩⟩⟩
+
+@[simp 1100]
+theorem Term.rightEqLeft_iff [M.Extensional] [M.ClosedUnderPair] :
+    (t₁.rightEqLeft t₂).Realize v xs ↔
+      ∃ a b c : M, t₁.realize' v xs = !(a, b) ∧ t₂.realize' v xs = !(b, c) := by
+  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+    castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
+    Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
+    castLE_var_inr, Fin.snoc_castSucc, not_forall, not_not, exists_prop, not_exists, not_and]
+  simp only [realize_inf, eqLeft_iff, eqRight_iff, realize_castLE, Fin.castLE_add_two_castSucc,
+    Sum.elim_comp_map_castSucc_comp, Fin.snoc_comp_castSucc, realize_var, Sum.elim_inr,
+    Fin.snoc_last]
+  constructor
+  · intro ⟨u, hu, b, hb, ⟨a, ha⟩, ⟨c, hc⟩⟩
+    exact ⟨a, b, c, ha, hc⟩
+  · intro ⟨a, b, c, ha, hc⟩
+    exact ⟨M.unorderedPair a b, by rw [realize', MemStructure.eq_orderedPair_iff] at ha; grind,
+      ⟨b, by grind, ⟨a, ha⟩, ⟨c, hc⟩⟩⟩
+
 
 end FirstOrder.Language

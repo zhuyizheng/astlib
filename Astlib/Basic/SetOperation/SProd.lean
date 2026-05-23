@@ -12,19 +12,25 @@ class ClosedUnderSProd extends M.ClosedUnderPair, SProd M M M where
 
 -- export ClosedUnderProduct (sprod_prop)
 
-theorem exists_prod [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
+theorem exists_sprod [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
     [M.ClosedUnderDeltaZeroComprehension]
     [M.HasPowerset (x ∪ y)] [M.HasPowerset (𝒫 (x ∪ y))] :
     ∃ a : M, ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) := by
-  sorry
-  -- let b := 𝒫 (𝒫 (x ∪ y))
-  -- let a := {∈ b | }
+  -- sorry
+  use {∈ 𝒫 (𝒫 (x ∪ y)) | ∃'∈ &0 ∃'∈ &1 (&3).eqOrderedPair &4 &5 〘![x, y]〙}
+  suffices ∀ (z x_1 : ↑M), x_1 ∈ x → ∀ x_2 ∈ y, z = !(x_1, x_2) → z ⊆ 𝒫 (x ∪ y) by
+    simpa
+  intro z u hu v hv hz
+  rw [hz, orderedPair]
+  intro p
+  simp only [mem_unorderedPair_iff, mem_powerset_iff]
+  grind
 
--- noncomputable instance [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
---     [M.ClosedUnderDeltaZeroComprehension] :
---   Foundational M where
---   memMin := fun x ↦ Classical.choose (exists_memMin hM x)
---   memMin_prop := fun x ↦ Classical.choose_spec (exists_memMin hM x)
+noncomputable instance [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
+  [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderPowerset] :
+  M.ClosedUnderSProd where
+  sprod x y := Classical.choose (exists_sprod x y)
+  sprod_prop x y z := by simpa using Classical.choose_spec (exists_sprod x y) z
 
 @[simp, grind =]
 theorem mem_sprod_iff [ClosedUnderSProd M] : z ∈ x ×ˢ y ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) :=
