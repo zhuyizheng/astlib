@@ -9,15 +9,26 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y a : M)
 
 variable (M) in
-/- `M` is closed under `⋃` -/
-class ClosedUnderSUnion where
+class SUnion where
   /-- `⋃ x` in set theory, denoted by `⋃₀ x` in lean -/
   sUnion : M → M
-  protected sUnion_prop : ∀ x y : M, y ∈ sUnion x ↔ (∃ z ∈ x, y ∈ z)
 
-export ClosedUnderSUnion (sUnion)
+noncomputable instance : Decidable (∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) :=
+  Classical.propDecidable _
 
-@[inherit_doc] prefix:110 "⋃₀ " => sUnion
+noncomputable instance : SUnion M :=
+  ⟨fun x ↦ if hx : ∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z) then Classical.choose hx else default⟩
+
+@[inherit_doc] prefix:110 "⋃₀ " => SUnion.sUnion
+
+variable (M) in
+/- `M` is closed under `⋃` -/
+class ClosedUnderSUnion : Prop where
+  protected sUnion_prop (x y : M) : y ∈ ⋃₀ x ↔ (∃ z ∈ x, y ∈ z)
+
+noncomputable instance instClosedUnderSUnion
+    (h : ∀ x : M, ∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) : M.ClosedUnderSUnion :=
+  ⟨fun x ↦ by convert Classical.choose_spec (h x); simp [SUnion.sUnion, h]⟩
 
 @[simp, grind =, push]
 theorem mem_sUnion_iff [M.ClosedUnderSUnion] : x ∈ ⋃₀ a ↔ ∃ y ∈ a, x ∈ y :=
@@ -53,43 +64,35 @@ abbrev Term.eqSUnion :=
 
 instance : (t₁.eqSUnion t₂).DeltaZero := by infer_instance
 
-/-- Every set has a union -/
-def allExSUnion : L.Sentence := ∀' ∃' (&1).eqSUnion &0
+-- /-- Every set has a union -/
+-- def allExSUnion : L.Sentence := ∀' ∃' (&1).eqSUnion &0
 
 variable {M : MemStructure} (v : α → M) (xs : Fin n → M)
 
-noncomputable instance (hM : M ⊨ M.L.allExSUnion) : M.ClosedUnderSUnion where
-  sUnion x := Classical.choose (exists_of_ex (realize_all.mp hM x))
-  sUnion_prop := fun x ↦ by
-    have := Classical.choose_spec (exists_of_ex (realize_all.mp hM x))
-    simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, Function.comp_apply, realize_inf,
-      Fin.reduceLast, Term.castSucc, Term.castLE_var_inr, Fin.castLE_zero, realize_all,
-      Fin.castLE_succ_castSucc, Fin.castSucc_one, realize_imp, MemStructure.realize_mem,
-      Term.realize_var, Sum.elim_inr, Fin.snoc, Fin.coe_ofNat_eq_mod, Nat.one_mod, Order.lt_two_iff,
-      Std.le_refl, ↓reduceDIte, Fin.reduceCastLT, Nat.mod_succ, lt_self_iff_false, cast_eq,
-      realize_not, Fin.reduceCastSucc, Nat.zero_mod, zero_lt_three, Fin.castSucc_zero, zero_le,
-      Order.lt_one_iff, Nat.reduceMod, Nat.lt_add_one, not_forall,
-      not_not, Nat.one_lt_ofNat] at this ⊢
-    grind
+-- noncomputable instance (hM : M ⊨ M.L.allExSUnion) : M.ClosedUnderSUnion where
+--   sUnion x := Classical.choose (exists_of_ex (realize_all.mp hM x))
+--   sUnion_prop := fun x ↦ by
+--     have := Classical.choose_spec (exists_of_ex (realize_all.mp hM x))
+--     simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, Function.comp_apply, realize_inf,
+--       Fin.reduceLast, Term.castSucc, Term.castLE_var_inr, Fin.castLE_zero, realize_all,
+--       Fin.castLE_succ_castSucc, Fin.castSucc_one, realize_imp, MemStructure.realize_mem,
+--       Term.realize_var, Sum.elim_inr, Fin.snoc, Fin.coe_ofNat_eq_mod, Nat.one_mod, Order.lt_two_iff,
+--       Std.le_refl, ↓reduceDIte, Fin.reduceCastLT, Nat.mod_succ, lt_self_iff_false, cast_eq,
+--       realize_not, Fin.reduceCastSucc, Nat.zero_mod, zero_lt_three, Fin.castSucc_zero, zero_le,
+--       Order.lt_one_iff, Nat.reduceMod, Nat.lt_add_one, not_forall,
+--       not_not, Nat.one_lt_ofNat] at this ⊢
+--     grind
 
 variable (t₁ t₂ : M.L.Term (α ⊕ Fin n))
 
 @[simp 1100]
 theorem Term.memSUnion_iff : (t₁.memSUnion t₂).Realize v xs ↔
     ∃ y ∈ t₂.realize' v xs, t₁.realize' v xs ∈ y := by
-  simp only [realize_not, castSucc, Nat.succ_eq_add_one, Function.comp_apply, realize_all,
-    realize_imp, MemStructure.realize_mem, realize_castLE, Fin.castLE_succ_castSucc,
-    Sum.elim_comp_map, Function.comp_id, Fin.snoc_comp_castSucc, realize_var, Sum.elim_inr,
-    Fin.snoc_last, not_forall, not_not]
-  congr!; grind [Fin.snoc_nat]
+  simp
 
 @[simp 1100]
 theorem Term.eqSUnion_iff [M.Extensional] [M.ClosedUnderSUnion] : (t₁.eqSUnion t₂).Realize v xs ↔
     t₁.realize' v xs = ⋃₀ t₂.realize' v xs := by
-  simp only [realize_inf, Function.comp_apply, castSucc, Nat.succ_eq_add_one, realize_all,
-    realize_imp, MemStructure.realize_mem, realize_castLE, Fin.castLE_succ_castSucc,
-    Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last, memSUnion_iff,
-    castLE_castLE, castLE_var_inr, Fin.snoc_castSucc, M.eq_sUnion_iff]
-  congr!; grind [Fin.snoc_nat]
+  simp [Fin.castLE_add_two_castSucc, M.eq_sUnion_iff]
 
 end FirstOrder.Language

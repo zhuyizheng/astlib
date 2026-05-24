@@ -6,10 +6,19 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x : M)
 
+noncomputable instance : Decidable (∃ a : M, ∀ (x : M), x ∉ a) :=
+  Classical.propDecidable _
+
+noncomputable instance : EmptyCollection M :=
+  ⟨if h : ∃ a : M, ∀ x, x ∉ a then Classical.choose h else default⟩
+
 variable (M) in
 /- `M` has an empty set `∅` -/
-class HasEmpty extends EmptyCollection M where
+class HasEmpty : Prop where
   protected empty_prop : ∀ x : M, x ∉ (∅ : M)
+
+noncomputable instance instHasEmpty (h : ∃ a : M, ∀ x, x ∉ a) : M.HasEmpty :=
+  ⟨ by convert Classical.choose_spec h; simp [EmptyCollection.emptyCollection, h]⟩
 
 @[simp, grind .]
 theorem notin_empty [M.HasEmpty] : x ∉ (∅ : M) := HasEmpty.empty_prop x
@@ -46,14 +55,18 @@ abbrev Term.isEmpty (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 
 instance (t : L.Term (α ⊕ Fin n)) : (t.isEmpty).DeltaZero := by infer_instance
 
-/-- There exists an empty set -/
-def exEmptyset : L.Sentence := ∃' ((&0).isEmpty)
+-- /-- There exists an empty set -/
+-- def exEmptyset : L.Sentence := ∃' ((&0).isEmpty)
 
 variable {M : MemStructure}
 
-noncomputable instance (hM : M ⊨ M.L.exEmptyset) : M.HasEmpty where
-  emptyCollection := Classical.choose (exists_of_ex hM)
-  empty_prop := by simpa using Classical.choose_spec (exists_of_ex hM)
+-- theorem Sentence.Realize.exists_empty_of_exEmptyset (hM : M ⊨ M.L.exEmptyset) :
+--     ∃ a : M, ∀ x, x ∉ a := by
+--   use Classical.choose (exists_of_ex hM)
+--   simpa using Classical.choose_spec (exists_of_ex hM)
+
+-- noncomputable instance (hM : M ⊨ M.L.exEmptyset) : M.HasEmpty :=
+--   MemStructure.instHasEmpty hM.exists_empty_of_exEmptyset
 
 @[simp 1100]
 theorem Term.isEmpty_iff [M.Extensional] [M.HasEmpty]

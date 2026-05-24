@@ -7,8 +7,8 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y z : M)
 
 variable (M) in
-instance [M.ClosedUnderSUnion] [M.ClosedUnderPair] : Union M where
-  union x y := ⋃₀ (ClosedUnderPair.unorderedPair x y)
+noncomputable instance [M.ClosedUnderSUnion] [M.ClosedUnderPair] : Union M where
+  union x y := ⋃₀ (unorderedPair x y)
 
 @[simp, grind =]
 theorem mem_union [M.ClosedUnderSUnion] [M.ClosedUnderPair] : x ∈ y ∪ z ↔ x ∈ y ∨ x ∈ z := by

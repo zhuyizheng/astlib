@@ -8,7 +8,7 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y z : M)
 
 variable (M) in
-instance instInsert [M.ClosedUnderSUnion] [M.ClosedUnderPair] : Insert M M where
+noncomputable instance [M.ClosedUnderSUnion] [M.ClosedUnderPair] : Insert M M where
   insert x y := {x} ∪ y
 
 @[simp, grind! .]
@@ -44,7 +44,7 @@ theorem insert_subset_insert [M.ClosedUnderSUnion] [M.ClosedUnderPair] {y z : M}
     insert x y ⊆ insert x z := by
   grind
 
-abbrev succ [M.ClosedUnderSUnion] [M.ClosedUnderPair] (x : M) := insert x x
+noncomputable abbrev succ [M.ClosedUnderSUnion] [M.ClosedUnderPair] (x : M) := insert x x
 
 -- source
 -- theorem Set.insert_subset {α : Type u_1} {s t : Set α} {a : α} (ha : a ∈ t) (hs : s ⊆ t) :

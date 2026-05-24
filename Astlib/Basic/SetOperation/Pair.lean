@@ -6,13 +6,29 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure}
 
+
+noncomputable instance : Decidable (∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) :=
+  Classical.propDecidable _
+
+variable (M) in
+class UnorderedPair where
+  unorderedPair : M → M → M
+
+export UnorderedPair (unorderedPair)
+
+noncomputable instance : UnorderedPair M :=
+  ⟨fun x y ↦ if h : ∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y then Classical.choose h else default⟩
+
 variable (M) in
 /- `M` is closed under unordered pairing -/
-class ClosedUnderPair where
-  unorderedPair : M → M → M
+class ClosedUnderPair : Prop where
   protected unorderedPair_prop : ∀ x y z : M, z ∈ unorderedPair x y ↔ (z = x ∨ z = y)
 
-export ClosedUnderPair (unorderedPair unorderedPair_prop)
+export ClosedUnderPair (unorderedPair_prop)
+
+noncomputable instance instClosedUnderPair
+    (h : ∀ x y : M, ∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) : M.ClosedUnderPair :=
+  ⟨fun x y ↦ by convert Classical.choose_spec (h x y); simp [unorderedPair, h]⟩
 
 @[simp, grind =]
 theorem mem_unorderedPair_iff [M.ClosedUnderPair] (x y z : M) :
@@ -49,7 +65,7 @@ theorem unorderedPair_eq_iff [M.Extensional] [M.ClosedUnderPair] (x₁ y₁ x₂
   grind
 
 /-- The ordered pair `(x, y)` -/
-def ClosedUnderPair.orderedPair [M.ClosedUnderPair] (x y : M) :=
+noncomputable def ClosedUnderPair.orderedPair [M.ClosedUnderPair] (x y : M) :=
   M.unorderedPair (M.unorderedPair x x) (M.unorderedPair x y)
 
 export ClosedUnderPair (orderedPair)
@@ -156,22 +172,22 @@ instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.rightEqLeft t₂).DeltaZero
 variable {L : FirstOrder.Language} [HasMem L]
 
 
-/-- Closed under unordered pairing -/
-def allAllExPair : L.Sentence :=
-  ∀' ∀' ∃' (&2).eqUnorderedPair &0 &1
+-- /-- Closed under unordered pairing -/
+-- def allAllExPair : L.Sentence :=
+--   ∀' ∀' ∃' (&2).eqUnorderedPair &0 &1
 
-noncomputable instance {M : MemStructure} (hM : M ⊨ M.L.allAllExPair) : M.ClosedUnderPair where
-  unorderedPair x y := Classical.choose (exists_of_ex (realize_all.mp (realize_all.mp hM x) y))
-  unorderedPair_prop := fun x y ↦ by
-    have := Classical.choose_spec (exists_of_ex (realize_all.mp (realize_all.mp hM x) y))
-    simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, Function.comp_apply, realize_inf,
-      Fin.reduceLast, Term.castSucc, Term.castLE_var_inr, Fin.castLE_zero, Fin.castLE_succ_castSucc,
-      Fin.castSucc_one, realize_all, Fin.reduceCastSucc, realize_imp, MemStructure.realize_mem,
-      Term.realize_var, Sum.elim_inr, Fin.snoc, Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.lt_add_one,
-      ↓reduceDIte, Fin.reduceCastLT, Nat.mod_succ, lt_self_iff_false, cast_eq, realize_sup,
-      realize_bdEqual, Nat.zero_mod, zero_lt_three, Fin.castSucc_zero, Order.lt_two_iff, zero_le,
-      Order.lt_one_iff, Nat.one_mod, Nat.one_lt_ofNat, Std.le_refl] at this ⊢
-    grind
+-- noncomputable instance {M : MemStructure} (hM : M ⊨ M.L.allAllExPair) : M.ClosedUnderPair where
+--   unorderedPair x y := Classical.choose (exists_of_ex (realize_all.mp (realize_all.mp hM x) y))
+--   unorderedPair_prop := fun x y ↦ by
+--     have := Classical.choose_spec (exists_of_ex (realize_all.mp (realize_all.mp hM x) y))
+--     simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, Function.comp_apply, realize_inf,
+--       Fin.reduceLast, Term.castSucc, Term.castLE_var_inr, Fin.castLE_zero, Fin.castLE_succ_castSucc,
+--       Fin.castSucc_one, realize_all, Fin.reduceCastSucc, realize_imp, MemStructure.realize_mem,
+--       Term.realize_var, Sum.elim_inr, Fin.snoc, Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.lt_add_one,
+--       ↓reduceDIte, Fin.reduceCastLT, Nat.mod_succ, lt_self_iff_false, cast_eq, realize_sup,
+--       realize_bdEqual, Nat.zero_mod, zero_lt_three, Fin.castSucc_zero, Order.lt_two_iff, zero_le,
+--       Order.lt_one_iff, Nat.one_mod, Nat.one_lt_ofNat, Std.le_refl] at this ⊢
+--     grind
 
 variable {M : MemStructure} (t t₁ t₂ t₃ : M.L.Term (α ⊕ Fin n)) (v : α → M) (xs : Fin n → M)
 
