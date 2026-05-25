@@ -10,7 +10,7 @@ noncomputable instance : Decidable (∃ a : M, ∀ (x : M), x ∉ a) :=
   Classical.propDecidable _
 
 noncomputable instance : EmptyCollection M :=
-  ⟨if h : ∃ a : M, ∀ x, x ∉ a then Classical.choose h else default⟩
+  ⟨dite (∃ a : M, ∀ x, x ∉ a) Classical.choose default⟩
 
 variable (M) in
 /- `M` has an empty set `∅` -/
@@ -18,7 +18,7 @@ class HasEmpty : Prop where
   protected empty_prop : ∀ x : M, x ∉ (∅ : M)
 
 noncomputable instance instHasEmpty (h : ∃ a : M, ∀ x, x ∉ a) : M.HasEmpty :=
-  ⟨ by convert Classical.choose_spec h; simp [EmptyCollection.emptyCollection, h]⟩
+  ⟨by convert Classical.choose_spec h; simp [EmptyCollection.emptyCollection, h]⟩
 
 @[simp, grind .]
 theorem notin_empty [M.HasEmpty] : x ∉ (∅ : M) := HasEmpty.empty_prop x
@@ -31,19 +31,6 @@ theorem ne_empty_iff [M.Extensional] [M.HasEmpty] : x ≠ ∅ ↔ ∃ y, y ∈ x
 
 @[grind .]
 theorem empty_subset [M.HasEmpty] : ∅ ⊆ x := by grind
-
-theorem test (M : MemStructure) [M.Extensional] [M.HasEmpty] :
-    ∃! x : M, (∀ z : M, z ∉ x) := by
-  use ∅
-  constructor
-  · grind
-  · intro y hy
-    ext
-    -- ext
-    -- apply extensional y empty
-    -- intro z
-    -- have : ∀ z : M, z ∉ empty := by grind
-    grind
 
 end MemStructure
 

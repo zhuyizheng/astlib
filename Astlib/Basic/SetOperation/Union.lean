@@ -7,7 +7,7 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y z : M)
 
 variable (M) in
-noncomputable instance [M.ClosedUnderSUnion] [M.ClosedUnderPair] : Union M where
+noncomputable instance : Union M where
   union x y := ⋃₀ (unorderedPair x y)
 
 @[simp, grind =]

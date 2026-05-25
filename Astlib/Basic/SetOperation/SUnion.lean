@@ -17,14 +17,14 @@ noncomputable instance : Decidable (∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, 
   Classical.propDecidable _
 
 noncomputable instance : SUnion M :=
-  ⟨fun x ↦ if hx : ∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z) then Classical.choose hx else default⟩
+  ⟨fun x ↦ dite (∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) Classical.choose default⟩
 
 @[inherit_doc] prefix:110 "⋃₀ " => SUnion.sUnion
 
 variable (M) in
 /- `M` is closed under `⋃` -/
 class ClosedUnderSUnion : Prop where
-  protected sUnion_prop (x y : M) : y ∈ ⋃₀ x ↔ (∃ z ∈ x, y ∈ z)
+  protected closedUnderSUnion (x y : M) : y ∈ ⋃₀ x ↔ ∃ z ∈ x, y ∈ z
 
 noncomputable instance instClosedUnderSUnion
     (h : ∀ x : M, ∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) : M.ClosedUnderSUnion :=
@@ -32,7 +32,7 @@ noncomputable instance instClosedUnderSUnion
 
 @[simp, grind =, push]
 theorem mem_sUnion_iff [M.ClosedUnderSUnion] : x ∈ ⋃₀ a ↔ ∃ y ∈ a, x ∈ y :=
-  ClosedUnderSUnion.sUnion_prop _ _
+  ClosedUnderSUnion.closedUnderSUnion _ _
 
 theorem eq_sUnion_iff [M.Extensional] [M.ClosedUnderSUnion] : x = ⋃₀ a ↔
     (∀ z ∈ x, ∃ y ∈ a, z ∈ y) ∧ ∀ y ∈ a, ∀ z ∈ y, z ∈ x :=

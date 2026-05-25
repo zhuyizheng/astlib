@@ -4,11 +4,13 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} [M.ClosedUnderDeltaZeroComprehension] (x y z : M)
+variable {M : MemStructure} (x y z : M)
 
 variable (M) in
 noncomputable instance : SDiff M where
   sdiff x y := {∈ x | ∼(&2 ∈' &0) 〘y〙₀}
+
+variable [M.ClosedUnderDeltaZeroComprehension]
 
 @[simp, grind =]
 theorem mem_sdiff : x ∈ y \ z ↔ x ∈ y ∧ x ∉ z := by

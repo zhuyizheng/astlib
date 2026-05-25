@@ -7,24 +7,22 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure}
 
 
-noncomputable instance : Decidable (∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) :=
-  Classical.propDecidable _
-
 variable (M) in
 class UnorderedPair where
   unorderedPair : M → M → M
 
 export UnorderedPair (unorderedPair)
 
+noncomputable instance : Decidable (∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) :=
+  Classical.propDecidable _
+
 noncomputable instance : UnorderedPair M :=
-  ⟨fun x y ↦ if h : ∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y then Classical.choose h else default⟩
+  ⟨fun x y ↦ dite (∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) Classical.choose default⟩
 
 variable (M) in
 /- `M` is closed under unordered pairing -/
 class ClosedUnderPair : Prop where
-  protected unorderedPair_prop : ∀ x y z : M, z ∈ unorderedPair x y ↔ (z = x ∨ z = y)
-
-export ClosedUnderPair (unorderedPair_prop)
+  protected closedUnderPair : ∀ x y z : M, z ∈ unorderedPair x y ↔ (z = x ∨ z = y)
 
 noncomputable instance instClosedUnderPair
     (h : ∀ x y : M, ∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) : M.ClosedUnderPair :=
@@ -32,7 +30,7 @@ noncomputable instance instClosedUnderPair
 
 @[simp, grind =]
 theorem mem_unorderedPair_iff [M.ClosedUnderPair] (x y z : M) :
-    z ∈ unorderedPair x y ↔ (z = x ∨ z = y) := M.unorderedPair_prop x y z
+    z ∈ unorderedPair x y ↔ (z = x ∨ z = y) := ClosedUnderPair.closedUnderPair x y z
 
 theorem eq_unorderedPair_iff [M.Extensional] [M.ClosedUnderPair] (x y z : M) :
     z = unorderedPair x y ↔ (∀ w ∈ z, (w = x ∨ w = y)) ∧ x ∈ z ∧ y ∈ z :=
@@ -65,10 +63,8 @@ theorem unorderedPair_eq_iff [M.Extensional] [M.ClosedUnderPair] (x₁ y₁ x₂
   grind
 
 /-- The ordered pair `(x, y)` -/
-noncomputable def ClosedUnderPair.orderedPair [M.ClosedUnderPair] (x y : M) :=
-  M.unorderedPair (M.unorderedPair x x) (M.unorderedPair x y)
-
-export ClosedUnderPair (orderedPair)
+noncomputable def orderedPair (x y : M) :=
+  unorderedPair (unorderedPair x x) (unorderedPair x y)
 
 @[inherit_doc] scoped[FirstOrder.Language] notation:max "!(" x ", " y ")" =>
   MemStructure.orderedPair x y
@@ -84,7 +80,7 @@ theorem eq_orderedPair_iff [M.Extensional] [M.ClosedUnderPair] (x y z : M) :
   ⟨by grind [orderedPair], fun _ ↦ by ext; grind [orderedPair]⟩
 
 @[simp, push, grind =]
-theorem ClosedUnderPair.orderedPair_eq_iff [M.Extensional] [M.ClosedUnderPair] (x₁ y₁ x₂ y₂ : M) :
+theorem orderedPair_eq_orderedPair_iff [M.Extensional] [M.ClosedUnderPair] (x₁ y₁ x₂ y₂ : M) :
     !(x₁, y₁) = !(x₂, y₂) ↔ x₁ = x₂ ∧ y₁ = y₂ := by
   grind [orderedPair]
 
@@ -169,6 +165,20 @@ abbrev Term.rightEqLeft (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
 instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.rightEqLeft t₂).DeltaZero :=
   by infer_instance
 
+/-- `t` is an ordered pair whose left and right components are the same -/
+abbrev Term.sameLeftRight (t : L.Term (α ⊕ Fin n)) :=
+  t.rightEqLeft t
+
+instance (t : L.Term (α ⊕ Fin n)) : t.sameLeftRight.DeltaZero :=
+  by infer_instance
+
+/-- `t₁` and `t₂` are ordered pairs that switches left and right components -/
+abbrev Term.reverseLeftRight (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  t₁.rightEqLeft t₂ ⊓ t₂.rightEqLeft t₁
+
+instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.reverseLeftRight t₂).DeltaZero :=
+  by infer_instance
+
 variable {L : FirstOrder.Language} [HasMem L]
 
 
@@ -219,7 +229,7 @@ theorem Term.eqOrderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
 theorem Term.eqLeft_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.eqLeft t₂).Realize v xs ↔
       ∃ a : M, t₂.realize' v xs = !(t₁.realize' v xs, a) := by
-  simp +contextual only [realize_not, Function.comp_apply, Nat.succ_eq_add_one, castSucc,
+  simp only [realize_not, Function.comp_apply, Nat.succ_eq_add_one, castSucc,
     castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
     Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
     castLE_var_inr, Fin.snoc_castSucc, eqOrderedPair_iff, Fin.castLE_add_two_castSucc,
@@ -231,7 +241,7 @@ theorem Term.eqLeft_iff [M.Extensional] [M.ClosedUnderPair] :
 theorem Term.eqRight_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.eqRight t₂).Realize v xs ↔
       ∃ a : M, t₂.realize' v xs = !(a, t₁.realize' v xs) := by
-  simp +contextual only [realize_not, Function.comp_apply, Nat.succ_eq_add_one, castSucc,
+  simp only [realize_not, Function.comp_apply, Nat.succ_eq_add_one, castSucc,
     castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
     Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
     castLE_var_inr, Fin.snoc_castSucc, eqOrderedPair_iff, Fin.castLE_add_two_castSucc,
@@ -242,7 +252,7 @@ theorem Term.eqRight_iff [M.Extensional] [M.ClosedUnderPair] :
 @[simp 1100]
 theorem Term.isOrderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
     (t.isOrderedPair).Realize v xs ↔ ∃ a b : M, t.realize' v xs = !(a, b) := by
-  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+  simp only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
     castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
     Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
     not_forall, not_not, exists_prop, not_exists, not_and, M.eq_orderedPair_iff]
@@ -262,7 +272,7 @@ theorem Term.isOrderedPair_iff [M.Extensional] [M.ClosedUnderPair] :
 theorem Term.sameLeft_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.sameLeft t₂).Realize v xs ↔
       ∃ a b c : M, t₁.realize' v xs = !(a, b) ∧ t₂.realize' v xs = !(a, c) := by
-  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+  simp only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
     castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
     Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
     castLE_var_inr, Fin.snoc_castSucc, not_forall, not_not, exists_prop, not_exists, not_and]
@@ -280,7 +290,7 @@ theorem Term.sameLeft_iff [M.Extensional] [M.ClosedUnderPair] :
 theorem Term.sameRight_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.sameRight t₂).Realize v xs ↔
       ∃ a b c : M, t₁.realize' v xs = !(a, c) ∧ t₂.realize' v xs = !(b, c) := by
-  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+  simp only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
     castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
     Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
     castLE_var_inr, Fin.snoc_castSucc, not_forall, not_not, exists_prop, not_exists, not_and]
@@ -298,7 +308,7 @@ theorem Term.sameRight_iff [M.Extensional] [M.ClosedUnderPair] :
 theorem Term.rightEqLeft_iff [M.Extensional] [M.ClosedUnderPair] :
     (t₁.rightEqLeft t₂).Realize v xs ↔
       ∃ a b c : M, t₁.realize' v xs = !(a, b) ∧ t₂.realize' v xs = !(b, c) := by
-  simp +contextual only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
+  simp only [realize_not, Function.comp_apply, castSucc, Nat.succ_eq_add_one,
     castLE_castLE, realize_all, realize_imp, MemStructure.realize_mem, realize_castLE,
     Fin.castLE_succ_castSucc, Sum.elim_comp_map_castSucc, realize_var, Sum.elim_inr, Fin.snoc_last,
     castLE_var_inr, Fin.snoc_castSucc, not_forall, not_not, exists_prop, not_exists, not_and]
@@ -312,5 +322,18 @@ theorem Term.rightEqLeft_iff [M.Extensional] [M.ClosedUnderPair] :
     exact ⟨M.unorderedPair a b, by rw [realize', MemStructure.eq_orderedPair_iff] at ha; grind,
       ⟨b, by grind, ⟨a, ha⟩, ⟨c, hc⟩⟩⟩
 
+@[simp 1100]
+theorem Term.sameLeftRight_iff [M.Extensional] [M.ClosedUnderPair] :
+    t.sameLeftRight.Realize v xs ↔
+      ∃ a : M, t.realize' v xs = !(a, a) := by
+  simp only [rightEqLeft_iff]
+  grind
+
+@[simp 1100]
+theorem Term.reverseLeftRight_iff [M.Extensional] [M.ClosedUnderPair] :
+    (t₁.reverseLeftRight t₂).Realize v xs ↔
+      ∃ a b : M, t₁.realize' v xs = !(a, b) ∧ t₂.realize' v xs = !(b, a) := by
+  simp only [realize_inf, rightEqLeft_iff]
+  grind
 
 end FirstOrder.Language

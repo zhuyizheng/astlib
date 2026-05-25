@@ -6,27 +6,45 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y : M)
 
+variable (M) in
+class Powerset where
+  /-- The power set of `x` -/
+  powerset : M → M
+
+@[inherit_doc] prefix:100 "𝒫 " => Powerset.powerset
+
+noncomputable instance : Decidable (∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) :=
+  Classical.propDecidable _
+
+noncomputable instance : Powerset M :=
+  ⟨fun x ↦ dite (∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) Classical.choose default⟩
+
 class HasPowerset (x : M) : Prop where
-  protected hasPowerset : ∃ y : M, ∀ z, z ∈ y ↔ z ⊆ x
+  protected powerset_prop : ∀ z, z ∈ 𝒫 x ↔ z ⊆ x
 
+export HasPowerset (powerset_prop)
+
+variable (M) in
 class ClosedUnderPowerset : Prop where
-  protected closedUnderPowerset : ∀ x, ∃ y : M, ∀ z, z ∈ y ↔ z ⊆ x
+  protected closedUnderPowerset : ∀ x z : M, z ∈ 𝒫 x ↔ z ⊆ x
 
-instance [hM : M.ClosedUnderPowerset] (x : M) : HasPowerset x where
-  hasPowerset := hM.closedUnderPowerset x
+instance [hM : M.ClosedUnderPowerset] (x : M) : HasPowerset x := ⟨hM.closedUnderPowerset x⟩
 
-export HasPowerset (hasPowerset)
+-- export HasPowerset (hasPowerset)
 
-export ClosedUnderPowerset (closedUnderPowerset)
+-- export ClosedUnderPowerset (closedUnderPowerset)
 
-/-- The power set of `x` -/
-noncomputable def powerset (x : M) [hx : HasPowerset x] := Classical.choose hx.hasPowerset
+noncomputable instance instHasPowerset (h : ∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) :
+    M.HasPowerset x :=
+  ⟨by convert Classical.choose_spec (h); simp [Powerset.powerset, h]⟩
 
-@[inherit_doc] prefix:100 "𝒫 " => powerset
+noncomputable instance instClosedUnderPowerset (h : ∀ x : M, ∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) :
+    M.ClosedUnderPowerset :=
+  ⟨fun x ↦ by convert Classical.choose_spec (h x); simp [Powerset.powerset, h]⟩
 
 @[simp, grind =, push]
 theorem mem_powerset_iff {x : M} [hx : HasPowerset x] (z : M) : z ∈ 𝒫 x ↔ z ⊆ x :=
-  Classical.choose_spec hx.hasPowerset z
+  HasPowerset.powerset_prop z
 
 @[grind! .]
 theorem mem_powerset_self [HasPowerset x] : x ∈ 𝒫 x := by simp
@@ -49,7 +67,7 @@ def allExPowerset : L.Sentence := ∀' ∃' ∀' (&2 ∈' &1 ⇔ &2 ⊆' &0)
 
 variable {M : MemStructure}
 
-instance (hM : M ⊨ M.L.allExPowerset) : M.ClosedUnderPowerset :=
-  ⟨by simpa [Term.subset] using realize_all.mp hM⟩
+-- instance (hM : M ⊨ M.L.allExPowerset) : M.ClosedUnderPowerset :=
+--   ⟨by simpa [Term.subset] using realize_all.mp hM⟩
 
 end FirstOrder.Language

@@ -7,7 +7,7 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y : M)
 
 variable (M) in
-noncomputable instance [M.ClosedUnderPair] : Singleton M M where
+noncomputable instance : Singleton M M where
   singleton x := unorderedPair x x
 
 @[simp, grind =, push]
