@@ -7,20 +7,16 @@ namespace FirstOrder.Language.MemStructure
 
 variable {α : Type*} {M : MemStructure} (x y z : M)
 
-variable (M) in
-class Comprehension where
-  /-- The subset of `x` containing `z` for which `φ.Realize v (snoc (snoc xs x) z)` holds -/
-  comprehension (x : M) (φ : M.L.BoundedFormula α (n + 2)) (v : α → M) (xs : Fin n → M) : M
-
-export Comprehension (comprehension)
 
 noncomputable instance (x : M) (φ : M.L.BoundedFormula α (n + 2)) (v : α → M) (xs : Fin n → M) :
   Decidable (∃ a : M, ∀ z, z ∈ a ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z)) :=
   Classical.propDecidable _
 
-noncomputable instance : Comprehension M (α := α) :=
-  ⟨fun x φ v xs ↦ dite (∃ a : M, ∀ z, z ∈ a ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z))
-    Classical.choose default⟩
+/-- The subset of `x` containing `z` for which `φ.Realize v (snoc (snoc xs x) z)` holds -/
+noncomputable def comprehension (x : M) (φ : M.L.BoundedFormula α (n + 2))
+  (v : α → M) (xs : Fin n → M) :=
+  dite (∃ a : M, ∀ z, z ∈ a ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z))
+    Classical.choose default
 
 /-- The subset of `x` containing `z` for which `φ.Realize default (snoc (snoc xs x) z)` holds -/
 noncomputable abbrev comprehension_empty (x : M)

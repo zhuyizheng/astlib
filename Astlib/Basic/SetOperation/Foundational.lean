@@ -4,18 +4,10 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y : M)
 
-variable (M) in
-class MemMin where
-  /-- The function sending `x : M` to a `∈`-mimimal element of `x`, if exists -/
-  memMin : M → M
-
-export MemMin (memMin)
-
 noncomputable instance : Decidable (∃ a ∈ x, ¬∃ y ∈ x, y ∈ a) :=
   Classical.propDecidable _
 
-noncomputable instance : MemMin M :=
-  ⟨fun x ↦ dite (∃ a ∈ x, ¬∃ y ∈ x, y ∈ a) Classical.choose default⟩
+noncomputable def memMin (x : M) := dite (∃ a ∈ x, ¬∃ y ∈ x, y ∈ a) Classical.choose default
 
 variable (M) in
 /- `M` is closed under `⋃` -/

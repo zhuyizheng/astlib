@@ -8,18 +8,14 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y a : M)
 
-variable (M) in
-class SUnion where
-  /-- `⋃ x` in set theory, denoted by `⋃₀ x` in lean -/
-  sUnion : M → M
-
 noncomputable instance : Decidable (∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) :=
   Classical.propDecidable _
 
-noncomputable instance : SUnion M :=
-  ⟨fun x ↦ dite (∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) Classical.choose default⟩
+/-- `⋃ x` in set theory, denoted by `⋃₀ x` in lean -/
+noncomputable def sUnion (x : M) :=
+  dite (∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) Classical.choose default
 
-@[inherit_doc] prefix:110 "⋃₀ " => SUnion.sUnion
+@[inherit_doc] prefix:110 "⋃₀ " => sUnion
 
 variable (M) in
 /- `M` is closed under `⋃` -/
@@ -28,7 +24,7 @@ class ClosedUnderSUnion : Prop where
 
 noncomputable instance instClosedUnderSUnion
     (h : ∀ x : M, ∃ a : M, ∀ y, y ∈ a ↔ (∃ z ∈ x, y ∈ z)) : M.ClosedUnderSUnion :=
-  ⟨fun x ↦ by convert Classical.choose_spec (h x); simp [SUnion.sUnion, h]⟩
+  ⟨fun x ↦ by convert Classical.choose_spec (h x); simp [sUnion, h]⟩
 
 @[simp, grind =, push]
 theorem mem_sUnion_iff [M.ClosedUnderSUnion] : x ∈ ⋃₀ a ↔ ∃ y ∈ a, x ∈ y :=

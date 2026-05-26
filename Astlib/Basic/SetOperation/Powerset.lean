@@ -6,19 +6,14 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y : M)
 
-variable (M) in
-class Powerset where
-  /-- The power set of `x` -/
-  powerset : M → M
-
-@[inherit_doc] prefix:100 "𝒫 " => Powerset.powerset
-
 noncomputable instance : Decidable (∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) :=
   Classical.propDecidable _
 
-noncomputable instance : Powerset M :=
-  ⟨fun x ↦ dite (∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) Classical.choose default⟩
+/-- The power set of `x` -/
+noncomputable def powerset (x : M) := dite (∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) Classical.choose default
 
+@[inherit_doc] prefix:100 "𝒫 " => powerset
+--
 class HasPowerset (x : M) : Prop where
   protected powerset_prop : ∀ z, z ∈ 𝒫 x ↔ z ⊆ x
 
@@ -36,11 +31,11 @@ instance [hM : M.ClosedUnderPowerset] (x : M) : HasPowerset x := ⟨hM.closedUnd
 
 noncomputable instance instHasPowerset (h : ∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) :
     M.HasPowerset x :=
-  ⟨by convert Classical.choose_spec (h); simp [Powerset.powerset, h]⟩
+  ⟨by convert Classical.choose_spec (h); simp [powerset, h]⟩
 
 noncomputable instance instClosedUnderPowerset (h : ∀ x : M, ∃ a : M, ∀ z, z ∈ a ↔ z ⊆ x) :
     M.ClosedUnderPowerset :=
-  ⟨fun x ↦ by convert Classical.choose_spec (h x); simp [Powerset.powerset, h]⟩
+  ⟨fun x ↦ by convert Classical.choose_spec (h x); simp [powerset, h]⟩
 
 @[simp, grind =, push]
 theorem mem_powerset_iff {x : M} [hx : HasPowerset x] (z : M) : z ∈ 𝒫 x ↔ z ⊆ x :=

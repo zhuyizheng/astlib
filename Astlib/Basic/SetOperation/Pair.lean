@@ -7,17 +7,11 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure}
 
 
-variable (M) in
-class UnorderedPair where
-  unorderedPair : M → M → M
-
-export UnorderedPair (unorderedPair)
-
 noncomputable instance : Decidable (∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) :=
   Classical.propDecidable _
 
-noncomputable instance : UnorderedPair M :=
-  ⟨fun x y ↦ dite (∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) Classical.choose default⟩
+noncomputable def unorderedPair (x y : M) :=
+  dite (∃ a : M, ∀ z, z ∈ a ↔ z = x ∨ z = y) Classical.choose default
 
 variable (M) in
 /- `M` is closed under unordered pairing -/
