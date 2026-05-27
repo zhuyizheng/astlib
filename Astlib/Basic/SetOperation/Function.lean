@@ -5,7 +5,7 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
 def IsFunction (f : M) :=
-  IsRelation f ∧ ∀ x y₁ y₂, x [f] y₁ → x [f] y₂ → y₁ = y₂
+  IsRelation f ∧ ∀ ⦃x y₁ y₂ : M⦄, x [f] y₁ → x [f] y₂ → y₁ = y₂
 
 theorem IsFunction.isRelation {f : M} (hf : IsFunction f) : IsRelation f := hf.left
 
@@ -28,17 +28,17 @@ noncomputable instance (f x : M) : Decidable (∃ y, x [f] y) :=
 
 noncomputable def val (f x : M) := dite (∃ y : M, x [f] y) Classical.choose default
 
-infix:88 " @ " => FirstOrder.Language.MemStructure.val
+infix:88 " ﹫ " => FirstOrder.Language.MemStructure.val
 
 @[simp, grind! .]
 theorem IsFunction.val_eq_of_rel
-    {f x y : M} (hf : IsFunction f) (hxy : x [f] y) : f @ x = y := by
+    {f x y : M} (hf : IsFunction f) (hxy : x [f] y) : f ﹫ x = y := by
   have : ∃ y, !(x, y) ∈ f := by use y
   grind [val, IsFunction]
 
 theorem IsFunction.exists_val
     {f : M} (hf : IsFunction f)
-    {z : M} (hz : z ∈ f) : ∃ x, z = !(x, f @ x) := by
+    {z : M} (hz : z ∈ f) : ∃ x, z = !(x, f ﹫ x) := by
   obtain ⟨x, y, hxy⟩ := hf.isRelation hz
   use x
   convert hxy
@@ -49,11 +49,11 @@ variable [M.ClosedUnderDeltaZeroComprehension]
 
 @[simp]
 theorem rel_val
-    {f x : M} (hx : x ∈ dom f) : x [f] (f @ x) := by
+    {f x : M} (hx : x ∈ dom f) : x [f] (f ﹫ x) := by
   grind [val]
 
 lemma IsFunction.subset_iff {f g : M} (hf : IsFunction f) :
-    f ⊆ g ↔ ∀ x ∈ dom f, (x [g] (f @ x)) := by
+    f ⊆ g ↔ ∀ x ∈ dom f, (x [g] (f ﹫ x)) := by
   refine ⟨by grind, fun h z hz ↦ ?_⟩
   obtain ⟨x, y, hxy⟩ := hf.exists_val hz
   exact h x (by grind)
@@ -61,16 +61,21 @@ lemma IsFunction.subset_iff {f g : M} (hf : IsFunction f) :
 @[grind .]
 theorem IsFunction.ext {f g : M} (hf : IsFunction f) (hg : IsFunction g)
     (hfg : dom f = dom g)
-    (h : ∀ x ∈ dom f, f @ x = g @ x) : f = g :=
+    (h : ∀ x ∈ dom f, f ﹫ x = g ﹫ x) : f = g :=
   eq_of_subset_of_subset (hf.subset_iff.mpr (by grind)) (hg.subset_iff.mpr (by grind))
+
+@[grind .]
+theorem IsFunction.eq_iff {f g : M} (hf : IsFunction f) (hg : IsFunction g) :
+    f = g ↔ dom f = dom g ∧ ∀ x ∈ dom f, f ﹫ x = g ﹫ x := by
+  grind
 
 @[grind =]
 theorem IsFunction.mem_dom_iff {f : M} (x : M) (hf : IsFunction f) :
-    x ∈ dom f ↔ x [f] (f @ x) := by
+    x ∈ dom f ↔ x [f] (f ﹫ x) := by
   grind
 
 theorem IsFunction.mem_ran_iff {f : M} (y : M) (hf : IsFunction f) :
-    y ∈ ran f ↔ ∃ x ∈ dom f, f @ x = y := by
+    y ∈ ran f ↔ ∃ x ∈ dom f, f ﹫ x = y := by
   rw [M.mem_ran_iff]
   exact exists_congr (by grind)
 
@@ -86,17 +91,20 @@ theorem IsFunction.isFunction_comp [M.ClosedUnderSProd]
 @[grind .]
 theorem mem_dom_comp [M.ClosedUnderSProd]
     {f g x : M} (hf : IsFunction f) (hg : IsFunction g)
-    (hx : x ∈ dom g) (hx' : g @ x ∈ dom x) :
+    (hx : x ∈ dom g) (hx' : g ﹫ x ∈ dom f) :
     x ∈ dom (f !∘ g) := by
-  rw [mem_dom_iff]
-  sorry
+  rw [hg.mem_dom_iff] at hx
+  rw [hf.mem_dom_iff] at hx'
+  grind
 
 @[grind =]
 theorem val_comp [M.ClosedUnderSProd]
     {f g x : M} (hf : IsFunction f) (hg : IsFunction g)
-    (hx : x ∈ dom g) (hx' : g @ x ∈ dom x) :
-    (f !∘ g) @ x = f @ (g @ x) := by
-  sorry
+    (hx : x ∈ dom g) (hx' : g ﹫ x ∈ dom f) :
+    (f !∘ g) ﹫ x = f ﹫ (g ﹫ x) := by
+  rw [hg.mem_dom_iff] at hx
+  rw [hf.mem_dom_iff] at hx'
+  grind
   -- suffices ((∃ u ∈ dom S, ∃ v ∈ ran R, z = !(u, v)) ∧
   --   ∃ x x_1, (x [S] x_1) ∧ ∃ x_2 x_3, (x_1 [R] x_3) ∧ (∃ x_4, z = !(x, x_4)) ∧ z = !(x_2, x_3))
   --   ↔ ∃ a b c, z = !(a, c) ∧ (a [S] b) ∧ (b [R] c) by

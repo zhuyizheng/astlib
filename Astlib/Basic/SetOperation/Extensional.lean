@@ -17,9 +17,14 @@ theorem ext [M.Extensional] {x y : M} (h : ∀ z, z ∈ x ↔ z ∈ y) : x = y :
 theorem eq_iff [M.Extensional] {x y : M} : x = y ↔ (∀ z, z ∈ x ↔ z ∈ y) :=
   ⟨by grind, fun h ↦ by ext; exact h _⟩
 
+@[grind .]
 theorem eq_of_subset_of_subset [M.Extensional] {x y : M} (h : x ⊆ y) (h' : y ⊆ x) :
     x = y := by
   ext; grind
+
+theorem eq_iff' [M.Extensional] {x y : M} :
+    x = y ↔ x ⊆ y ∧ y ⊆ x:= by
+  grind
 
 instance instAntisymmSubset [M.Extensional] : Std.Antisymm (α := M) Subset where
   antisymm := fun _ _ h h' ↦ eq_of_subset_of_subset h h'

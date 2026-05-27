@@ -13,7 +13,7 @@ noncomputable instance : Inter M := ⟨fun x y ↦ {∈ x | &2 ∈' &0 〘y〙�
 variable [M.ClosedUnderDeltaZeroComprehension]
 
 @[simp, grind =]
-theorem mem_inter : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
+theorem mem_inter_iff : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
   simp [Inter.inter]
 
 @[grind =]
@@ -75,13 +75,13 @@ variable [M.Extensional]
 @[simp, grind =]
 theorem inter_of_subset_right
     {x y : M} (h : x ⊆ y) : x ∩ y = x := by
-  ext z; simp only [mem_inter, and_iff_left_iff_imp]
+  ext z; simp only [mem_inter_iff, and_iff_left_iff_imp]
   exact fun hz ↦ h hz
 
 @[simp, grind =]
 theorem inter_of_subset_left
     {x y : M} (h : y ⊆ x) : x ∩ y = y := by
-  ext z; simp only [mem_inter, and_iff_right_iff_imp]
+  ext z; simp only [mem_inter_iff, and_iff_right_iff_imp]
   exact fun hz ↦ h hz
 
 @[simp, grind ., push]

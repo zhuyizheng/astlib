@@ -42,19 +42,27 @@ noncomputable instance [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
 theorem mem_sprod_iff [M.ClosedUnderSProd] : z ∈ x ×ˢ y ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) :=
   ClosedUnderSProd.closedUnderSProd x y z
 
+@[simp, grind =]
+theorem pair_mem_sprod_iff [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd] :
+    !(u, v) ∈ x ×ˢ y ↔ u ∈ x ∧ v ∈ y := by
+  grind
+
 theorem mem_sprod [M.ClosedUnderSProd] (hu : u ∈ x) (hv : v ∈ y) : !(u, v) ∈ x ×ˢ y := by
   grind
 
 variable [M.ClosedUnderSProd]
 
+@[simp, grind =]
 theorem sprod_empty [M.Extensional] [M.HasEmpty] :
     x ×ˢ (∅ : M) = ∅ := by
   ext; grind
 
+@[simp, grind =]
 theorem empty_sprod [M.Extensional] [M.HasEmpty] :
     (∅ : M) ×ˢ x = ∅ := by
   ext; grind
 
+@[simp, grind =]
 theorem singleton_sprod_singleton [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
     [M.ClosedUnderDeltaZeroComprehension] :
     ({x} : M) ×ˢ ({y} : M) = {!(x, y)} := by
@@ -93,7 +101,7 @@ theorem sprod_sdiff [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderDeltaZeroC
 theorem sprod_inter_sprod [M.Extensional] [M.ClosedUnderPair]
     [M.ClosedUnderDeltaZeroComprehension] :
     x₁ ×ˢ y₁ ∩ x₂ ×ˢ y₂ = (x₁ ∩ x₂) ×ˢ (y₁ ∩ y₂) := by
-  ext z; simp only [mem_inter, mem_sprod_iff]
+  ext z; simp only [mem_inter_iff, mem_sprod_iff]
   exact ⟨fun ⟨⟨u₁, hu₁, v₁, hv₁, hz₁⟩, ⟨u₂, hu₂, v₂, hv₂, hz₂⟩⟩ ↦ ⟨u₁, (by grind), v₁, (by grind)⟩,
     fun ⟨u, hu, v, hv, hz⟩ ↦ ⟨⟨u, by grind, v, by grind, hz⟩, ⟨u, by grind, v, by grind, hz⟩⟩⟩
 
