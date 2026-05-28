@@ -15,7 +15,7 @@ theorem ext [M.Extensional] {x y : M} (h : ∀ z, z ∈ x ↔ z ∈ y) : x = y :
   Extensional.extensional x y h
 
 theorem eq_iff [M.Extensional] {x y : M} : x = y ↔ (∀ z, z ∈ x ↔ z ∈ y) :=
-  ⟨by grind, fun h ↦ by ext; exact h _⟩
+  MemStructure.ext_iff
 
 @[grind .]
 theorem eq_of_subset_of_subset [M.Extensional] {x y : M} (h : x ⊆ y) (h' : y ⊆ x) :

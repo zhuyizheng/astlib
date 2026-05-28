@@ -22,6 +22,10 @@ theorem subset_refl (x : M) : x ⊆ x := fun _ h ↦ h
 
 instance instReflSubset : Std.Refl (α := M) Subset := ⟨subset_refl _⟩
 
+lemma subset_of_eq {x y : M} (h : x = y) : x ⊆ y := by grind
+
+alias Eq.subset := subset_of_eq
+
 @[grind .]
 theorem subset_trans (x y z : M) (hxy : x ⊆ y) (hyz : y ⊆ z) : x ⊆ z :=
   fun _ hw ↦ hyz (hxy hw)

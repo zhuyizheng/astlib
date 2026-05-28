@@ -2,6 +2,8 @@ import Astlib.Basic.SetOperation.SProd
 
 namespace FirstOrder.Language.MemStructure
 
+section Basic
+
 variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
 def IsRelation (R : M) :=
@@ -43,20 +45,22 @@ theorem IsRelation.subset {R S : M} (hR : IsRelation R) (hSR : S ⊆ R) :
 
 theorem IsRelation.inter_right [M.ClosedUnderDeltaZeroComprehension]
     {R S : M} (hR : IsRelation R) : IsRelation (R ∩ S) := by
-  grind [IsRelation]
+  grind
 
 theorem IsRelation.inter_left [M.ClosedUnderDeltaZeroComprehension]
     {R S : M} (hS : IsRelation S) : IsRelation (R ∩ S) := by
-  grind [IsRelation]
+  grind
 
 theorem IsRelation.sdiff [M.ClosedUnderDeltaZeroComprehension]
     {R S : M} (hR : IsRelation R) : IsRelation (R \ S) := by
-  grind [IsRelation]
+  grind
 
+@[simp, grind .]
 theorem IsRelation.union [M.ClosedUnderSUnion] [M.ClosedUnderPair] {R S : M}
     (hR : IsRelation R) (hS : IsRelation S) : IsRelation (R ∪ S) := by
   grind [IsRelation]
 
+@[simp, grind .]
 theorem IsRelation.sUnion [M.ClosedUnderSUnion] [M.ClosedUnderPair] {X : M}
     (hX : ∀ R ∈ X, IsRelation R) : IsRelation (⋃₀ X) := by
   grind [IsRelation]
@@ -72,6 +76,7 @@ theorem mem_dom_iff [M.Extensional] [M.ClosedUnderPair] (R x : M) :
   suffices ∀ y, x [R] y → ∃ z, (∃ w ∈ R, z ∈ w) ∧ x ∈ z by simpa [dom]
   exact fun y _ ↦ ⟨unorderedPair x y, ⟨!(x, y), by grind [orderedPair]⟩, by grind⟩
 
+@[simp, grind .]
 theorem dom_mono [M.Extensional] [M.ClosedUnderPair] {R S : M} (h : R ⊆ S) :
     dom R ⊆ dom S := by
   grind
@@ -80,6 +85,14 @@ theorem dom_mono [M.Extensional] [M.ClosedUnderPair] {R S : M} (h : R ⊆ S) :
 theorem dom_empty [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] :
     dom (∅ : M) = ∅ := by
   ext; grind
+
+theorem dom_union [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] (R S : M) :
+    dom (R ∪ S) = dom R ∪ dom S := by
+  ext; grind
+
+theorem mem_dom_sUnion_iff [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] (X z : M) :
+    z ∈ dom (⋃₀ X) ↔ ∃ R ∈ X, z ∈ dom R := by
+  grind
 
 @[simp, grind =]
 theorem dom_sprod [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] [M.ClosedUnderSProd]
@@ -99,6 +112,7 @@ theorem mem_ran_iff [M.Extensional] [M.ClosedUnderPair] (R y : M) :
   suffices ∀ x, x [R] y → ∃ z, (∃ w ∈ R, z ∈ w) ∧ y ∈ z by simpa [ran]
   exact fun x _ ↦ ⟨unorderedPair x y, ⟨!(x, y), by grind [orderedPair]⟩, by grind⟩
 
+@[simp, grind .]
 theorem ran_mono [M.Extensional] [M.ClosedUnderPair] {R S : M} (h : R ⊆ S) :
     ran R ⊆ ran S := by
   grind
@@ -107,6 +121,14 @@ theorem ran_mono [M.Extensional] [M.ClosedUnderPair] {R S : M} (h : R ⊆ S) :
 theorem ran_empty [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] :
     ran (∅ : M) = ∅ := by
   ext; grind
+
+theorem ran_union [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] (R S : M) :
+    ran (R ∪ S) = ran R ∪ ran S := by
+  ext; grind
+
+theorem mem_ran_sUnion_iff [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] (X z : M) :
+    z ∈ ran (⋃₀ X) ↔ ∃ R ∈ X, z ∈ ran R := by
+  grind
 
 @[simp, grind =]
 theorem ran_sprod [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] [M.ClosedUnderSProd]
@@ -124,7 +146,14 @@ theorem IsRelation.subset_dom_sprod_ran [M.Extensional] [M.ClosedUnderPair]
   simp only [mem_sprod_iff]
   exact ⟨x, by grind, y, by grind, hxy⟩
 
+end Basic
 
+section Comp
+
+variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
+
+variable [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+  [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderSUnion]
 
 /-- `R ∘ S` in set theory, denoted by `R !∘ S` in lean -/
 noncomputable def comp (R S : M) : M :=
@@ -134,7 +163,7 @@ noncomputable def comp (R S : M) : M :=
 @[inherit_doc] infixr:90 " !∘ "  => FirstOrder.Language.MemStructure.comp
 
 @[grind =]
-theorem mem_comp [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem mem_comp
     (R S z : M) :
     z ∈ R !∘ S ↔ ∃ a b c : M, z = !(a, c) ∧ (a [S] b) ∧ (b [R] c) := by
   suffices ((∃ u ∈ dom S, ∃ v ∈ ran R, z = !(u, v)) ∧
@@ -144,38 +173,46 @@ theorem mem_comp [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
   refine ⟨by grind, fun ⟨a, b, c, hz, hab, hbc⟩ ↦ ?_⟩
   exact ⟨⟨a, by grind, c, by grind, hz⟩, ⟨a, b, hab, a, c, hbc, ⟨⟨c, hz⟩, hz⟩⟩⟩
 
-theorem comp_assoc [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem comp_assoc
     (R S T : M) :
     (R !∘ S) !∘ T = R !∘ (S !∘ T) := by
   ext
   grind
 
 @[simp, grind! .]
-theorem isRelation_comp [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem isRelation_comp
     (R S : M) : IsRelation (R !∘ S) := by
   grind [IsRelation]
 
 @[grind =]
-theorem rel_comp [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem rel_comp
     (R S a c : M) :
     (a [R !∘ S] c) ↔ ∃ b : M, a [S] b ∧ b [R] c := by
   grind
 
-theorem dom_comp_subset [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd] (R S : M) :
+theorem dom_comp_subset (R S : M) :
     dom (R !∘ S) ⊆ dom S := by
   grind
 
-theorem ran_comp_subset [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd] (R S : M) :
+theorem ran_comp_subset (R S : M) :
     ran (R !∘ S) ⊆ ran R := by
   grind
+
+end Comp
+
+section Id
+
+variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
+
+variable [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+  [M.ClosedUnderDeltaZeroComprehension]
 
 /-- The set of `!(x, x)` for `x ∈ a` -/
 noncomputable def id (a : M) : M :=
   {∈ a ×ˢ a | (&1).sameLeftRight}
 
-omit [M.ClosedUnderSUnion] in
 @[grind =]
-theorem mem_id [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem mem_id
     (x z : M) :
     z ∈ id x ↔ ∃ a ∈ x, z = !(a, a) := by
   simp only [id, Fin.isValue, Function.comp_apply, mem_comprehension_iff, mem_sprod_iff,
@@ -184,36 +221,43 @@ theorem mem_id [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
     exists_and_left]
   grind
 
-omit [M.ClosedUnderSUnion] in
 @[simp, grind .]
-theorem eq_of_id [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem eq_of_id
     {x y z : M} (h : y [id x] z) : y = z := by
   grind
 
-omit [M.ClosedUnderSUnion] in
 @[simp, grind .]
-theorem id_isRelation [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem id_isRelation
     (a : M) : IsRelation (id a) := by
   grind [IsRelation]
 
 @[simp, grind =]
-theorem IsRelation.comp_id [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem IsRelation.comp_id [M.ClosedUnderSUnion]
     {R a : M} (hR : IsRelation R) (h : dom R ⊆ a) :
     R !∘ (id a) = R := by
   grind
 
 @[simp, grind =]
-theorem IsRelation.id_comp [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem IsRelation.id_comp [M.ClosedUnderSUnion]
     {R a : M} (hR : IsRelation R) (h : ran R ⊆ a) :
     (id a) !∘ R = R := by
   grind
+
+end Id
+
+section Inv
+
+variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
+
+variable [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+  [M.ClosedUnderDeltaZeroComprehension]
 
 /-- `y [R⁻¹] x` means `x [R] y` -/
 noncomputable instance : Inv M :=
   ⟨fun R ↦ {∈ ran R ×ˢ dom R | ∃'∈ &0 (&2).reverseLeftRight &3 〘R〙₀}⟩
 
 @[grind =]
-theorem mem_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem mem_inv
     (R z : M) :
     z ∈ R⁻¹ ↔ ∃ a b : M, z = !(a, b) ∧ b [R] a := by
   suffices ((∃ u ∈ ran R, ∃ v ∈ dom R, z = !(u, v)) ∧ ∃ x x_1, !(x_1, x) ∈ R ∧ z = !(x, x_1)) ↔
@@ -221,23 +265,23 @@ theorem mem_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
     simpa [Inv.inv, mem_comprehension_iff]
   exact ⟨by grind, fun ⟨a, b, hz, hba⟩ ↦ ⟨⟨a, by grind, b, by grind, hz⟩, ⟨a, b, hba, hz⟩⟩⟩
 
-@[simp, grind! .]
-theorem isRelation_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+@[simp, grind .]
+theorem isRelation_inv
     (R : M) : IsRelation (R⁻¹) := by
   grind [IsRelation]
 
 @[simp, grind =]
-theorem rel_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem rel_inv
     (R a b : M) :
     a [R⁻¹] b ↔ b [R] a := by
   grind
 
 @[simp, grind =]
-theorem inv_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem inv_inv
     {R : M} (hR : IsRelation R) : (R⁻¹)⁻¹ = R := by
   grind [isRelation_inv R⁻¹]
 
-theorem inv_comp [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem inv_comp
     {R S : M} : (R !∘ S)⁻¹ = S⁻¹ !∘ R⁻¹ := by
   apply IsRelation.ext (isRelation_inv _) (isRelation_comp _ _)
   intro x y
@@ -245,20 +289,27 @@ theorem inv_comp [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
     exists_and_left, exists_eq_left']
   grind
 
-theorem dom_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd] {R : M} :
+theorem dom_inv {R : M} :
     dom R⁻¹ = ran R := by
   ext; simp [mem_dom_iff, mem_ran_iff]
 
-theorem ran_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd] {R : M} :
+theorem ran_inv {R : M} :
     ran R⁻¹ = dom R := by
   ext; simp [mem_dom_iff, mem_ran_iff]
+
+end Inv
+
+section Restrict
+
+variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
+
+variable [M.ClosedUnderDeltaZeroComprehension]
 
 noncomputable def restrict₂ (R a : M) := R ∩ (a ×ˢ a)
 
 infix:88 " ↾↾ " => FirstOrder.Language.MemStructure.restrict₂
 
-omit [M.ClosedUnderSUnion] in
-@[grind .]
+@[simp, grind .]
 theorem isRelation_restrict₂ [M.ClosedUnderSProd] (R a : M) :
     IsRelation (R ↾↾ a) :=
   (isRelation_sprod a a).inter_left
@@ -273,7 +324,7 @@ theorem isRelation_restrict₂ [M.ClosedUnderSProd] (R a : M) :
 --   convert ran_mono (R := R ↾↾ a) (S := a ×ˢ a) (by grind [restrict₂])
 --   grind
 
-omit [M.ClosedUnderSUnion] in
+@[simp, grind =]
 theorem restrict₂_restrict₂ [M.Extensional] [M.ClosedUnderPair]
     [M.ClosedUnderSProd]
     (R a b : M) : (R ↾↾ a) ↾↾ b = R ↾↾ (a ∩ b) := by
@@ -281,14 +332,16 @@ theorem restrict₂_restrict₂ [M.Extensional] [M.ClosedUnderPair]
   congr
   exact sprod_inter_sprod a b a b
 
-omit [M.ClosedUnderSUnion] in
 @[simp, grind =]
 theorem restrict₂_empty [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair]
     [M.ClosedUnderSProd]
     (R : M) : (R ↾↾ ∅) = ∅ := by
   grind [restrict₂]
 
+end Restrict
 section IsRelationOn
+
+variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
 def IsRelationOn (R a : M) := IsRelation R ∧ R ⊆ a ×ˢ a
 
@@ -305,7 +358,6 @@ theorem IsRelationOn.exists_exists [M.ClosedUnderSProd] {R : M} (hR : IsRelation
   rw [hxy, mem_sprod_iff] at this
   grind
 
-omit [M.ClosedUnderSUnion] in
 theorem IsRelationOn.subset_iff [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
     [M.ClosedUnderSProd]
     {R a : M} (hR : IsRelationOn R a) (S : M) :
@@ -315,7 +367,7 @@ theorem IsRelationOn.subset_iff [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedU
   exact hxy ▸ (h x hx y hy) (hxy ▸ hz)
 
 @[grind .]
-theorem IsRelationOn.ext [M.Extensional] [M.ClosedUnderPair]
+theorem IsRelationOn.ext [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
     [M.ClosedUnderSProd]
     {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a)
     (h : ∀ x ∈ a, ∀ y ∈ a, (x [R] y ↔ x [S] y)) :
@@ -323,20 +375,19 @@ theorem IsRelationOn.ext [M.Extensional] [M.ClosedUnderPair]
   eq_of_subset_of_subset ((hR.subset_iff _).mpr (by grind)) ((hS.subset_iff _).mpr (by grind))
 
 @[grind .]
-theorem IsRelationOn.eq_iff [M.Extensional] [M.ClosedUnderPair]
+theorem IsRelationOn.eq_iff [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
     [M.ClosedUnderSProd]
     {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a) :
     R = S ↔ ∀ x ∈ a, ∀ y ∈ a, (x [R] y ↔ x [S] y) := by
   grind
 
-omit [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderSUnion] in
 @[simp, grind .]
 theorem isRelationOn_empty [M.HasEmpty] : IsRelationOn (∅ : M) a := by
   grind [IsRelationOn]
 
-omit [M.ClosedUnderSUnion] in
 @[simp, grind .]
-theorem isRelationOn_restrict₂ [M.ClosedUnderSProd] (R a : M) :
+theorem isRelationOn_restrict₂ [M.ClosedUnderDeltaZeroComprehension]
+    [M.ClosedUnderSProd] (R a : M) :
     IsRelationOn (R ↾↾ a) a := by
   grind [IsRelationOn, restrict₂]
 
@@ -369,13 +420,15 @@ theorem IsRelationOn.sUnion [M.ClosedUnderSUnion] [M.ClosedUnderPair] {X a : M}
     (hX : ∀ R ∈ X, IsRelationOn R a) : IsRelationOn (⋃₀ X) a := by
   grind [IsRelationOn, IsRelation]
 
-theorem IsRelationOn.dom_subset [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem IsRelationOn.dom_subset [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair]
+    [M.ClosedUnderSProd] [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderSUnion]
     {R a : M}
     (hR : IsRelationOn R a) : dom R ⊆ a := by
   convert dom_mono (R := R) (S := a ×ˢ a) (by grind)
   grind
 
-theorem IsRelationOn.ran_subset [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+theorem IsRelationOn.ran_subset [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair]
+    [M.ClosedUnderSProd] [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderSUnion]
     {R a : M}
     (hR : IsRelationOn R a) : ran R ⊆ a := by
   convert ran_mono (R := R) (S := a ×ˢ a) (by grind)
