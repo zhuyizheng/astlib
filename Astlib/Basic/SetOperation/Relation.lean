@@ -226,10 +226,27 @@ theorem eq_of_id
     {x y z : M} (h : y [id x] z) : y = z := by
   grind
 
+-- @[simp, grind .]
+-- theorem rel_id_iff
+--     {y z a : M} (hy : y ∈ a) : y [id a] z ↔ y = z := by
+--   grind
+
 @[simp, grind .]
 theorem id_isRelation
     (a : M) : IsRelation (id a) := by
   grind [IsRelation]
+
+@[simp, grind =]
+theorem dom_id [M.ClosedUnderSUnion] (a : M) : dom (id a) = a := by
+  ext z
+  rw [mem_dom_iff]
+  exact ⟨by grind, fun hz ↦ ⟨z, by grind⟩⟩
+
+@[simp, grind =]
+theorem ran_id [M.ClosedUnderSUnion] (a : M) : ran (id a) = a := by
+  ext z
+  rw [mem_ran_iff]
+  exact ⟨by grind, fun hz ↦ ⟨z, by grind⟩⟩
 
 @[simp, grind =]
 theorem IsRelation.comp_id [M.ClosedUnderSUnion]

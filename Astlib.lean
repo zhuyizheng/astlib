@@ -3,6 +3,7 @@ import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Empty
 import Astlib.Basic.SetOperation.Extensional
 import Astlib.Basic.SetOperation.Foundational
+import Astlib.Basic.SetOperation.Function
 import Astlib.Basic.SetOperation.Insert
 import Astlib.Basic.SetOperation.Inter
 import Astlib.Basic.SetOperation.Pair
@@ -22,4 +23,5 @@ import Astlib.Mathlib.ModelTheory.Syntax
 import Astlib.Mathlib.Sum.Basic
 import Astlib.ModelTheory.Defs
 import Astlib.ModelTheory.Levy
+import Astlib.ModelTheory.Semantics
 import Astlib.ModelTheory.Syntax
