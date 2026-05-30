@@ -218,7 +218,7 @@ theorem isFunctionFrom_dom {f : M} (hf : IsFunction f) : IsFunctionFrom f (dom f
   simp [IsFunctionFrom, hf]
 
 @[simp, grind .]
-theorem isFunctionFrom_empty [M.HasEmpty] [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
+theorem isFunctionFrom_empty [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
   [M.ClosedUnderDeltaZeroComprehension] : IsFunctionFrom (∅ : M) ∅ := by
   simp [IsFunctionFrom]
 
@@ -235,7 +235,7 @@ theorem isFunctionTo_ran {f : M} (hf : IsFunction f) :
   grind [IsFunctionTo]
 
 @[simp, grind .]
-theorem isFunctionTo_empty [M.HasEmpty] [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
+theorem isFunctionTo_empty [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
     [M.ClosedUnderDeltaZeroComprehension] (b : M) : IsFunctionTo (∅ : M) b := by
   have : IsFunctionTo (∅ : M) ∅ := by grind [IsFunctionTo]
   grind
@@ -260,13 +260,13 @@ theorem isFunctionFromTo_dom_ran {f : M} (hf : IsFunction f) :
   grind [IsFunctionFromTo]
 
 @[simp, grind .]
-theorem isFunctionFromTo_empty [M.HasEmpty] [M.Extensional] [M.ClosedUnderSUnion]
+theorem isFunctionFromTo_empty [M.Extensional] [M.ClosedUnderSUnion]
     [M.ClosedUnderPair]
     [M.ClosedUnderDeltaZeroComprehension] (b : M) : ∅ !: ∅ → b := by
   grind [IsFunctionFromTo]
 
 @[simp, grind .]
-theorem IsFunctionFromTo.comp [M.HasEmpty] [M.Extensional] [M.ClosedUnderSUnion]
+theorem IsFunctionFromTo.comp [M.Extensional] [M.ClosedUnderSUnion]
     [M.ClosedUnderPair]
     [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderSProd]
     {f g a b c : M} (hf : f !: a → b) (hg : g !: b → c) :
@@ -297,7 +297,7 @@ variable [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
   [M.ClosedUnderDeltaZeroComprehension]
 
 @[simp, grind .]
-theorem isInjective_empty [M.HasEmpty] : IsInjective (∅ : M) := by
+theorem isInjective_empty : IsInjective (∅ : M) := by
   grind [IsInjective]
 
 theorem isInjective_iff_isFunction_inv [M.ClosedUnderSProd] {f : M} (hf : IsFunction f) :
@@ -385,6 +385,76 @@ theorem IsInjective.isSurjective_inv_dom [M.ClosedUnderSProd] {f : M} (hf : IsIn
   grind [IsSurjective, isInjective_iff_isFunction_inv, ran_inv]
 
 end Surjective
+
+section Bijective
+
+variable {M : MemStructure}
+
+def IsBijective (f a b : M) := IsInjective f ∧ dom f = a ∧ ran f = b
+
+notation:50 f " !: " a:50 " ↔ " b:50 => IsBijective f a b
+
+@[simp, grind .]
+theorem IsBijective.isInjective {f a b : M} (hf : f !: a ↔ b) : IsInjective f := hf.left
+
+@[simp, grind .]
+theorem IsBijective.isFunction {f a b : M} (hf : f !: a ↔ b) : IsFunction f :=
+  hf.isInjective.isFunction
+
+@[simp, grind .]
+theorem IsBijective.isFunctionFromTo {f a b : M} (hf : f !: a ↔ b) : f !: a → b := by
+  grind [IsFunctionFromTo, IsBijective]
+
+@[simp, grind .]
+theorem IsBijective.isSurjective {f a b : M} (hf : f !: a ↔ b) : IsSurjective f b :=
+  by grind [IsBijective, IsSurjective]
+
+@[simp, grind .]
+theorem IsBijective.dom_eq {f a b : M} (hf : f !: a ↔ b) : dom f = a := hf.right.left
+
+@[simp, grind .]
+theorem IsBijective.ran_eq {f a b : M} (hf : f !: a ↔ b) : ran f = b := hf.right.right
+
+theorem isBijective_ran_of_isInjective {f : M} (hf : IsInjective f) :
+    f !: dom f ↔ ran f := by
+  grind [IsInjective, IsBijective]
+
+theorem isBijective_iff_of_isFunctionFromTo {f a b : M} (hf : f !: a → b) :
+    f !: a ↔ b ↔ IsInjective f ∧ IsSurjective f b := by
+  grind [IsInjective, IsSurjective, IsBijective]
+
+variable [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
+  [M.ClosedUnderDeltaZeroComprehension]
+
+@[simp, grind .]
+theorem IsBijective.existsUnique {f a b y : M} (hf : f !: a ↔ b) (hy : y ∈ b) :
+    ∃! x ∈ dom f, f ﹫ x = y := by
+  obtain ⟨x, hx⟩ := hf.isSurjective.exists hy
+  exact ⟨x, hx, by grind⟩
+
+theorem isBijective_iff_of_isFunctionFromTo' {f a b : M} (hf : f !: a → b) :
+    f !: a ↔ b ↔ ∀ y ∈ b, ∃! x ∈ dom f, f ﹫ x = y := by
+  refine ⟨by grind, ?_⟩
+  rw [isBijective_iff_of_isFunctionFromTo hf]
+  intro h
+  constructor
+  · refine ⟨by grind, fun x₁ x₂ h₁ h₂ h₁₂ ↦ ?_⟩
+    grind [(h (f ﹫ x₁) (by grind)).unique (y₁ := x₁) (y₂ := x₂)]
+  · rw [isSurjective_iff_of_isFunctionFromTo hf]
+    exact fun y a ↦ (h y a).exists
+    
+theorem IsBijective.comp [M.ClosedUnderSProd] {f g a b c : M} (hg₁ : g !: a → b)
+    (hg₂ : IsBijective g a b)
+    (hf₁ : f !: b → c) (hf₂ : IsBijective f b c) : IsBijective (f !∘ g) a c := by
+  sorry
+  -- grind [IsBijective, IsFunction.comp]
+
+theorem IsBijective.isbijective_inv [M.ClosedUnderSProd] {f a b : M} (hf : f !: a ↔ b) :
+    IsBijective f⁻¹ b a := by
+  sorry
+  -- grind [IsSurjective, isInjective_iff_isFunction_inv, ran_inv]
+
+end Bijective
 -- @[grind =]
 -- theorem mem_inv [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
 --     (R z : M) :

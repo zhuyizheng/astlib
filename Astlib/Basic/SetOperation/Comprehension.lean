@@ -117,6 +117,9 @@ instance [M.ClosedUnderDeltaZeroComprehension] (x : M)
   (φ : M.L.BoundedFormula Empty (n + 2)) [φ.DeltaZero] (xs : Fin n → M) :
   HasComprehension x φ default xs := ⟨closedUnderDeltaZeroComprehension x φ xs⟩
 
+instance [M.ClosedUnderDeltaZeroComprehension] : M.HasEmpty :=
+  instHasEmpty (⟨{∈ default | ⊥}, by simp⟩)
+
 variable (M) in
 class ClosedUnderComprehension : Prop where
   closedUnderComprehension (x : M) (φ : M.L.BoundedFormula Empty (n + 2))

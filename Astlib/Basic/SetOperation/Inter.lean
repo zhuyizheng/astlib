@@ -36,22 +36,22 @@ instance instAssociativeInter [M.Extensional] :
   assoc := fun x y z ↦ inter_assoc x y z
 
 @[simp, grind ., push]
-theorem notin_of_inter_empty_mem_left [M.HasEmpty] (h : x ∩ y = ∅) (hz : z ∈ x) : z ∉ y := by
+theorem notin_of_inter_empty_mem_left (h : x ∩ y = ∅) (hz : z ∈ x) : z ∉ y := by
   by_contra!
   have : z ∈ x ∩ y := by grind
   grind
 
 @[simp, grind ., push]
-theorem notin_of_inter_empty_mem_right [M.HasEmpty] (h : x ∩ y = ∅) (hz : z ∈ y) : z ∉ x := by
+theorem notin_of_inter_empty_mem_right (h : x ∩ y = ∅) (hz : z ∈ y) : z ∉ x := by
   grind
 
 @[simp, grind =, push]
-theorem empty_inter [M.Extensional] [M.HasEmpty] :
+theorem empty_inter [M.Extensional] :
     (∅ : M) ∩ x = ∅ := by
   ext; grind
 
 @[simp, grind =, push]
-theorem inter_empty [M.Extensional] [M.HasEmpty] :
+theorem inter_empty [M.Extensional] :
     x ∩ (∅ : M) = ∅ := by
   grind
 
