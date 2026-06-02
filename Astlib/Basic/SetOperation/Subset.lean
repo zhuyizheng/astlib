@@ -1,6 +1,6 @@
 import Astlib.ModelTheory.Defs
 import Astlib.Mathlib.Sum.Basic
-
+import Astlib.ModelTheory.Levy
 
 open FirstOrder Language BoundedFormula Fin
 

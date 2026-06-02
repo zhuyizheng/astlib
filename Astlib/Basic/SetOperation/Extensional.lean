@@ -26,7 +26,7 @@ theorem eq_iff' [M.Extensional] {x y : M} :
     x = y ↔ x ⊆ y ∧ y ⊆ x:= by
   grind
 
-instance instAntisymmSubset [M.Extensional] : Std.Antisymm (α := M) Subset where
+instance [M.Extensional] : Std.Antisymm (α := M) Subset where
   antisymm := fun _ _ h h' ↦ eq_of_subset_of_subset h h'
 
 /-- The extensionality axiom -/

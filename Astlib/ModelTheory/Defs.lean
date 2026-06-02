@@ -2,7 +2,6 @@
 
 import Astlib.ModelTheory.Syntax
 import Astlib.Mathlib.ModelTheory.Semantics
-import Astlib.Basic.Axioms
 import Astlib.Mathlib.Fin.Basic
 
 open FirstOrder Language BoundedFormula Fin

@@ -21,7 +21,7 @@ theorem inter_comm [M.Extensional] : x ∩ y = y ∩ x := by
   ext; grind
 
 variable (M) in
-instance instCommutativeInter [M.Extensional] :
+instance [M.Extensional] :
   Std.Commutative (α := M) Inter.inter where
   comm := fun x y ↦ inter_comm x y
 
@@ -31,7 +31,7 @@ theorem inter_assoc [M.Extensional] :
   ext; grind
 
 variable (M) in
-instance instAssociativeInter [M.Extensional] :
+instance [M.Extensional] :
   Std.Associative (α := M) Inter.inter where
   assoc := fun x y z ↦ inter_assoc x y z
 

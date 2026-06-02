@@ -320,14 +320,12 @@ section Restrict
 
 variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
-variable [M.ClosedUnderDeltaZeroComprehension]
+variable [M.ClosedUnderDeltaZeroComprehension] [M.Extensional] [M.ClosedUnderPair]
 
 noncomputable def restrict₂ (R a : M) :=
   {∈ R | (∃'∈ &0 (&3).eqLeft &2) ⊓ (∃'∈ &0 (&3).eqRight &2) 〘a〙₀}
 
 infix:88 " ↾↾ " => FirstOrder.Language.MemStructure.restrict₂
-
-variable [M.Extensional] [M.ClosedUnderPair]
 
 theorem mem_restrict₂_iff (R a z : M) :
     z ∈ R ↾↾ a ↔ z ∈ R ∧ ∃ x ∈ a, ∃ y ∈ a, z = !(x, y) := by
@@ -347,7 +345,7 @@ theorem empty_restrict₂ (a : M) : (∅ : M) ↾↾ a = ∅ := by
   grind [restrict₂_subset]
 --
 @[simp, grind .]
-theorem isRelation_restrict₂ {R : M} (hR : IsRelation R) (a : M) :
+theorem IsRelation.restrict₂ {R : M} (hR : IsRelation R) (a : M) :
     IsRelation (R ↾↾ a) :=
   hR.subset (restrict₂_subset _ _)
 

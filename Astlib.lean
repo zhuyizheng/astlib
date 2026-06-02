@@ -1,4 +1,5 @@
-import Astlib.Basic.Axioms
+import Astlib.Basic.SetOperation.Axioms
+import Astlib.Basic.SetOperation.Choice
 import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Empty
 import Astlib.Basic.SetOperation.Extensional

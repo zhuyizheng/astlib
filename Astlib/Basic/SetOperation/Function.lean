@@ -107,7 +107,7 @@ theorem IsFunction.union {f g : M}
     (hf : IsFunction f) (hg : IsFunction g)
     (hfg : FunctionAgree f g) : IsFunction (f ∪ g) := by
   refine ⟨hf.isRelation.union hg.isRelation, fun x y₁ y₂ h₁ h₂ ↦ ?_⟩
-  rw [mem_union] at h₁ h₂
+  rw [mem_union_iff] at h₁ h₂
   rcases h₁ with h₁ | h₁
   · rcases h₂ with h₂ | h₂
     · grind
@@ -378,7 +378,7 @@ theorem IsSurjectionFromTo.exists_mem_val {f a b y : M} (hf : f !: a ↠ b)
   grind [IsSurjectionFromTo]
 
 theorem isSurjectionFromTo_iff_of_isFunctionFromTo {f a b : M} (hf : f !: a → b) :
-    f !: a ↠ b ↔ ∀ y ∈ b, ∃ x ∈ dom f, f ﹫ x = y := by
+    f !: a ↠ b ↔ ∀ y ∈ b, ∃ x ∈ a, f ﹫ x = y := by
   grind [IsSurjectionFromTo, IsFunctionFromTo]
 
 @[simp, grind .]
@@ -463,7 +463,7 @@ theorem IsBijectionFromTo.existsUnique_mem_val {f a b y : M} (hf : f !: a ↔ b)
   exact ⟨x, hx, by grind [hf.isInjectionFromTo]⟩
 
 theorem isBijectionFromTo_iff_of_isFunctionFromTo {f a b : M} (hf : f !: a → b) :
-    f !: a ↔ b ↔ ∀ y ∈ b, ∃! x ∈ dom f, f ﹫ x = y := by
+    f !: a ↔ b ↔ ∀ y ∈ b, ∃! x ∈ a, f ﹫ x = y := by
   refine ⟨by grind, fun h ↦ ⟨?_, ?_⟩⟩
   · refine ⟨by grind, fun x₁ x₂ h₁ h₂ h₁₂ ↦ ?_⟩
     grind [(h (f ﹫ x₁) (by grind)).unique (y₁ := x₁) (y₂ := x₂)]
@@ -525,5 +525,110 @@ theorem isBijectionFromTo_of_comp_id_comp_id
   grind [IsBijectionFromTo]
 
 end IsBijectionFromTo
+
+
+section Restrict
+
+variable {M : MemStructure}
+
+noncomputable def restrict (f a : M) :=
+  {∈ f | (∃'∈ &0 (&3).eqLeft &2) 〘a〙₀}
+
+infix:88 " ↾ " => FirstOrder.Language.MemStructure.restrict
+
+variable [M.ClosedUnderDeltaZeroComprehension] [M.Extensional] [M.ClosedUnderPair]
+
+theorem mem_restrict_iff (f a z : M) :
+    z ∈ f ↾ a ↔ z ∈ f ∧ ∃ x ∈ a, ∃ y, z = !(x, y) := by
+  simp [restrict]
+
+theorem rel_restrict_iff (f x y : M) :
+    x [f ↾ a] y ↔ x [f] y ∧ x ∈ a := by
+  grind [mem_restrict_iff]
+
+theorem restrict_subset (f a : M) : f ↾ a ⊆ f := by
+  grind [mem_restrict_iff]
+
+@[simp, grind =]
+theorem empty_restrict (a : M) : (∅ : M) ↾ a = ∅ := by
+  grind [restrict_subset]
+
+@[simp, grind .]
+theorem IsFunction.restrict {f : M} (hf : IsFunction f) (a : M) :
+    IsFunction (f ↾ a) :=
+  hf.subset (restrict_subset _ _)
+
+@[simp, grind .]
+theorem dom_restrict [M.ClosedUnderSUnion] {f : M} (hf : IsFunction f) (a : M) :
+    dom (f ↾ a) = dom f ∩ a := by
+  ext; grind [rel_restrict_iff]
+
+@[simp, grind .]
+theorem val_restrict [M.ClosedUnderSUnion] (f : M) (hf : IsFunction f)
+    {x a : M} (hx : x ∈ a) (hx' : x ∈ dom f) :
+    (f ↾ a) ﹫ x = f ﹫ x := by
+  grind [show x [f ↾ a] (f ﹫ x) by grind [rel_restrict_iff] ]
+
+theorem restrict_eq_inter_sprod [M.ClosedUnderSUnion] [M.ClosedUnderSProd] (f a : M) :
+    f ↾ a = f ∩ (a ×ˢ ran f) := by
+  ext
+  rw [mem_inter_iff]
+  grind [mem_restrict_iff]
+
+@[simp, grind =]
+theorem restrict_restrict
+    (f a b : M) : (f ↾ a) ↾ b = f ↾ (a ∩ b) := by
+  ext; grind [mem_restrict_iff]
+
+theorem restrict_inter
+    (f a b : M) : f ↾ (a ∩ b) = f ↾ a ∩ f ↾ b := by
+  ext; grind [mem_restrict_iff]
+
+theorem restrict_union [M.ClosedUnderSUnion]
+    (f a b : M) : f ↾ (a ∪ b) = f ↾ a ∪ f ↾ b := by
+  ext; grind [mem_restrict_iff]
+
+theorem restrict_sUnion [M.ClosedUnderSUnion]
+    (f X z : M) : z ∈ f ↾ ⋃₀ X ↔ ∃ a ∈ X, z ∈ f ↾ a := by
+  grind [mem_restrict_iff]
+
+@[simp, grind =]
+theorem restrict_empty (f : M) : (f ↾ ∅) = ∅ := by
+  ext; grind [mem_restrict_iff]
+
+@[simp, grind =]
+theorem restrict_dom [M.ClosedUnderSUnion] {f : M} (hf : IsFunction f) : (f ↾ dom f) = f := by
+  apply hf.restrict (dom f) |>.ext hf <;> grind
+
+end Restrict
+
+
+section Image
+
+variable {M : MemStructure}
+
+noncomputable def image (f a : M) := ran (f ↾ a)
+
+infix:88 " '' " => FirstOrder.Language.MemStructure.image
+
+variable [M.ClosedUnderDeltaZeroComprehension] [M.Extensional] [M.ClosedUnderPair]
+  [M.ClosedUnderSUnion]
+
+@[simp, grind =]
+theorem image_empty (f : M) : f '' ∅ = ∅ := by
+  grind [image]
+
+@[simp, grind =]
+theorem image_dom (f : M) : f '' (dom f) = ran f := by
+  ext; grind [image, mem_restrict_iff]
+
+theorem image_union (f a b : M) : f '' (a ∪ b) = f '' a ∪ f '' b := by
+  grind [image, restrict_union, ran_union]
+
+theorem mem_image_sUnion_iff (f X z : M) :
+    z ∈ f '' (⋃₀ X) ↔ ∃ a ∈ X, z ∈ f '' a := by
+  grind [image, restrict_sUnion]
+
+end Image
 
 end FirstOrder.Language.MemStructure

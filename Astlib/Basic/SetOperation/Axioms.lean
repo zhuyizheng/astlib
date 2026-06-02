@@ -1,5 +1,5 @@
-import Astlib.ModelTheory.Syntax
-import Astlib.ModelTheory.Levy
+import Astlib.Basic.SetOperation.Foundational
+import Astlib.Basic.SetOperation.Choice
 
 namespace FirstOrder
 
@@ -8,6 +8,30 @@ namespace Language
 open FirstOrder Language BoundedFormula
 
 variable {L : FirstOrder.Language} [HasMem L]
+
+/-- The foundation axiom -/
+def foundation : L.Sentence := ∀' ((&0).isEmpty ⊔ ∃'∈ &0 ∼(∃'∈ &0 (&2 ∈' &1)))
+
+variable {M : MemStructure}
+
+theorem exists_memMin [M.Extensional] [M.HasEmpty] (hM : M ⊨ M.L.foundation) (x : M)
+    (hx : x ≠ ∅) :
+    ∃ y : M, (y ∈ x ∧ ∀ z ∈ y, z ∉ x) := by
+  simp only [Sentence.Realize, Formula.Realize, foundation, Nat.reduceAdd, Term.isEmpty,
+    BoundedFormula.allMem, Fin.reduceLast, Function.comp_apply, Fin.isValue, Term.castSucc,
+    Nat.succ_eq_add_one, Term.castLE_var_inr, Fin.castLE_zero, BoundedFormula.exMem,
+    BoundedFormula.realize_all, BoundedFormula.realize_sup, BoundedFormula.realize_imp,
+    MemStructure.realize_mem, Term.realize_var, Sum.elim_inr, Fin.snoc, Fin.coe_ofNat_eq_mod,
+    Nat.zero_mod, Order.lt_one_iff, ↓reduceDIte, Fin.reduceCastLT, Fin.castSucc_zero,
+    lt_self_iff_false, cast_eq, Nat.mod_succ, BoundedFormula.realize_bot,
+    imp_false, BoundedFormula.realize_not, Order.lt_two_iff, zero_le, Nat.one_mod, Std.le_refl,
+    Fin.castSucc_one, not_forall,  not_not, not_exists] at hM
+  rw [M.ne_empty_iff] at hx
+  grind
+
+noncomputable instance [M.Extensional] [M.HasEmpty]
+    (hM : M ⊨ M.L.foundation) : M.Foundational :=
+  M.instFoundational (fun x ↦ exists_memMin hM x)
 
 -- /-- The extensionality axiom -/
 -- def extensionality : L.Sentence := ∀' ∀' (∀' (&2 ∈' &0 ⇔ &2 ∈' &1) ⟹ &0 =' &1)
