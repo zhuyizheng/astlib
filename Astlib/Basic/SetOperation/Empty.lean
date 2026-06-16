@@ -6,22 +6,23 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x : M)
 
-noncomputable instance : Decidable (∃ a : M, ∀ (x : M), x ∉ a) :=
+abbrev IsEmpty (a : M) := ∀ (x : M), x ∉ a
+
+noncomputable instance : Decidable (∃ a : M, IsEmpty a) :=
   Classical.propDecidable _
 
 noncomputable instance : EmptyCollection M :=
-  ⟨dite (∃ a : M, ∀ x, x ∉ a) Classical.choose default⟩
+  ⟨dite (∃ a : M, IsEmpty a) Classical.choose default⟩
 
 variable (M) in
 /- `M` has an empty set `∅` -/
 class HasEmpty : Prop where
-  protected empty_prop : ∀ x : M, x ∉ (∅ : M)
-
-noncomputable instance instHasEmpty (h : ∃ a : M, ∀ x, x ∉ a) : M.HasEmpty :=
-  ⟨by convert Classical.choose_spec h; simp [EmptyCollection.emptyCollection, h]⟩
+  protected hasEmpty : ∃ a : M, IsEmpty a
 
 @[simp, grind .]
-theorem notin_empty [M.HasEmpty] : x ∉ (∅ : M) := HasEmpty.empty_prop x
+theorem notin_empty [M.HasEmpty] : x ∉ (∅ : M) := by
+  simp only [EmptyCollection.emptyCollection, HasEmpty.hasEmpty]
+  grind
 
 theorem empty_iff [M.Extensional] [M.HasEmpty] : x = ∅ ↔ ∀ y, y ∉ x := by
   rw [eq_iff]; grind

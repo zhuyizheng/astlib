@@ -29,11 +29,4 @@ theorem eq_iff' [M.Extensional] {x y : M} :
 instance [M.Extensional] : Std.Antisymm (α := M) Subset where
   antisymm := fun _ _ h h' ↦ eq_of_subset_of_subset h h'
 
-/-- The extensionality axiom -/
-def _root_.FirstOrder.Language.extensionality {L : FirstOrder.Language} [HasMem L] : L.Sentence :=
-  ∀' ∀' (∀' (&2 ∈' &0 ⇔ &2 ∈' &1) ⟹ &0 =' &1)
-
-instance (hM : M ⊨ M.L.extensionality) : M.Extensional :=
-  ⟨by simpa [Sentence.Realize, Formula.Realize, extensionality] using hM⟩
-
 end FirstOrder.Language.MemStructure
