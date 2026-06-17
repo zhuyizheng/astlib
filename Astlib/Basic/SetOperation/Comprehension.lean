@@ -104,7 +104,7 @@ variable (M) in
 class ClosedUnderDeltaZeroComprehension : Prop where
   closedUnderDeltaZeroComprehension {n} (x : M) (φ : M.L.BoundedFormula Empty (n + 2)) [φ.DeltaZero]
     (xs : Fin n → M) :
-    ∃ a : M, ∀ z, z ∈ a ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z)
+    ∃ a : M, IsComprehension a x φ default xs
 
 export ClosedUnderDeltaZeroComprehension (closedUnderDeltaZeroComprehension)
 
@@ -119,7 +119,7 @@ variable (M) in
 class ClosedUnderComprehension : Prop where
   closedUnderComprehension (x : M) (φ : M.L.BoundedFormula Empty (n + 2))
     (xs : Fin n → M) :
-    ∃ a : M, ∀ z, z ∈ a ↔ z ∈ x ∧ φ.Realize v (snoc (snoc xs x) z)
+    ∃ a : M, IsComprehension a x φ default xs
 
 export ClosedUnderComprehension (closedUnderComprehension)
 
