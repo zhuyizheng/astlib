@@ -1,4 +1,12 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Relation
+/-!
+file docstring
+-/
 
 namespace FirstOrder.Language.MemStructure
 
@@ -12,7 +20,7 @@ def IsFunction (f : M) :=
 @[simp, grind .]
 theorem IsFunction.isRelation {f : M} (hf : IsFunction f) : IsRelation f := hf.left
 
-@[simp, grind .]
+@[grind .]
 theorem IsFunction.eq
     {f x y₁ y₂: M} (hf : IsFunction f) (h₁ : x [f] y₁) (h₂ : x [f] y₂) : y₁ = y₂ := by
   grind [IsFunction]
@@ -531,8 +539,7 @@ section Restrict
 
 variable {M : MemStructure}
 
-noncomputable def restrict (f a : M) :=
-  {∈ f | (∃'∈ &0 (&3).eqLeft &2) 〘a〙₀}
+noncomputable def restrict (f a : M) := (∃'∈ &0 (&2).eqLeft &1) 〘a, ∈ f〙₀
 
 infix:88 " ↾ " => FirstOrder.Language.MemStructure.restrict
 

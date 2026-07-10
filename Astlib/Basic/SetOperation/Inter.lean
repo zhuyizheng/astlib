@@ -1,5 +1,13 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Union
+/-!
+file docstring
+-/
 
 open FirstOrder.Language.BoundedFormula
 
@@ -8,7 +16,7 @@ namespace FirstOrder.Language.MemStructure
 variable {M : MemStructure} (x y z : M)
 
 variable (M) in
-noncomputable instance : Inter M := ⟨fun x y ↦ {∈ x | &2 ∈' &0 〘y〙₀}⟩
+noncomputable instance : Inter M := ⟨fun x y ↦ (&1 ∈' &0) 〘y, ∈ x〙₀⟩
 
 variable [M.ClosedUnderDeltaZeroComprehension]
 

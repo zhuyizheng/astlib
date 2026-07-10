@@ -1,5 +1,13 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Singleton
 import Astlib.Basic.SetOperation.Union
+/-!
+file docstring
+-/
 
 open FirstOrder.Language.BoundedFormula
 
@@ -43,7 +51,7 @@ theorem insert_subset_insert [M.ClosedUnderSUnion] [M.ClosedUnderPair] {y z : M}
     insert x y ⊆ insert x z := by
   grind
 
-noncomputable abbrev succ (x : M) := insert x x
+noncomputable def succ (x : M) := insert x x
 
 -- source
 -- theorem Set.insert_subset {α : Type u_1} {s t : Set α} {a : α} (ha : a ∈ t) (hs : s ⊆ t) :

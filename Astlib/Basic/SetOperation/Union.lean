@@ -1,4 +1,12 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Pair
+/-!
+file docstring
+-/
 
 open FirstOrder.Language.BoundedFormula
 
@@ -12,7 +20,7 @@ noncomputable instance : Union M where
 
 @[simp, grind =]
 theorem mem_union_iff [M.ClosedUnderSUnion] [M.ClosedUnderPair] : x ∈ y ∪ z ↔ x ∈ y ∨ x ∈ z := by
-  simp [Union.union]
+  simp [Union.union, mem_sUnion_iff]
 
 @[grind =]
 theorem union_comm [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] : x ∪ y = y ∪ x := by

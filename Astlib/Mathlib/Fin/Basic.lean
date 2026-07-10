@@ -1,4 +1,12 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Mathlib.Data.Fin.Tuple.Basic
+/-!
+file docstring
+-/
 
 variable {α : Type*} {m n p : ℕ} (a : Fin m → α) (b : Fin n → α) (c : Fin p → α) (x : α)
 
@@ -15,6 +23,11 @@ theorem Fin.castLE_add_three_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 
 
 theorem Fin.castLE_add_four_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 4) (by omega) =
     Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc := by rfl
+
+@[simp]
+theorem snoc_snoc_comp_castSucc_castSucc {α : Sort*} {a b : α} {f : Fin n → α} :
+    (snoc (snoc f a : Fin (n + 1) → α) b) ∘ castSucc ∘ castSucc = f := by
+  simp [← Function.comp_assoc]
 
 @[simp]
 theorem Fin.val_last_plus_one_minus_one : (last (n + 1) - 1).val = n := by
@@ -58,6 +71,10 @@ theorem Fin.append_nat (i : Fin (m + n)) :
   · nth_rw 1 [show i = Fin.natAdd (m := n) m ⟨(i.val - m), by omega⟩ by grind]
     rw [append_right]
 
+@[simp]
+theorem Fin.snoc_snoc_comp_gap_one (xs : Fin n → α) (x a : α) :
+    (snoc (snoc xs x) a ∘ fun i ↦ if i.val < n then castAdd 1 i else i.succ) = snoc xs a := by
+  grind [snoc_nat]
 
 
 -- @[simp]

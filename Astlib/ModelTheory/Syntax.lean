@@ -1,5 +1,12 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Mathlib.ModelTheory.Syntax
-
+/-!
+file docstring
+-/
 
 open FirstOrder Language
 
@@ -49,11 +56,11 @@ instance : HasMem pureSTLanguage := ⟨.mem⟩
 -- open STLanguage
 
 
-variable {L : Language} [HasMem L]
+variable {L : Language} [L.HasMem]
 
 /-- Applies the `∈` relation to two terms as a bounded formula. -/
 @[match_pattern]
-def mem_boundedFormula [HasMem L] (t₁ t₂ : L.Term (α ⊕ Fin n)) :
+def mem_boundedFormula (t₁ t₂ : L.Term (α ⊕ Fin n)) :
     L.BoundedFormula α n :=
   memSymb.boundedFormula₂ t₁ t₂
 
@@ -73,8 +80,7 @@ theorem BoundedFormula.liftAt_mem_boundedFormula (t₁ t₂ : L.Term (α ⊕ Fin
 variable {L : Language} [HasMem L] {α : Type*} {n : ℕ}
 
 /-- `∀ x ∈ t, φ (..., x)` -/
-@[match_pattern]
-abbrev BoundedFormula.allMem
+def BoundedFormula.allMem
   (t : L.Term (α ⊕ Fin n)) (φ : L.BoundedFormula α (n + 1)) : L.BoundedFormula α n :=
   ∀' (&-1 ∈' t.castSucc ⟹ φ)
 
@@ -82,8 +88,7 @@ abbrev BoundedFormula.allMem
 notation "∀'∈ " x:arg y:50 => FirstOrder.Language.BoundedFormula.allMem x y
 
 /-- `∃ x ∈ t, φ (..., x)` -/
-@[match_pattern]
-abbrev BoundedFormula.exMem
+def BoundedFormula.exMem
   (t : L.Term (α ⊕ Fin n)) (φ : L.BoundedFormula α (n + 1)) : L.BoundedFormula α n :=
   ∼(∀'∈ t (∼φ))
 
@@ -91,74 +96,74 @@ abbrev BoundedFormula.exMem
 notation "∃'∈ " x:arg y:50 => FirstOrder.Language.BoundedFormula.exMem x y
 
 -- /-- `t = ∅` -/
--- abbrev Term.isEmpty (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.isEmpty (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∀'∈ t ⊥
 
 -- /-- `t₁ = {t₂}` -/
--- abbrev Term.eqSingleton (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqSingleton (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --    t₂ ∈' t₁ ⊓ ∀'∈ t₁ &-1 =' t₂.castSucc
 --   -- ∀' (&-1 ∈' t₁.castSucc ⇔ &-1 =' t₂.castSucc)
 
 -- /-- `t₁ = {t₂, t₃}` -/
--- abbrev Term.eqUnoderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqUnoderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   t₂ ∈' t₁ ⊓ t₃ ∈' t₁ ⊓ ∀'∈ t₁ (&-1 =' t₂.castSucc ⊔ &-1 =' t₃.castSucc)
 --   -- ∀' (&-1 ∈' t₁.castSucc ⇔ &-1 =' t₂.castSucc ⊔ &-1 =' t₃.castSucc)
 
 -- /-- `t₁ ∈ t₂ ∪ {t₃}` -/
--- abbrev Term.memUnionSingleton (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.memUnionSingleton (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   t₁ ∈' t₂ ⊔ t₁ =' t₃
 
 -- /-- `t₁ = t₂ ∪ {t₃}` -/
--- abbrev Term.eqUnionSingleton (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqUnionSingleton (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   t₂ ⊆' t₁ ⊓ t₃ ∈' t₁ ⊓ ∀'∈ t₁ ((&-1).memUnionSingleton t₂.castSucc t₃.castSucc)
 --   -- ∀' (&-1 ∈' t₁.castSucc ⇔ (&-1).memUnionSingleton t₂.castSucc t₃.castSucc)
 
 -- /-- `t₁ ∈ t₂ ∪ {t₂}` -/
--- abbrev Term.memSucc (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.memSucc (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   t₁.memUnionSingleton t₂ t₂
 
 -- /-- `t₁ = t₂ ∪ {t₂}` -/
--- abbrev Term.eqSucc (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqSucc (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   t₁.eqUnionSingleton t₂ t₂
 
 -- /-- `t₁ = (t₂, t₃)` -/
--- abbrev Term.eqOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqOrderedPair (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   (∃'∈ t₁ ((&-1).eqSingleton t₂.castSucc)) ⊓
 --   (∃'∈ t₁ (&-1).eqUnoderedPair t₂.castSucc t₃.castSucc) ⊓
 --   (∀'∈ t₁ ((&-1).eqSingleton t₂.castSucc ⊔ (&-1).eqUnoderedPair t₂.castSucc t₃.castSucc))
 
 -- /-- `t` is an ordered pair -/
--- abbrev Term.isOrderedPair (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.isOrderedPair (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∃'∈ t ∃'∈ (&-1) ∃'∈ t.castSucc.castSucc ∃'∈(&-1)
 --     (t.castSucc.castSucc.castSucc.castSucc.eqOrderedPair (&-3) (&-1))
 
 -- /-- `t` is a binary relation -/
--- abbrev Term.isRel (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.isRel (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∀'∈ t (&-1.isOrderedPair)
 
 -- /-- `t₁` is in the domain of `t₂` -/
--- abbrev Term.memDom (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.memDom (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∃' (t₂.castSucc.eqOrderedPair t₁.castSucc &-1)
 
 -- /-- `t₁ = dom t₂` -/
--- abbrev Term.eqDom (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqDom (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∀' (&-1 ∈' t₁.castSucc ⇔ &-1.memDom t₂.castSucc)
 
 -- /-- `t₁` is in the range of `t₂` -/
--- abbrev Term.memRan (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.memRan (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∃' (t₂.castSucc.eqOrderedPair &-1 t₁.castSucc)
 
 -- /-- `t₁ = ran t₂` -/
--- abbrev Term.eqRan (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqRan (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∀' (&-1 ∈' t₁.castSucc ⇔ &-1.memRan t₂.castSucc)
 
 -- /-- `t` is a function -/
--- abbrev Term.isFun (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.isFun (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   t.isRel ⊓ ∀'∈ t ∀'∈ t.castSucc ∀' ∀' ∀'
 --     ( (&-5).eqOrderedPair (&-3) (&-2) ⟹ (&-4).eqOrderedPair (&-3) (&-1) ⟹ &-2 =' &-1)
 
 -- /-- `t₁ = t₂ t₃` -/
--- abbrev Term.eqVal (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+-- def Term.eqVal (t₁ t₂ t₃ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
 --   ∃'∈ t₁ ((&-1).eqOrderedPair t₂.castSucc t₃.castSucc)
 
 end Language

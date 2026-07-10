@@ -1,5 +1,13 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Mathlib.ModelTheory.Syntax
 import Mathlib.Tactic.FinCases
+/-!
+file docstring
+-/
 
 open FirstOrder Language
 
@@ -7,7 +15,7 @@ open Structure Fin Nat
 
 universe u v
 
-variable {L : FirstOrder.Language}
+variable {L : FirstOrder.Language} {α : Type*} {m n n' n'' l k : ℕ}
 
 
 @[inherit_doc] scoped[FirstOrder] prefix:110 "∀'' " => FirstOrder.Language.BoundedFormula.alls
@@ -212,7 +220,8 @@ theorem all'_all'_eq_all'_cast (φ : L.BoundedFormula α (n + m + k)) :
     (φ.all' k).all' m = (φ.cast (n.add_assoc m k)).all' (m + k) := by
   induction k with
   | zero => simp
-  | succ k ih => rw [all']; convert ih _ using 1
+  | succ k ih => simp [all', ih]
+
 
 -- @[simp]
 -- theorem all'_castLE_eq_alls (φ : L.BoundedFormula α n) :
@@ -268,7 +277,9 @@ theorem ex'_ex'_eq_ex'_cast (φ : L.BoundedFormula α (n + m + k)) :
     (φ.ex' k).ex' m = (φ.cast (n.add_assoc m k)).ex' (m + k) := by
   induction k with
   | zero => simp
-  | succ k ih => rw [ex']; convert ih _ using 1
+  | succ k ih =>
+    simp only [ex', add_eq, ih, cast, castLE]
+    congr
 
 -- @[simp]
 -- theorem ex'_cast_eq_exs (φ : L.BoundedFormula α n) :

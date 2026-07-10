@@ -1,6 +1,14 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Init.Data.Sum.Basic
 
 import Astlib.Mathlib.Fin.Basic
+/-!
+file docstring
+-/
 
 -- variable (α β : Type* )
 

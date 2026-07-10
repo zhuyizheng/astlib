@@ -1,10 +1,18 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Function
+/-!
+file docstring
+-/
 
 namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y : M)
 
-abbrev IsChoiceFunction (f F : M) :=
+def IsChoiceFunction (f F : M) :=
   IsFunction f ∧ dom f = dom F ∧ ∀ x ∈ dom F, F ﹫ x ≠ ∅ → f ﹫ x ∈ F ﹫ x
 
 noncomputable instance : Decidable
@@ -29,7 +37,7 @@ theorem isChoiceFunction_choiceFunction [ClosedUnderChoice M] {F : M} (hF : IsFu
 @[simp, grind .]
 theorem isFunction_choiceFunction [ClosedUnderChoice M] {F : M} (hF : IsFunction F) :
     IsFunction (choiceFunction F) := by
-  grind
+  grind [IsChoiceFunction, isChoiceFunction_choiceFunction]
 
 @[simp, grind .]
 theorem dom_choiceFunction [ClosedUnderChoice M] {F : M} (hF : IsFunction F) :

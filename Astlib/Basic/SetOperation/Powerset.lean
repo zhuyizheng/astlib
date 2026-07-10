@@ -1,4 +1,12 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Empty
+/-!
+file docstring
+-/
 
 open FirstOrder.Language.BoundedFormula
 
@@ -6,7 +14,7 @@ namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y : M)
 
-abbrev IsPowerset (a x : M) := ∀ z, z ∈ a ↔ z ⊆ x
+def IsPowerset (a x : M) := ∀ z, z ∈ a ↔ z ⊆ x
 
 noncomputable instance : Decidable (∃ a : M, IsPowerset a x) :=
   Classical.propDecidable _
@@ -27,8 +35,8 @@ instance [hM : M.ClosedUnderPowerset] (x : M) : HasPowerset x := ⟨hM.closedUnd
 
 @[simp, grind =, push]
 theorem mem_powerset_iff {x : M} [hx : HasPowerset x] (z : M) : z ∈ 𝒫 x ↔ z ⊆ x := by
-  simp only [HasPowerset.hasPowerset, powerset]
-  grind
+  convert Classical.choose_spec hx.hasPowerset z
+  simp [HasPowerset.hasPowerset, powerset]
 
 @[grind! .]
 theorem mem_powerset_self [HasPowerset x] : x ∈ 𝒫 x := by simp

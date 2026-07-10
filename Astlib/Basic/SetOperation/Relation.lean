@@ -1,4 +1,14 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.SProd
+/-!
+file docstring
+-/
+
+open Fin
 
 namespace FirstOrder.Language.MemStructure
 
@@ -66,15 +76,16 @@ theorem IsRelation.sUnion [M.ClosedUnderSUnion] [M.ClosedUnderPair] {X : M}
   grind [IsRelation]
 
 noncomputable def dom (R : M) :=
-  {∈ ⋃₀ (⋃₀ R) | ∃'∈ &0 (&2).eqLeft (&3) 〘R〙₀}
+  (∃'∈ &0 (&1).eqLeft (&2))〘R, ∈ ⋃₀ (⋃₀ R)〙₀
 
 variable [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderSUnion]
 
 @[grind =]
 theorem mem_dom_iff [M.Extensional] [M.ClosedUnderPair] (R x : M) :
     x ∈ dom R ↔ ∃ y, x [R] y := by
-  suffices ∀ y, x [R] y → ∃ z, (∃ w ∈ R, z ∈ w) ∧ x ∈ z by simpa [dom]
-  exact fun y _ ↦ ⟨unorderedPair x y, ⟨!(x, y), by grind [orderedPair]⟩, by grind⟩
+  suffices ∀ (x_1 : ↑M), !(x, x_1) ∈ R → ∃ y, (∃ y_1 ∈ R, y ∈ y_1) ∧ x ∈ y by
+    simpa [dom, mem_sUnion_iff]
+  exact fun y hy ↦ ⟨{x, y}, by grind⟩
 
 @[simp, grind .]
 theorem dom_mono [M.Extensional] [M.ClosedUnderPair] {R S : M} (h : R ⊆ S) :
@@ -104,13 +115,14 @@ theorem dom_sprod [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
   exact ⟨v, by grind⟩
 
 noncomputable def ran (R : M) :=
-  {∈ ⋃₀ (⋃₀ R) | ∃'∈ &0 (&2).eqRight (&3) 〘R〙₀}
+  (∃'∈ &0 (&1).eqRight (&2))〘R, ∈ ⋃₀ (⋃₀ R)〙₀
 
 @[grind =]
 theorem mem_ran_iff [M.Extensional] [M.ClosedUnderPair] (R y : M) :
     y ∈ ran R ↔ ∃ x, x [R] y := by
-  suffices ∀ x, x [R] y → ∃ z, (∃ w ∈ R, z ∈ w) ∧ y ∈ z by simpa [ran]
-  exact fun x _ ↦ ⟨unorderedPair x y, ⟨!(x, y), by grind [orderedPair]⟩, by grind⟩
+  suffices ∀ (x : ↑M), !(x, y) ∈ R → ∃ y_1, (∃ y ∈ R, y_1 ∈ y) ∧ y ∈ y_1 by
+    simpa [ran, mem_sUnion_iff]
+  exact fun x _ ↦ ⟨{x, y}, by grind⟩
 
 @[simp, grind .]
 theorem ran_mono [M.Extensional] [M.ClosedUnderPair] {R S : M} (h : R ⊆ S) :
@@ -157,8 +169,8 @@ variable [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
 
 /-- `R ∘ S` in set theory, denoted by `R !∘ S` in lean -/
 noncomputable def comp (R S : M) : M :=
-  {∈ dom S ×ˢ ran R |
-    ∃'∈ &0 ∃'∈ &1 ((&4).sameLeft &3 ⊓ (&5).sameRight &3 ⊓ (&4).rightEqLeft (&5)) 〘![S, R]〙}
+  (∃'∈ &0 ∃'∈ &1 ((&3).sameLeft &2 ⊓ (&4).sameRight &2 ⊓ (&3).rightEqLeft (&4)))
+    〘![S, R], ∈ dom S ×ˢ ran R 〙
 
 @[inherit_doc] infixr:90 " !∘ "  => FirstOrder.Language.MemStructure.comp
 
@@ -167,15 +179,12 @@ theorem mem_comp
     (R S z : M) :
     z ∈ R !∘ S ↔ ∃ a b c : M, z = !(a, c) ∧ (a [S] b) ∧ (b [R] c) := by
   suffices ((∃ u ∈ dom S, ∃ v ∈ ran R, z = !(u, v)) ∧
-    ∃ x x_1, x [S] x_1 ∧ ∃ x_2 x_3, x_1 [R] x_3 ∧ (∃ x_4, z = !(x, x_4)) ∧ z = !(x_2, x_3))
-    ↔ ∃ a b c, z = !(a, c) ∧ a [S] b ∧ b [R] c by
-    simpa [MemStructure.comp, mem_comprehension_iff]
-  refine ⟨by grind, fun ⟨a, b, c, hz, hab, hbc⟩ ↦ ?_⟩
-  exact ⟨⟨a, by grind, c, by grind, hz⟩, ⟨a, b, hab, a, c, hbc, ⟨⟨c, hz⟩, hz⟩⟩⟩
+      ∃ a b c a_1, !(a_1, a) ∈ S ∧ !(a, c) ∈ R ∧ (∃ x, z = !(a_1, x)) ∧ z = !(b, c)) ↔
+        ∃ a b c, z = !(a, c) ∧ !(a, b) ∈ S ∧ !(b, c) ∈ R by
+    simpa [MemStructure.comp]
+  grind
 
-theorem comp_assoc
-    (R S T : M) :
-    (R !∘ S) !∘ T = R !∘ (S !∘ T) := by
+theorem comp_assoc (R S T : M) : (R !∘ S) !∘ T = R !∘ (S !∘ T) := by
   ext
   grind
 
@@ -185,17 +194,13 @@ theorem isRelation_comp
   grind [IsRelation]
 
 @[grind =]
-theorem rel_comp
-    (R S a c : M) :
-    (a [R !∘ S] c) ↔ ∃ b : M, a [S] b ∧ b [R] c := by
+theorem rel_comp (R S a c : M) : (a [R !∘ S] c) ↔ ∃ b : M, a [S] b ∧ b [R] c := by
   grind
 
-theorem dom_comp_subset (R S : M) :
-    dom (R !∘ S) ⊆ dom S := by
+theorem dom_comp_subset (R S : M) : dom (R !∘ S) ⊆ dom S := by
   grind
 
-theorem ran_comp_subset (R S : M) :
-    ran (R !∘ S) ⊆ ran R := by
+theorem ran_comp_subset (R S : M) : ran (R !∘ S) ⊆ ran R := by
   grind
 
 end Comp
@@ -209,21 +214,17 @@ variable [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
 
 /-- The set of `!(x, x)` for `x ∈ a` -/
 noncomputable def id (a : M) : M :=
-  {∈ a ×ˢ a | (&1).sameLeftRight}
+  (&0).sameLeftRight〘∈ a ×ˢ a〙
 
 @[grind =]
-theorem mem_id
-    (x z : M) :
-    z ∈ id x ↔ ∃ a ∈ x, z = !(a, a) := by
-  simp only [id, Fin.isValue, Function.comp_apply, mem_comprehension_iff, mem_sprod_iff,
-    Nat.reduceAdd, Pi.default_def, Term.rightEqLeft_iff, Term.realize_var, Sum.elim_inr,
-    Fin.snoc_nat, Fin.coe_ofNat_eq_mod, Nat.mod_succ, lt_self_iff_false, ↓reduceDIte,
-    exists_and_left]
+theorem mem_id (x z : M) : z ∈ id x ↔ ∃ a ∈ x, z = !(a, a) := by
+  simp only [id, isValue, Function.comp_apply, mem_comprehension_empty_one_iff, mem_sprod_iff,
+    Pi.default_def, Nat.reduceAdd, Term.sameLeftRight_iff, Term.realize'_var', snoc_nat,
+    val_eq_zero, lt_self_iff_false, ↓reduceDIte]
   grind
 
-@[simp, grind .]
-theorem eq_of_id
-    {x y z : M} (h : y [id x] z) : y = z := by
+@[grind .]
+theorem eq_of_id {x y z : M} (h : y [id x] z) : y = z := by
   grind
 
 -- @[simp, grind .]
@@ -232,8 +233,7 @@ theorem eq_of_id
 --   grind
 
 @[simp, grind .]
-theorem id_isRelation
-    (a : M) : IsRelation (id a) := by
+theorem id_isRelation (a : M) : IsRelation (id a) := by
   grind [IsRelation]
 
 @[simp, grind =]
@@ -250,14 +250,12 @@ theorem ran_id [M.ClosedUnderSUnion] (a : M) : ran (id a) = a := by
 
 @[simp, grind =]
 theorem IsRelation.comp_id [M.ClosedUnderSUnion]
-    {R a : M} (hR : IsRelation R) (h : dom R ⊆ a) :
-    R !∘ (id a) = R := by
+    {R a : M} (hR : IsRelation R) (h : dom R ⊆ a) : R !∘ (id a) = R := by
   grind
 
 @[simp, grind =]
 theorem IsRelation.id_comp [M.ClosedUnderSUnion]
-    {R a : M} (hR : IsRelation R) (h : ran R ⊆ a) :
-    (id a) !∘ R = R := by
+    {R a : M} (hR : IsRelation R) (h : ran R ⊆ a) : (id a) !∘ R = R := by
   grind
 
 end Id
@@ -271,47 +269,38 @@ variable [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] [M.ClosedUnde
 
 /-- `y [R⁻¹] x` means `x [R] y` -/
 noncomputable instance : Inv M :=
-  ⟨fun R ↦ {∈ ran R ×ˢ dom R | ∃'∈ &0 (&2).reverseLeftRight &3 〘R〙₀}⟩
+  ⟨fun R ↦ (∃'∈ &0 (&1).reverseLeftRight &2)〘R, ∈ ran R ×ˢ dom R〙₀⟩
 
 @[grind =]
-theorem mem_inv
-    (R z : M) :
-    z ∈ R⁻¹ ↔ ∃ a b : M, z = !(a, b) ∧ b [R] a := by
+theorem mem_inv (R z : M) : z ∈ R⁻¹ ↔ ∃ a b : M, z = !(a, b) ∧ b [R] a := by
   suffices ((∃ u ∈ ran R, ∃ v ∈ dom R, z = !(u, v)) ∧ ∃ x x_1, !(x_1, x) ∈ R ∧ z = !(x, x_1)) ↔
       ∃ a b, z = !(a, b) ∧ !(b, a) ∈ R by
     simpa [Inv.inv, mem_comprehension_iff]
   exact ⟨by grind, fun ⟨a, b, hz, hba⟩ ↦ ⟨⟨a, by grind, b, by grind, hz⟩, ⟨a, b, hba, hz⟩⟩⟩
 
 @[simp, grind .]
-theorem isRelation_inv
-    (R : M) : IsRelation (R⁻¹) := by
+theorem isRelation_inv (R : M) : IsRelation (R⁻¹) := by
   grind [IsRelation]
 
 @[simp, grind =]
-theorem rel_inv
-    (R a b : M) :
-    a [R⁻¹] b ↔ b [R] a := by
+theorem rel_inv (R a b : M) : a [R⁻¹] b ↔ b [R] a := by
   grind
 
 @[simp, grind =]
-theorem inv_inv
-    {R : M} (hR : IsRelation R) : (R⁻¹)⁻¹ = R := by
+theorem inv_inv {R : M} (hR : IsRelation R) : (R⁻¹)⁻¹ = R := by
   grind [isRelation_inv R⁻¹]
 
-theorem inv_comp
-    {R S : M} : (R !∘ S)⁻¹ = S⁻¹ !∘ R⁻¹ := by
+theorem inv_comp {R S : M} : (R !∘ S)⁻¹ = S⁻¹ !∘ R⁻¹ := by
   apply IsRelation.ext (isRelation_inv _) (isRelation_comp _ _)
   intro x y
   simp only [mem_inv, orderedPair_eq_orderedPair_iff, mem_comp, ↓existsAndEq, and_true,
     exists_and_left, exists_eq_left']
   grind
 
-theorem dom_inv {R : M} :
-    dom R⁻¹ = ran R := by
+theorem dom_inv {R : M} : dom R⁻¹ = ran R := by
   ext; simp [mem_dom_iff, mem_ran_iff]
 
-theorem ran_inv {R : M} :
-    ran R⁻¹ = dom R := by
+theorem ran_inv {R : M} : ran R⁻¹ = dom R := by
   ext; simp [mem_dom_iff, mem_ran_iff]
 
 end Inv
@@ -323,7 +312,7 @@ variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 variable [M.ClosedUnderDeltaZeroComprehension] [M.Extensional] [M.ClosedUnderPair]
 
 noncomputable def restrict₂ (R a : M) :=
-  {∈ R | (∃'∈ &0 (&3).eqLeft &2) ⊓ (∃'∈ &0 (&3).eqRight &2) 〘a〙₀}
+  ((∃'∈ &0 (&2).eqLeft &1) ⊓ (∃'∈ &0 (&2).eqRight &1)) 〘a, ∈ R〙₀
 
 infix:88 " ↾↾ " => FirstOrder.Language.MemStructure.restrict₂
 
@@ -392,23 +381,19 @@ theorem IsRelationOn.exists_exists {R a : M} (hR : IsRelationOn R a)
     {z : M} (hz : z ∈ R) : ∃ x ∈ a, ∃ y ∈ a, z = !(x, y) := by
   grind [hR.restrict_eq, mem_restrict₂_iff]
 
-theorem IsRelationOn.subset_iff
-    {R a : M} (hR : IsRelationOn R a) (S : M) :
+theorem IsRelationOn.subset_iff {R a : M} (hR : IsRelationOn R a) (S : M) :
     R ⊆ S ↔ ∀ x ∈ a, ∀ y ∈ a, x [R] y → x [S] y := by
   refine ⟨by grind, fun h z hz ↦ ?_⟩
   obtain ⟨x, hx, y, hy, hxy⟩ := hR.exists_exists hz
   exact hxy ▸ (h x hx y hy) (hxy ▸ hz)
 
 @[grind .]
-theorem IsRelationOn.ext
-    {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a)
-    (h : ∀ x ∈ a, ∀ y ∈ a, (x [R] y ↔ x [S] y)) :
-    R = S :=
+theorem IsRelationOn.ext {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a)
+    (h : ∀ x ∈ a, ∀ y ∈ a, (x [R] y ↔ x [S] y)) : R = S :=
   eq_of_subset_of_subset ((hR.subset_iff _).mpr (by grind)) ((hS.subset_iff _).mpr (by grind))
 
 @[grind .]
-theorem IsRelationOn.eq_iff
-    {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a) :
+theorem IsRelationOn.eq_iff {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a) :
     R = S ↔ ∀ x ∈ a, ∀ y ∈ a, (x [R] y ↔ x [S] y) := by
   grind
 
@@ -461,4 +446,93 @@ theorem IsRelationOn.ran_subset [M.ClosedUnderSUnion] {R a : M}
 
 end IsRelationOn
 
-end FirstOrder.Language.MemStructure
+end MemStructure
+
+section Syntax
+
+variable {L : FirstOrder.Language} [HasMem L] {α : Type*} {n : ℕ} (t t₁ t₂ : L.Term (α ⊕ Fin n))
+
+/-- `t` is a relation -/
+def Term.isRelation (t : L.Term (α ⊕ Fin n)) :=
+  ∀'∈ t ((&-1).isOrderedPair)
+
+
+theorem Term.isDeltaZero_isRelation : (t.isRelation).IsDeltaZero := by
+  simp only [isRelation]
+  exact BoundedFormula.DeltaZero.isDeltaZero
+
+instance : (t.isRelation).DeltaZero := ⟨t.isDeltaZero_isRelation⟩
+
+/-- `t₁ ∈ dom t₂` -/
+def Term.memDom (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  ∃'∈ t₂ (t₁.castSucc.eqLeft &-1)
+
+theorem Term.isDeltaZero_memDom : (t₁.memDom t₂).IsDeltaZero := by
+  simp only [memDom]
+  exact BoundedFormula.DeltaZero.isDeltaZero
+
+instance : (t₁.memDom t₂).DeltaZero := ⟨t₁.isDeltaZero_memDom t₂⟩
+
+/-- `t₁ = dom t₂` -/
+def Term.eqDom (t₁ t₂ : L.Term (α ⊕ Fin n)) :=
+  (∀'∈ t₁ ((&-1).memDom t₂.castSucc)) ⊓
+    ∀'∈ t₂ ∀'∈ &-1 ∀'∈ &-1 (&-1.memDom t₂.castSucc.castSucc.castSucc ⟹
+    &-1 ∈' t₁.castSucc.castSucc.castSucc)
+
+theorem Term.isDeltaZero_eqDom : (t₁.eqDom t₂).IsDeltaZero := by
+  simp only [eqDom]
+  exact BoundedFormula.DeltaZero.isDeltaZero
+
+instance : (t₁.eqDom t₂).DeltaZero := ⟨t₁.isDeltaZero_eqDom t₂⟩
+
+
+variable {M : MemStructure} (v : α → M) (xs : Fin n → M)
+
+variable (t t₁ t₂ : M.L.Term (α ⊕ Fin n))
+
+@[simp]
+theorem Term.isRelation_iff [M.Extensional] [M.ClosedUnderPair] :
+    t.isRelation〘v, xs〙 ↔ M.IsRelation t〘v, xs〙 := by
+  simp [MemStructure.IsRelation, isRelation]
+
+@[simp]
+theorem Term.memDom_iff [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSUnion]
+    [M.ClosedUnderDeltaZeroComprehension] :
+    (t₁.memDom t₂)〘v, xs〙 ↔ t₁〘v, xs〙 ∈ M.dom (t₂〘v, xs〙) := by
+  suffices ∀ (x : ↑M),
+    !(t₁〘v, xs〙, x) ∈ t₂〘v, xs〙 →
+      ∃ y, (∃ y_1 ∈ t₂〘v, xs〙, y ∈ y_1) ∧ t₁〘v, xs〙 ∈ y
+    by simpa [MemStructure.dom, memDom, MemStructure.mem_sUnion_iff]
+  refine fun w hw ↦ ⟨{t₁〘v, xs〙}, ?_⟩
+  simp only [MemStructure.mem_singleton_iff, and_true]
+  use !(t₁〘v, xs〙, w)
+  simp only [hw, MemStructure.mem_orderedPair_iff, true_and]
+  left
+  rfl
+
+-- @[simp]
+-- theorem Term.eqDom_iff [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSUnion]
+--      [M.ClosedUnderSProd] [M.ClosedUnderDeltaZeroComprehension] :
+--     (t₁.eqDom t₂)〘v, xs〙 ↔
+--     t₁〘v, xs〙 = M.dom (t₂〘v, xs〙) := by
+--   -- rw [MemStructure.ext_iff]
+--   constructor
+--   · intro h
+--     simp? [] at h
+
+  -- suffices ∀ (x : ↑M),
+  --   !(t₁〘v, xs〙, x) ∈ t₂〘v, xs〙 →
+  --     ∃ y, (∃ y_1 ∈ t₂〘v, xs〙, y ∈ y_1) ∧ t₁〘v, xs〙 ∈ y
+  --   by simpa [MemStructure.dom]
+  -- intro w hw
+  -- use {t₁〘v, xs〙}
+  -- simp only [MemStructure.mem_singleton_iff, and_true]
+  -- use !(t₁〘v, xs〙, w)
+  -- simp only [hw, MemStructure.mem_orderedPair_iff, true_and]
+  -- left
+  -- rfl
+
+
+end Syntax
+
+end FirstOrder.Language

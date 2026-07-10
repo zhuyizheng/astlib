@@ -1,6 +1,14 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.ModelTheory.Syntax
 import Astlib.Mathlib.ModelTheory.Satisfiability
 import Astlib.Mathlib.ModelTheory.Bundled
+/-!
+file docstring
+-/
 
 open FirstOrder Language BoundedFormula Theory
 
@@ -11,6 +19,7 @@ namespace FirstOrder
 namespace Language
 
 namespace BoundedFormula
+
 variable {n : ℕ}
 
 section SyntacticalLevyHierarchy
@@ -21,9 +30,9 @@ inductive IsDeltaZero : ∀ {n : ℕ}, L.BoundedFormula α n → Prop
   | rel {n : ℕ} {l : ℕ} (R : L.Relations l) (ts : Fin l → L.Term (α ⊕ Fin n)) :
     (rel R ts).IsDeltaZero
   | imp {n : ℕ} {φ₁ φ₂ : L.BoundedFormula α n} (hφ₁ : φ₁.IsDeltaZero) (hφ₂ : φ₂.IsDeltaZero):
-    (imp φ₁ φ₂).IsDeltaZero
+    (φ₁ ⟹ φ₂).IsDeltaZero
   | bddAll {n : ℕ} {φ : L.BoundedFormula α (n + 1)} (t : L.Term (α ⊕ Fin n)) (hφ : φ.IsDeltaZero) :
-    (∀' (&-1 ∈' t.castSucc ⟹ φ)).IsDeltaZero
+    (∀'∈t φ).IsDeltaZero
 
 mutual
   inductive IsPi : ∀ {n : ℕ}, L.BoundedFormula α n → ℕ → Prop
@@ -37,7 +46,7 @@ mutual
       (φ.ex' m).IsSigma (k + 1)
 end
 
-variable {k n : ℕ} {φ ψ : L.BoundedFormula α n}
+variable {k n m n' p l : ℕ} {φ ψ : L.BoundedFormula α n}
 
 theorem IsDeltaZero.not (h : φ.IsDeltaZero) : (∼φ).IsDeltaZero := h.imp IsDeltaZero.falsum
 
@@ -99,11 +108,12 @@ theorem IsDeltaZero.cast (h : φ.IsDeltaZero) (h' : n = n') : (φ.cast h').IsDel
     exact fun h' ↦ IsDeltaZero.imp (ih₁ h') (ih₂ h')
   | bddAll t hψ ih =>
     intro n' h'
-    simp only [BoundedFormula.cast, castLE, Function.comp_apply, Term.castSucc, Nat.succ_eq_add_one,
-      castLE_mem_boundedFormula, Term.castLE_var_inr, Term.castLE_castLE]
+    simp only [cast, allMem, Function.comp_apply, Term.castSucc, Nat.succ_eq_add_one, castLE_all,
+      castLE, castLE_mem_boundedFormula, Term.castLE_var_inr, Term.castLE_castLE]
     convert IsDeltaZero.bddAll (t.cast h') (ih (by rw [h']))
-    · grind
-    · simp
+    simp only [allMem, Function.comp_apply, Term.castSucc, Nat.succ_eq_add_one, Term.cast,
+      Term.castLE_castLE, cast, all.injEq, imp.injEq, and_true]
+    grind
 
 mutual
 theorem IsPi.cast {k n n' : ℕ} {φ : L.BoundedFormula α n} (h : φ.IsPi k) (h' : n = n') :
@@ -129,7 +139,7 @@ theorem IsSigma.cast {k n n' : ℕ} {φ : L.BoundedFormula α n} (h : φ.IsSigma
     exact hψ₁.cast (h' ▸ rfl) |>.ex'
 end
 
-theorem IsDeltaZero.liftAt {n n' p : ℕ} {φ : L.BoundedFormula α n} (h : φ.IsDeltaZero)
+theorem IsDeltaZero.liftAt {φ : L.BoundedFormula α n} (h : φ.IsDeltaZero)
     (hpn : p ≤ n) : (φ.liftAt n' p).IsDeltaZero := by
   revert n'
   induction h with
@@ -141,17 +151,14 @@ theorem IsDeltaZero.liftAt {n n' p : ℕ} {φ : L.BoundedFormula α n} (h : φ.I
     exact IsDeltaZero.imp (ih₁ hpn) (ih₂ hpn)
   | @bddAll n ψ t hψ ih =>
     intro n'
-    simp only [Function.comp_apply, Term.castSucc, Nat.succ_eq_add_one, liftAt_all,
+    simp only [allMem, Function.comp_apply, Term.castSucc, Nat.succ_eq_add_one, liftAt_all,
       BoundedFormula.cast, liftAt_imp, liftAt_mem_boundedFormula, Term.liftAt_var_inr, Fin.val_last,
-      Fin.addNat_last, castLE_imp, castLE_mem_boundedFormula, Term.castLE_var_inr]
+      Fin.addNat_last, castLE.eq_4, castLE_mem_boundedFormula, Term.castLE_var_inr]
     convert IsDeltaZero.bddAll (t.liftAt n' p) ((ih (n' := n') (by omega)).cast (by omega))
-    · grind [Term.var.injEq, Sum.inr.injEq]
-    · simp only [Term.castLE, Term.liftAt, Term.relabel_relabel, Sum.map_comp_map,
-        Term.castSucc]
-      congr 1
-      simp only [Sum.map]
-      congr 2
-      grind
+    simp only [Term.castLE, Term.liftAt, Fin.castLE_succ_castSucc, Term.relabel_relabel,
+      Sum.map_comp_map, Function.comp_id, allMem, Function.comp_apply, Term.castSucc,
+      Nat.succ_eq_add_one, BoundedFormula.cast, all.injEq, imp.injEq, and_true]
+    congr 3 <;> grind
 
 mutual
 theorem IsPi.liftAt {k n n' p : ℕ} {φ : L.BoundedFormula α n} (h : φ.IsPi k) (hpn : p ≤ n) :
@@ -213,7 +220,6 @@ theorem IsSigma.isSigma_succ {k n : ℕ} {φ : L.BoundedFormula α n} (h : φ.Is
     convert hψ.isPi_succ.ex'
 end
 
-variable {m : ℕ}
 variable {φ : L.BoundedFormula α n}
 
 theorem IsPi.Pi_of_le (h : φ.IsPi k) (hkm : k ≤ m) : φ.IsPi m := by
@@ -248,7 +254,7 @@ instance : (⊥ : L.BoundedFormula α n).DeltaZero := ⟨IsDeltaZero.falsum⟩
 
 instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁ =' t₂).DeltaZero := ⟨IsDeltaZero.equal _ _⟩
 
-instance {n : ℕ} {l : ℕ} (R : L.Relations l)
+instance (R : L.Relations l)
   (ts : Fin l → L.Term (α ⊕ Fin n)) :
   (rel R ts).DeltaZero := ⟨IsDeltaZero.rel _ _⟩
 
@@ -258,12 +264,9 @@ instance (t₁ t₂ : L.Term (α ⊕ Fin n)) :
 instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⟹ ψ).DeltaZero :=
   ⟨hφ.isDeltaZero.imp hψ.isDeltaZero⟩
 
-instance {n : ℕ} {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
-  (t : L.Term (α ⊕ Fin n)) : (∀' (&-1 ∈' t.castSucc ⟹ φ)).DeltaZero := ⟨hφ.isDeltaZero.bddAll t⟩
-
-instance {n : ℕ} {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
-  (t : L.Term (α ⊕ Fin n)) : (∀'∈ t φ).DeltaZero := by
-  infer_instance
+instance {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
+  (t : L.Term (α ⊕ Fin n)) : (∀'∈ t φ).DeltaZero :=
+  ⟨hφ.isDeltaZero.bddAll t⟩
 
 instance [hφ : φ.DeltaZero] : (∼φ).DeltaZero := ⟨hφ.isDeltaZero.not⟩
 
@@ -276,9 +279,8 @@ instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⊓ ψ).DeltaZero :=
 instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⇔ ψ).DeltaZero :=
   ⟨(hφ.isDeltaZero.imp hψ.isDeltaZero).inf (hψ.isDeltaZero.imp hφ.isDeltaZero)⟩
 
-instance {n : ℕ} {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
-  (t : L.Term (α ⊕ Fin n)) : (∃'∈ t φ).DeltaZero := by
-  infer_instance
+instance {φ : L.BoundedFormula α (n + 1)} [hφ : φ.DeltaZero]
+  (t : L.Term (α ⊕ Fin n)) : (∃'∈ t φ).DeltaZero := ⟨(hφ.isDeltaZero.not.bddAll t).not⟩
 
 class Pi (k : ℕ) (φ : L.BoundedFormula α n) : Prop where
   isPi : φ.IsPi k
@@ -310,20 +312,29 @@ instance {φ : L.BoundedFormula α (n + 1)} [hφ : φ.Sigma k] :
 
 instance [h : φ.DeltaZero] (h' : n = n') : (φ.cast h').DeltaZero := ⟨h.isDeltaZero.cast h'⟩
 
-instance {k n n' : ℕ} {φ : L.BoundedFormula α n} [h : φ.Pi k] (h' : n = n') :
+instance {φ : L.BoundedFormula α n} [h : φ.Pi k] (h' : n = n') :
     (φ.cast h').Pi k := ⟨h.isPi.cast h'⟩
 
-instance {k n n' : ℕ} {φ : L.BoundedFormula α n} [h : φ.Sigma k] (h' : n = n') :
+instance {φ : L.BoundedFormula α n} [h : φ.Sigma k] (h' : n = n') :
     (φ.cast h').Sigma k := ⟨h.isSigma.cast h'⟩
 
-instance {n n' p : ℕ} {φ : L.BoundedFormula α n} [h : φ.DeltaZero]
-    (hpn : p ≤ n) : (φ.liftAt n' p).DeltaZero := ⟨h.isDeltaZero.liftAt hpn⟩
+instance {φ : L.BoundedFormula α n} [h : φ.DeltaZero] :
+    (φ.liftAt n' n).DeltaZero := ⟨h.isDeltaZero.liftAt (le_refl _)⟩
 
-instance {k n n' p : ℕ} {φ : L.BoundedFormula α n} [h : φ.Pi k]
-    (hpn : p ≤ n) : (φ.liftAt n' p).Pi k := ⟨h.isPi.liftAt hpn⟩
+instance {φ : L.BoundedFormula α (n + 1)} [h : φ.DeltaZero] :
+    (φ.liftAt n' n).DeltaZero := ⟨h.isDeltaZero.liftAt (Nat.le_succ _)⟩
 
-instance {k n n' p : ℕ} {φ : L.BoundedFormula α n} [h : φ.Sigma k]
-    (hpn : p ≤ n) : (φ.liftAt n' p).Sigma k := ⟨h.isSigma.liftAt hpn⟩
+instance {φ : L.BoundedFormula α n} [h : φ.Pi k] :
+    (φ.liftAt n' n).Pi k := ⟨h.isPi.liftAt (le_refl _)⟩
+
+instance {φ : L.BoundedFormula α (n + 1)} [h : φ.Pi k] :
+    (φ.liftAt n' n).Pi k := ⟨h.isPi.liftAt (Nat.le_succ _)⟩
+
+instance {φ : L.BoundedFormula α n} [h : φ.Sigma k] :
+    (φ.liftAt n' n).Sigma k := ⟨h.isSigma.liftAt (le_refl _)⟩
+
+instance {φ : L.BoundedFormula α (n + 1)} [h : φ.Sigma k] :
+    (φ.liftAt n' n).Sigma k := ⟨h.isSigma.liftAt (Nat.le_succ _)⟩
 
 instance {φ : L.BoundedFormula α (n + m)} [h : φ.Pi (k + 1)] :
     (φ.all' m).Pi (k + 1) := ⟨h.isPi.all'⟩
@@ -337,10 +348,10 @@ instance {φ : L.BoundedFormula α (n + m)} [h : φ.Sigma (k + 1)] :
 instance {φ : L.BoundedFormula α (n + 1)} [h : φ.Sigma (k + 1)] :
     φ.ex.Sigma (k + 1) := ⟨h.isSigma.ex⟩
 
-instance {k n : ℕ} {φ : L.BoundedFormula α n} [h : φ.Pi k] :
+instance {φ : L.BoundedFormula α n} [h : φ.Pi k] :
     φ.Pi (k + 1) := ⟨h.isPi.isPi_succ⟩
 
-instance {k n : ℕ} {φ : L.BoundedFormula α n} [h : φ.Sigma k] :
+instance {φ : L.BoundedFormula α n} [h : φ.Sigma k] :
     φ.Sigma (k + 1) := ⟨h.isSigma.isSigma_succ⟩
 
 end SyntacticalLevyHierarchy
@@ -351,15 +362,15 @@ section LogicalLevyHierarchy
 variable {k n : ℕ} {φ ψ : L.BoundedFormula α n}
 
 /-- `φ` is `T`-logically `Π n` means that `φ` is `T`-equivalent to a `Π n` formula -/
-def IsLogicalPi (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop :=
+def IsLogicalPi (k : ℕ) (φ : L.BoundedFormula α n) (T : L.Theory) : Prop :=
   ∃ ψ : L.BoundedFormula α n, (ψ.IsPi k ∧ T ⊨ᵇ φ ⇔ ψ)
 
 /-- `φ` is `T`-logically `Σ n` means that `φ` is `T`-equivalent to a `Σ n` formula -/
-def IsLogicalSigma (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop :=
+def IsLogicalSigma (k : ℕ) (φ : L.BoundedFormula α n) (T : L.Theory) : Prop :=
   ∃ ψ : L.BoundedFormula α n, (ψ.IsSigma k ∧ T ⊨ᵇ φ ⇔ ψ)
 
 /-- `φ` is `T`-logically `Δ n` means that `φ` is `T`-logically `Π n` and `T`-logically `Σ n` -/
-def IsLogicalDelta (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop :=
+def IsLogicalDelta (k : ℕ) (φ : L.BoundedFormula α n) (T : L.Theory) : Prop :=
   φ.IsLogicalPi k T ∧ φ.IsLogicalSigma k T
 
 variable {T : L.Theory}
@@ -390,7 +401,7 @@ theorem IsLogicalDelta.isLogicalSigma (h : φ.IsLogicalDelta k T) : φ.IsLogical
 
 /- logical quantifiers -/
 
-variable {φ : L.BoundedFormula α (n + m)}
+variable {m : ℕ} {φ : L.BoundedFormula α (n + m)}
 
 theorem IsLogicalPi.all' (h : φ.IsLogicalPi (k + 1) T) : (φ.all' m).IsLogicalPi (k + 1) T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
@@ -553,7 +564,7 @@ theorem IsLogicalSigma.imp {k n : ℕ} {φ ψ : L.BoundedFormula α n}
     simp [θ]
 end
 
-theorem IsLogicalDelta.imp {k n : ℕ} {φ ψ : L.BoundedFormula α n}
+theorem IsLogicalDelta.imp {φ ψ : L.BoundedFormula α n}
     (hφ : φ.IsLogicalDelta k T) (hψ : ψ.IsLogicalDelta k T) : (φ ⟹ ψ).IsLogicalDelta k T :=
   ⟨hφ.right.imp hψ.left, hφ.left.imp hψ.right⟩
 
@@ -629,13 +640,13 @@ theorem IsLogicalDelta.mono (h : φ.IsLogicalDelta k T) (h' : T ⊆ T') : φ.IsL
   obtain ⟨hψ₁, hψ₂⟩ := h
   exact ⟨hψ₁.mono h', hψ₂.mono h'⟩
 
-class LogicalPi (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop where
+class LogicalPi (k : ℕ) (φ : L.BoundedFormula α n) (T : L.Theory) : Prop where
   isLogicalPi : φ.IsLogicalPi k T
 
-class LogicalSigma (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop where
+class LogicalSigma (k : ℕ) (φ : L.BoundedFormula α n) (T : L.Theory) : Prop where
   isLogicalSigma : φ.IsLogicalSigma k T
 
-class LogicalDelta (k : ℕ) {n : ℕ} (φ : L.BoundedFormula α n) (T : L.Theory) : Prop extends
+class LogicalDelta (k : ℕ) (φ : L.BoundedFormula α n) (T : L.Theory) : Prop extends
   φ.LogicalPi k T, φ.LogicalSigma k T
 
 -- instance [φ.LogicalDelta k T] : φ.LogicalPi k T := by infer_instance
@@ -661,8 +672,8 @@ variable {φ : L.BoundedFormula α (n + m)}
 
 instance [h : φ.LogicalPi (k + 1) T] : (φ.all' m).LogicalPi (k + 1) T := ⟨h.isLogicalPi.all'⟩
 
-instance [h : φ.LogicalPi k T] (hk : k ≠ 0) :
-  (φ.all' m).LogicalPi k T := ⟨h.isLogicalPi.all'₀ hk⟩
+instance [h : φ.LogicalPi k T] [hk : NeZero k] :
+  (φ.all' m).LogicalPi k T := ⟨h.isLogicalPi.all'₀ hk.out⟩
 
 instance [h : φ.LogicalPi k T] :
   (φ.ex' m).LogicalSigma (k + 1) T := ⟨h.isLogicalPi.ex'⟩
@@ -670,8 +681,8 @@ instance [h : φ.LogicalPi k T] :
 instance [h : φ.LogicalSigma (k + 1) T] :
   (φ.ex' m).LogicalSigma (k + 1) T := ⟨h.isLogicalSigma.ex'⟩
 
-instance [h : φ.LogicalSigma k T] (hk : k ≠ 0) :
-  (φ.ex' m).LogicalSigma k T := ⟨h.isLogicalSigma.ex'₀ hk⟩
+instance [h : φ.LogicalSigma k T] [hk : NeZero k] :
+  (φ.ex' m).LogicalSigma k T := ⟨h.isLogicalSigma.ex'₀ hk.out⟩
 
 instance [h : φ.LogicalSigma k T] :
   (φ.all' m).LogicalPi (k + 1) T := ⟨h.isLogicalSigma.all'⟩

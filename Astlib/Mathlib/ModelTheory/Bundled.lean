@@ -1,4 +1,13 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Mathlib.ModelTheory.Bundled
+
+/-!
+file docstring
+-/
 
 open FirstOrder Language BoundedFormula Theory
 

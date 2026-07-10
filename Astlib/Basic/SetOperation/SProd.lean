@@ -1,5 +1,13 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.SDiff
 import Astlib.Basic.SetOperation.Powerset
+/-!
+file docstring
+-/
 
 namespace FirstOrder.Language.MemStructure
 
@@ -13,10 +21,10 @@ noncomputable instance : SProd M M M :=
 
 variable (M) in
 /- `M` is closed under the Cartesian product `×ˢ` -/
-class ClosedUnderSProd where
+class ClosedUnderSProd : Prop where
   protected closedUnderSProd (x y z : M) : z ∈ x ×ˢ y ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v)
 
-noncomputable instance instClosedUnderSProd
+theorem instClosedUnderSProd
     (h : ∀ x y : M, ∃ a : M, ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v)) :
     M.ClosedUnderSProd :=
     ⟨fun x y ↦ by convert Classical.choose_spec (h x y); simp [SProd.sprod, h]⟩
@@ -25,13 +33,13 @@ theorem exists_sprod [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
     [M.ClosedUnderDeltaZeroComprehension]
     [M.HasPowerset (x ∪ y)] [M.HasPowerset (𝒫 (x ∪ y))] :
     ∃ a : M, ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) := by
-  use {∈ 𝒫 (𝒫 (x ∪ y)) | ∃'∈ &0 ∃'∈ &1 (&3).eqOrderedPair &4 &5 〘![x, y]〙}
+  use (∃'∈ &0 ∃'∈ &1 (&2).eqOrderedPair &3 &4) 〘![x, y], ∈ 𝒫 (𝒫 (x ∪ y))〙
   suffices ∀ (z x_1 : ↑M), x_1 ∈ x → ∀ x_2 ∈ y, z = !(x_1, x_2) → z ⊆ 𝒫 (x ∪ y) by
     simpa
   intro z u hu v hv hz
   rw [hz, orderedPair]
   intro p
-  simp only [mem_unorderedPair_iff, mem_powerset_iff]
+  simp [mem_unorderedPair_iff, mem_powerset_iff]
   grind
 
 noncomputable instance [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]

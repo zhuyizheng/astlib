@@ -1,4 +1,12 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Pair
+/-!
+file docstring
+-/
 
 open FirstOrder.Language.BoundedFormula
 
@@ -13,7 +21,8 @@ noncomputable instance : Singleton M M where
 @[simp, grind =, push]
 theorem mem_singleton_iff [M.ClosedUnderPair] : y ∈ ({x} : M) ↔ y = x := by
   convert mem_unorderedPair_iff x x y using 1
-  tauto
+  · rfl
+  · tauto
 
 theorem notMem_singleton_iff [M.ClosedUnderPair] : y ∉ ({x} : M) ↔ y ≠ x := by simp
 
@@ -36,7 +45,8 @@ theorem singleton_subset_singleton [M.ClosedUnderPair] : ({x} : M) ⊆ {y} ↔ x
   grind [mem_singleton]
 
 @[simp, grind =, push]
-theorem sUnion_singleton [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] : ⋃₀ {x} = x := by
+theorem sUnion_singleton [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+    ⋃₀ {x} = x := by
   ext; grind
 
 end FirstOrder.Language.MemStructure

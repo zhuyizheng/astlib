@@ -1,7 +1,15 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Mathlib.ModelTheory.Bundled
 import Mathlib.ModelTheory.Satisfiability
 import Astlib.Mathlib.ModelTheory.Syntax
 import Astlib.Mathlib.ModelTheory.Semantics
+/-!
+file docstring
+-/
 
 open FirstOrder Language Theory
 
@@ -84,7 +92,7 @@ def ModelsTheory.{u, v, w} (T U : L.Theory) : Prop :=
   ∀ (M : ModelType.{u, v, max u v w} T), ∀ φ ∈ U, M ⊨ φ
 
 @[inherit_doc FirstOrder.Language.Theory.ModelsTheory]
-infixl:51 " ⊨ᵇ " => ModelsTheory -- input using \|= or \vDash, but not using \models
+infixl:51 " ⊨ᵇ " => ModelsTheory -- input using \|= or Dash, but not using \models
 
 -- theorem models_theory_iff (T U : L.Theory) :
 --     T ⊨ᵇ U ↔ ∀ (M : ModelType T) (v : α → M), φ.Realize v :=

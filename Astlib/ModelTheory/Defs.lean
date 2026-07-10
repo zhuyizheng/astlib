@@ -1,12 +1,20 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 -- import Init.Core
 
 import Astlib.ModelTheory.Syntax
 import Astlib.Mathlib.ModelTheory.Semantics
 import Astlib.Mathlib.Fin.Basic
+/-!
+file docstring
+-/
 
 open FirstOrder Language BoundedFormula Fin
 
-variable (L : FirstOrder.Language) [HasMem L]
+variable (L : FirstOrder.Language) [L.HasMem]
 
 namespace FirstOrder.Language
 
@@ -19,7 +27,7 @@ structure MemStructure where
 
 -- Porting note: In Lean4, other instances precedes `FirstOrder.Language.Theory.ModelType.struc`,
 -- it's issues in `ModelTheory.Satisfiability`. So, we increase these priorities. TODO
-attribute [instance 2000] MemStructure.L MemStructure.hasMem MemStructure.struc
+attribute [instance 2000] MemStructure.hasMem MemStructure.struc
   MemStructure.nonempty'
 
 namespace MemStructure
@@ -31,10 +39,10 @@ instance : CoeSort MemStructure (Type _) where
 
 /-- The object in the category of R-algebras associated to a type equipped with the appropriate
 typeclasses. TODO -/
-def of (M : Type w) [L.Structure M] [L.HasMem] [Nonempty M] : MemStructure :=
+def of (M : Type w) [L.Structure M] [Nonempty M] : MemStructure :=
   ⟨M, L⟩
 
-variable (M : MemStructure)
+variable (M : MemStructure) (α : Type*) (n : ℕ)
 
 instance : Nonempty M := inferInstance
 
@@ -49,8 +57,8 @@ instance : Membership M M := ⟨M.Mem⟩
 
 @[simp]
 theorem realize_mem {M : MemStructure} (t₁ t₂ : M.L.Term (α ⊕ Fin n)) {v : α → M} {xs : Fin n → M} :
-    (t₁ ∈' t₂).Realize v xs ↔ t₁.realize' v xs ∈ t₂.realize' v xs := by
-  simp [mem_boundedFormula, Membership.mem, MemStructure.Mem]
+    (t₁ ∈' t₂)〘v, xs〙 ↔ t₁〘v, xs〙 ∈ t₂〘v, xs〙 := by
+  simp [mem_boundedFormula, Membership.mem, MemStructure.Mem, Term.realize']
 
 end MemStructure
 
@@ -60,20 +68,21 @@ end FirstOrder.Language
 
 
 section ExUnique
-variable {L : Language} [L.Structure M]
+
+variable {M : MemStructure} {L : Language} [L.Structure M]
 
 -- {T : L.Theory} {M : T.ModelType}
 
-variable {φ : L.BoundedFormula α n}
+variable {α : Type*} {n : ℕ} {φ : L.BoundedFormula α n}
 
 theorem exists_of_ex {φ : L.BoundedFormula α (n + 1)} {v : α → M}
-    {xs : Fin n → M} (h : (∃' φ).Realize v xs) :
-    ∃ a : M, φ.Realize v (snoc xs a) := by
+    {xs : Fin n → M} (h : (∃' φ)〘v, xs〙) :
+    ∃ a, φ〘v, snoc xs a〙 := by
   simpa using h
 
 theorem existsUnique_of_exUnique {φ : L.BoundedFormula α (n + 1)} {v : α → M}
-    {xs : Fin n → M} (h : (∃!' φ).Realize v xs) :
-    ∃! a : M, φ.Realize v (snoc xs a) := by
+    {xs : Fin n → M} (h : (∃!' φ)〘v, xs〙) :
+    ∃! a, φ〘v, snoc xs a〙 := by
   simp only [BoundedFormula.exUnique, Function.comp_apply, realize_ex, Nat.succ_eq_add_one,
     realize_inf, realize_all, realize_imp, realize_bdEqual, Term.realize_var, Sum.elim_inr,
     snoc_last] at h
@@ -88,9 +97,9 @@ theorem existsUnique_of_exUnique {φ : L.BoundedFormula α (n + 1)} {v : α → 
   · grind [snoc, Fin.val_last_plus_one_minus_one]
 
 
-theorem existsUnique_of_exUnique_sentence {φ : L.BoundedFormula Empty 1}
-    (h : (∃!' φ).Realize default (default : _ → M)) :
-    ∃! a : M, φ.Realize default ![a] := by
+theorem existsUnique_of_exUnique_sentence {φ : L.BoundedFormula Empty 1} {v : Empty → M}
+    {xs : Fin 0 → M} (h : (∃!' φ)〘v, xs〙) :
+    ∃! a : M, φ〘v, ![a]〙 := by
   convert existsUnique_of_exUnique h
   ext i
   simp [snoc]

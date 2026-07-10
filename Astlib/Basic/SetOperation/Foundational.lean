@@ -1,10 +1,18 @@
+/-
+Copyright (c) 2026 Yizheng Zhu. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yizheng Zhu
+-/
 import Astlib.Basic.SetOperation.Insert
+/-!
+file docstring
+-/
 
 namespace FirstOrder.Language.MemStructure
 
 variable {M : MemStructure} (x y : M)
 
-abbrev IsMemMin (a x : M) := a ∈ x ∧ ∀ y ∈ a, y ∉ x
+def IsMemMin (a x : M) := a ∈ x ∧ ∀ y ∈ a, y ∉ x
 
 noncomputable instance : Decidable (∃ a, IsMemMin a x) :=
   Classical.propDecidable _
@@ -23,13 +31,13 @@ theorem isMemMin_memMin [Foundational M] {x : M} (hx : x ≠ ∅) : IsMemMin (me
 
 @[simp, grind .]
 theorem memMin_mem [Foundational M] {x : M} (hx : x ≠ ∅) : memMin x ∈ x := by
-  grind [isMemMin_memMin]
+  grind [isMemMin_memMin, IsMemMin]
 
 @[simp, grind .]
 theorem notMem_memMin [M.HasEmpty] [Foundational M] {x y : M} (hy : y ∈ x) :
     y ∉ memMin x := by
   have : x ≠ ∅ := by grind
-  grind [isMemMin_memMin]
+  grind [isMemMin_memMin, IsMemMin]
 
 @[simp]
 theorem notMem_of_mem_memMin [M.HasEmpty] [Foundational M] {x y : M} (hy : y ∈ memMin x) :
@@ -45,6 +53,6 @@ theorem notMem_self [M.HasEmpty] [M.ClosedUnderPair] [Foundational M] : x ∉ x 
 theorem succ_neq [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] [M.ClosedUnderSUnion]
     [Foundational M] :
     succ x ≠ x := by
-  grind
+  grind [succ]
 
 end FirstOrder.Language.MemStructure
