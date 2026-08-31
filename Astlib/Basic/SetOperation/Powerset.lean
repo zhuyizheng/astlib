@@ -12,7 +12,7 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} (x y : M)
+variable {M : MemStructure} [M.RudClosed] (x y : M)
 
 def IsPowerset (a x : M) := ∀ z, z ∈ a ↔ z ⊆ x
 
@@ -39,10 +39,10 @@ theorem mem_powerset_iff {x : M} [hx : HasPowerset x] (z : M) : z ∈ 𝒫 x ↔
   simp [HasPowerset.hasPowerset, powerset]
 
 @[grind! .]
-theorem mem_powerset_self [HasPowerset x] : x ∈ 𝒫 x := by simp
+theorem mem_powerset_self [HasPowerset x] : x ∈ 𝒫 x := by grind
 
 @[grind! .]
-theorem empty_mem_powerset [M.HasEmpty] [HasPowerset x] : ∅ ∈ 𝒫 x := by grind
+theorem empty_mem_powerset [HasPowerset x] : ∅ ∈ 𝒫 x := by grind
 
 theorem powerset_mono {x y : M} (h : x ⊆ y) [HasPowerset x] [HasPowerset y] : 𝒫 x ⊆ 𝒫 y := by grind
 

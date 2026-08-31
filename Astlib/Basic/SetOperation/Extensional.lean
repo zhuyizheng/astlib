@@ -3,7 +3,7 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
-import Astlib.ModelTheory.Defs
+import Astlib.Basic.SetOperation.MemStructure.Defs
 import Astlib.Basic.SetOperation.Subset
 /-!
 file docstring
@@ -11,12 +11,30 @@ file docstring
 
 namespace FirstOrder.Language.MemStructure
 
+open Fin
+
 variable {M : MemStructure}
 
 variable (M) in
 /- `M` is extensional -/
 class Extensional : Prop where
   protected extensional : ∀ x y : M, ((∀ z : M, (z ∈ x ↔ z ∈ y)) → x = y)
+
+-- theorem extensional_iff : M.Extensional ↔
+--     ∀ x y : M, ((∀ z : M, (z ∈ x ↔ z ∈ y)) → x = y) :=
+--   ⟨fun h ↦ h.extensional, fun h ↦ { extensional := h }⟩
+
+-- variable {L : Language} [L.HasMem]
+
+-- def extensionalityAxiom : L.BoundedFormula' 0 :=
+--   ∀' ∀' (∀' (&2 ∈' &0 ⇔ &2 ∈' &1) ⟹ &0 =' &1)
+
+-- theorem models_extensionalityAxiom_iff : M ⊨ extensionalityAxiom (L := M.L) ↔
+--     M.Extensional := by
+--   simp [extensionalityAxiom, snoc_nat, extensional_iff]
+
+-- instance [hM : M.Extensional] : M.toExtraConstantsOnly.Extensional where
+--   extensional := hM.extensional
 
 variable [M.Extensional] {x y : M}
 

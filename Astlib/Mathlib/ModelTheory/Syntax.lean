@@ -5,6 +5,7 @@ Authors: Yizheng Zhu
 -/
 import Mathlib.ModelTheory.Syntax
 import Mathlib.Tactic.FinCases
+import Astlib.Mathlib.Fin.Basic
 /-!
 file docstring
 -/
@@ -26,164 +27,301 @@ namespace FirstOrder
 
 namespace Language
 
+abbrev Term' (L : Language) (n) := L.Term (Empty ⊕ Fin n)
+
 namespace Term
 
+variable {L : Language} {n m k : ℕ} (ts : Fin n → L.Term (α ⊕ Fin m)) {i : Fin n} {x : α}
+  (f : Fin n → Fin m) (g : Fin m → Fin k) (u : L.Term (α ⊕ Fin n))
+
+/-- `u.substBound ts : L.Term (α ⊕ Fin m)` is obtained by replacing every occurrence of the
+bound variable `&i` by `ts i` -/
+def substBound {L : Language} {n m : ℕ} (u : L.Term (α ⊕ Fin n))
+    (ts : Fin n → L.Term (α ⊕ Fin m)) : L.Term (α ⊕ (Fin m)) :=
+  u.subst (Sum.elim (var ∘ Sum.inl) ts)
+
+@[simp]
+theorem substBound_var_inl : (var (Sum.inl x)).substBound ts = var (Sum.inl x) := by
+  simp [substBound]
+
+@[simp]
+theorem substBound_var_comp_inr : (&i).substBound ts = ts i := by
+  simp [substBound]
+
+@[simp]
+theorem substBound_var_inr : (var (Sum.inr i)).substBound ts = ts i := by
+  simp [substBound]
+
+@[simp]
+theorem substBound_var_func (f : L.Functions l) (us : Fin l → L.Term (α ⊕ Fin n)) :
+    (func f us).substBound ts = func f (fun i ↦ (us i).substBound ts) := by
+  simp [substBound]
+
+@[simp]
+theorem substBound_substBound (us : Fin m → L.Term (α ⊕ Fin k)) :
+    (u.substBound ts).substBound us = u.substBound (fun i ↦ (ts i).substBound us) := by
+  induction u with
+  | var i => cases i <;> simp
+  | func f vs ih => simp [ih]
+
+/-- `u.substBound ts : L.Term (α ⊕ Fin m)` is obtained by replacing every occurrence of the
+bound variable `&i` by `ts i` -/
+def substBoundBound {L : Language} {n m : ℕ} (u : L.Term (α ⊕ Fin n))
+    (f : Fin n → Fin m) : L.Term (α ⊕ (Fin m)) :=
+  u.substBound (fun i ↦ &(f i))
+
+@[simp]
+theorem substBoundBound_var_inl :
+    (var (Sum.inl x) : L.Term (α ⊕ Fin n)).substBoundBound f = var (Sum.inl x) := by
+  simp [substBoundBound]
+
+@[simp]
+theorem substBoundBound_var_comp_inr : (&i : L.Term (α ⊕ Fin n)).substBoundBound f = &(f i) := by
+  simp [substBoundBound, substBound]
+
+@[simp]
+theorem substBoundBound_var_inr :
+    (var (Sum.inr i) : L.Term (α ⊕ Fin n)).substBoundBound f = &(f i) := by
+  simp [substBoundBound, substBound]
+
+@[simp]
+theorem substBoundBound_var_func (F : L.Functions l) (us : Fin l → L.Term (α ⊕ Fin n)) :
+    (func F us).substBoundBound f = func F (fun i ↦ (us i).substBoundBound f) := by
+  simp [substBoundBound]
+
+@[simp]
+theorem substBoundBound_substBoundBound :
+    (u.substBoundBound f).substBoundBound g = u.substBoundBound (g ∘ f) := by
+  simp [substBoundBound]
+
+@[simp]
+theorem substBoundBound_id :
+    u.substBoundBound id = u := by
+  induction u with
+  | var i => cases i <;> simp [substBoundBound, substBound]
+  | func f us ih => simp [ih]
+
 /-- Cast a `L.Term (α ⊕ (Fin m))` to `L.Term (α ⊕ Fin n)` given a proof of `m ≤ n` -/
-def castLE (_h : m ≤ n) (t : L.Term (α ⊕ (Fin m))) :
-  L.Term (α ⊕ Fin n):= t.relabel (Sum.map id (Fin.castLE _h))
+@[simp]
+def castLE (h : m ≤ n) (t : L.Term (α ⊕ Fin m)) :
+  L.Term (α ⊕ Fin n) := t.substBoundBound (Fin.castLE h)
 
 /-- Cast a `L.Term (α ⊕ (Fin m))` to `L.Term (α ⊕ Fin n)` given a proof of `m = n` -/
 @[simp]
-def cast (_h : m = n) (t : L.Term (α ⊕ (Fin m))) := t.castLE _h.le
+def cast (h : m = n) (t : L.Term (α ⊕ Fin m)) : L.Term (α ⊕ Fin n) := t.castLE h.le
 
 /-- Cast a `L.Term (α ⊕ Fin n)` to `L.Term (α ⊕ (Fin (n + 1)))` -/
 @[simp]
-def castSucc (t : L.Term (α ⊕ Fin n)) := t.castLE (n.le_succ)
+def castAdd (t : L.Term (α ⊕ Fin n)) (m : ℕ) : L.Term (α ⊕ Fin (n + m)) :=
+  t.castLE (n.le_add_right m)
+
+/-- Cast a `L.Term (α ⊕ Fin n)` to `L.Term (α ⊕ (Fin (n + 1)))` -/
+@[simp]
+def castSucc (t : L.Term (α ⊕ Fin n)) := t.castAdd 1
 
 @[simp]
-theorem castLE_castLE (h : n ≤ n') (h' : n' ≤ n'') (t : L.Term (α ⊕ Fin n)) :
-    (t.castLE h).castLE h' = t.castLE (h.trans h') := by
-  simp [castLE]
+theorem substBound_castSucc_snoc_castSucc
+    (u : L.Term (α ⊕ Fin n)) (ts : Fin n → L.Term (α ⊕ Fin m)) (t : L.Term (α ⊕ Fin (m + 1))) :
+    (u.castSucc).substBound (snoc (fun i ↦ (ts i).castSucc) t) = (u.substBound ts).castSucc := by
+  simp only [castSucc, castAdd, castLE, substBoundBound, castLE_succ_castSucc, Function.comp_apply,
+    substBound_substBound, substBound_var_inr, snoc_castSucc]
 
-@[simp 1100]
-theorem castLE_var_inl (h : n ≤ n') (x : α) :
-    (var (Sum.inl x) : L.Term (α ⊕ Fin n)).castLE h = var (Sum.inl x) := by
-  simp [castLE]
+-- @[simp]
+-- theorem castLE_castLE (h : n ≤ n') (h' : n' ≤ n'') (t : L.Term (α ⊕ Fin n)) :
+--     (t.castLE h).castLE h' = t.castLE (h.trans h') := by
+--   simp [castLE]
 
-@[simp 1100]
-theorem castLE_var_inr (h : n ≤ n') (i : Fin n) :
-    (var (Sum.inr i) : L.Term (α ⊕ Fin n)).castLE h = var (Sum.inr (Fin.castLE h i)) := by
-  simp [castLE]
-
-@[simp 1100]
-theorem castLE_func (h : n ≤ n') (l : ℕ) (f : L.Functions l)
-    (ts : Fin l → L.Term (α ⊕ Fin n)) :
-    (func f ts).castLE h = func f (fun i ↦ (ts i).castLE h) := by
-  simp [castLE]
-
-@[simp 1100]
-theorem liftAt_var_inl (x : α) :
-    (Term.var (Sum.inl x) : L.Term (α ⊕ Fin n)).liftAt n' m = Term.var (Sum.inl x) := by
-  simp [liftAt]
-
-@[simp 1100]
-theorem liftAt_var_inr (i : Fin n) :
-    (Term.var (Sum.inr i) : L.Term (α ⊕ Fin n)).liftAt n' m =
-      Term.var (Sum.inr (if i < m then castAdd n' i else addNat i n')) := by
-  simp [liftAt]
-
-@[simp 1100]
-theorem liftAt_func (l : ℕ) (f : L.Functions l)
-    (ts : Fin l → L.Term (α ⊕ Fin n)) :
-    (Term.func f ts).liftAt n' m = Term.func f (fun i ↦ (ts i).liftAt n' m) := by
-  simp [liftAt]
-
--- theorem liftAt_castLE_of_le (t : L.Term (α ⊕ Fin m)) (hmn : m ≤ n) (hmm' : m ≤ m') :
---     (t.castLE hmn).liftAt n' m' = (t.liftAt (n' + (n - m)) m').cast (by omega) := by
---   simp only [liftAt, castLE, relabel_relabel, Sum.map_comp_map, Function.comp_id, cast]
---   congr 1
---   simp only [Sum.map, Function.comp_id]
---   congr 2
---   grind
 
 end Term
 
+abbrev BoundedFormula' (n) := L.BoundedFormula Empty n
+
+-- instance : Inhabited (L.BoundedFormula' n) :=
+--   ⟨(⊥ : L.BoundedFormula Empty n)⟩
+
+-- instance : Bot (L.BoundedFormula' n) :=
+--   ⟨(⊥ : L.BoundedFormula Empty n)⟩
+
+-- instance : Top (L.BoundedFormula' n) :=
+--   ⟨BoundedFormula.not ⊥⟩
+
+-- instance : Min (L.BoundedFormula' n) :=
+--   ⟨fun f g => (f.imp g.not).not⟩
+
+-- instance : Max (L.BoundedFormula' n) :=
+--   ⟨fun f g => f.not.imp g⟩
+
 namespace BoundedFormula
 
+/-- `φ.substBound ts : L.BoundedFormula α m` is obtained by replacing every occurrence of the
+bound variable `&i` by `ts i` if `i < n`, by `&(i + m - n)` otherwise -/
+def substBound
+    {L : Language} {n m : ℕ} (φ : L.BoundedFormula α n)
+    (ts : Fin n → L.Term (α ⊕ Fin m)) : L.BoundedFormula α m :=
+  match φ with
+  | falsum => falsum
+  | equal t₁ t₂ => equal (t₁.substBound ts) (t₂.substBound ts)
+  | rel R vs => rel R (fun k ↦ (vs k).substBound ts)
+  | imp φ₁ φ₂ => φ₁.substBound ts ⟹ φ₂.substBound ts
+  | all φ => ∀' (φ.substBound (snoc (fun i ↦ (ts i).castSucc) &(last m)))
+
+variable (ts : Fin n → L.Term (α ⊕ Fin m)) (f : Fin n → Fin m) (g : Fin m → Fin k)
+
 @[simp]
-def cast : ∀ {m n : ℕ} (_h : m = n), L.BoundedFormula α m → L.BoundedFormula α n :=
-  fun _h ↦ castLE _h.le
+theorem substBound_falsum :
+    (falsum : L.BoundedFormula α n).substBound ts = falsum := by simp [substBound]
 
-@[simp 1100]
-theorem castLE_falsum (h : n ≤ n') :
-    (falsum : L.BoundedFormula α n).castLE h = falsum := by simp
+@[simp]
+theorem substBound_bot :
+    (⊥ : L.BoundedFormula α n).substBound ts = ⊥ := by simp [Bot.bot]
 
-@[simp 1100]
-theorem castLE_equal (h : n ≤ n') (t₁ t₂ : L.Term (α ⊕ Fin n)) :
-    (equal t₁ t₂).castLE h = equal (t₁.castLE h) (t₂.castLE h) := by simp [Term.castLE]
+@[simp]
+theorem substBound_equal (t₁ t₂ : L.Term (α ⊕ Fin n)) :
+    (equal t₁ t₂).substBound ts = equal (t₁.substBound ts) (t₂.substBound ts) := by
+  simp [substBound]
 
-@[simp 1100]
-theorem castLE_rel (h : n ≤ n') (R : L.Relations l)
-    (ts : Fin l → L.Term (α ⊕ Fin n)) :
-    (rel R ts).castLE h = rel R (fun i ↦ (ts i).castLE h)  := by
-  simp only [castLE, Term.castLE, rel.injEq, heq_eq_eq, true_and]
-  ext i; simp
+@[simp]
+theorem substBound_equal' (t₁ t₂ : L.Term (α ⊕ Fin n)) :
+    (t₁ =' t₂).substBound ts = t₁.substBound ts =' t₂.substBound ts := by
+  simp [Term.bdEqual]
 
-@[simp 1100]
-theorem castLE_rel_boundedFormula₁ (h : n ≤ n') (R : L.Relations 1)
+@[simp]
+theorem substBound_rel (R : L.Relations l)
+    (us : Fin l → L.Term (α ⊕ Fin n)) :
+    (rel R us).substBound ts = rel R (fun i ↦ (us i).substBound ts)  := by
+  simp [substBound]
+
+@[simp]
+theorem substBound_rel_boundedFormula₁ (R : L.Relations 1)
     (t : L.Term (α ⊕ Fin n)) :
-    (R.boundedFormula₁ t).castLE h = R.boundedFormula₁ (t.castLE h) := by
-  simp only [Relations.boundedFormula₁, Relations.boundedFormula, BoundedFormula.castLE_rel,
-    Matrix.cons_val_fin_one, BoundedFormula.rel.injEq, heq_eq_eq, true_and]
-  ext; simp
+    (R.boundedFormula₁ t).substBound ts = R.boundedFormula₁ (t.substBound ts) := by
+  simp [Relations.boundedFormula₁, Relations.boundedFormula, Matrix.const_fin1_eq]
 
-@[simp 1100]
-theorem castLE_rel_boundedFormula₂ (h : n ≤ n') (R : L.Relations 2)
-    (t₁ t₂ : L.Term (α ⊕ Fin n)) :
-    (R.boundedFormula₂ t₁ t₂).castLE h = R.boundedFormula₂ (t₁.castLE h) (t₂.castLE h) := by
-  simp only [Relations.boundedFormula₂, Relations.boundedFormula, BoundedFormula.castLE_rel,
-    BoundedFormula.rel.injEq, heq_eq_eq, true_and]
-  ext i; fin_cases i <;> simp
+@[simp]
+theorem substBound_rel_boundedFormula₂ (R : L.Relations 2) (t₁ t₂ : L.Term (α ⊕ Fin n)) :
+    (R.boundedFormula₂ t₁ t₂).substBound ts =
+      R.boundedFormula₂ (t₁.substBound ts) (t₂.substBound ts) := by
+  simp only [Relations.boundedFormula₂, Relations.boundedFormula, substBound_rel, rel.injEq,
+    heq_eq_eq, true_and]
+  exact List.ofFn_inj.mp rfl
 
-@[simp 1100]
-theorem castLE_imp (h : n ≤ n') (φ ψ : L.BoundedFormula α n) :
-    (φ ⟹ ψ).castLE h = φ.castLE h ⟹ ψ.castLE h := by
-  simp
+@[simp]
+theorem substBound_imp (φ ψ : L.BoundedFormula α n) :
+    (φ ⟹ ψ).substBound ts = φ.substBound ts ⟹ ψ.substBound ts := by
+  simp [substBound]
 
-@[simp 1100]
-theorem castLE_all (h : n ≤ n') (φ : L.BoundedFormula α (n + 1)) :
-    (∀' φ).castLE h = ∀' (φ.castLE (add_le_add_left h 1)) := by simp
+@[simp]
+theorem substBound_all (ψ : L.BoundedFormula α (n + 1)) :
+    (∀' ψ).substBound ts = ∀' (ψ.substBound (snoc (fun i ↦ (ts i).castSucc) &(last m))) := by
+  simp [substBound]
 
-@[simp 1100]
-theorem liftAt_falsum :
-    (falsum : L.BoundedFormula α n).liftAt n' m = falsum := by
-  simp [liftAt, mapTermRel]
+@[simp]
+theorem substBound_ex (ψ : L.BoundedFormula α (n + 1)) :
+    (∃' ψ).substBound ts = ∃' (ψ.substBound (snoc (fun i ↦ (ts i).castSucc) &(last m))) := by
+  simp [substBound]
+  rfl
 
-@[simp 1100]
-theorem liftAt_equal (t₁ t₂ : L.Term (α ⊕ Fin n)) :
-    (equal t₁ t₂).liftAt n' m = equal (t₁.liftAt n' m) (t₂.liftAt n' m) := by
-  simp [liftAt, mapTermRel]
+@[simp]
+theorem substBound_substBound (φ : L.BoundedFormula α n) (ts : Fin n → L.Term (α ⊕ Fin m))
+    (us : Fin m → L.Term (α ⊕ Fin k)) :
+    (φ.substBound ts).substBound us = φ.substBound (fun i ↦ (ts i).substBound us) := by
+  induction φ generalizing m k with
+  | falsum => simp
+  | equal t₁ t₂ => simp
+  | rel R vs => simp
+  | imp φ₁ φ₂ ih₁ ih₂ => simp [ih₁, ih₂]
+  | all ψ ih =>
+    simp only [substBound_all, Function.comp_apply, ih, all.injEq]
+    congr
+    ext i
+    induction i using lastCases with
+    | last => simp
+    | cast i' =>
+      simp only [Term.castSucc, Term.castAdd, Term.castLE, Term.substBoundBound,
+        Function.comp_apply, snoc_castSucc, Term.substBound_substBound, Term.substBound_var_inr]
+      congr
+      ext j
+      have : Fin.castSucc j = Fin.castLE (by omega) j := rfl
+      rw [← this, snoc_castSucc]
 
-@[simp 1100]
-theorem liftAt_rel (R : L.Relations l) (ts : Fin l → L.Term (α ⊕ Fin n)) :
-    (rel R ts).liftAt n' m = rel R (fun i ↦ (ts i).liftAt n' m)  := by
-  simp [liftAt, mapTermRel]
+/-- `φ.substBoundBound f : L.BoundedFormula α m` is obtained by replacing every occurrence of the
+bound variable `&i` by `&(f i)` if `i < n`, by `&(i + m - n)` otherwise -/
+def substBoundBound
+    {L : Language} {n m : ℕ} (φ : L.BoundedFormula α n)
+    (f : Fin n → Fin m) : L.BoundedFormula α m :=
+  φ.substBound (fun i ↦ &(f i))
 
-@[simp 1100]
-theorem liftAt_rel_boundedFormula₁ (R : L.Relations 1)
+@[simp]
+theorem substBoundBound_falsum :
+    (falsum : L.BoundedFormula α n).substBoundBound f = falsum := by simp [substBoundBound]
+
+@[simp]
+theorem substBoundBound_bot :
+    (⊥ : L.BoundedFormula α n).substBoundBound f = ⊥ := by simp [Bot.bot]
+
+@[simp]
+theorem substBoundBound_equal (t₁ t₂ : L.Term (α ⊕ Fin n)) :
+    (equal t₁ t₂).substBoundBound f = equal (t₁.substBoundBound f) (t₂.substBoundBound f) := by
+  simp [substBoundBound, Term.substBoundBound]
+
+@[simp]
+theorem substBoundBound_rel (R : L.Relations l)
+    (us : Fin l → L.Term (α ⊕ Fin n)) :
+    (rel R us).substBoundBound f = rel R (fun i ↦ (us i).substBoundBound f)  := by
+  simp [substBoundBound, Term.substBoundBound]
+
+@[simp]
+theorem substBoundBound_rel_boundedFormula₁ (R : L.Relations 1)
     (t : L.Term (α ⊕ Fin n)) :
-    (R.boundedFormula₁ t).liftAt n' m = R.boundedFormula₁ (t.liftAt n' m) := by
-  simp only [Relations.boundedFormula₁, Relations.boundedFormula, liftAt_rel,
-    Matrix.cons_val_fin_one, rel.injEq, heq_eq_eq, true_and]
-  ext; simp
+    (R.boundedFormula₁ t).substBoundBound f = R.boundedFormula₁ (t.substBoundBound f) := by
+  simp [substBoundBound, Term.substBoundBound]
 
-@[simp 1100]
-theorem liftAt_rel_boundedFormula₂ (R : L.Relations 2)
-    (t₁ t₂ : L.Term (α ⊕ Fin n)) :
-    (R.boundedFormula₂ t₁ t₂).liftAt n' m =
-      R.boundedFormula₂ (t₁.liftAt n' m) (t₂.liftAt n' m) := by
-  simp only [Relations.boundedFormula₂, Relations.boundedFormula, liftAt_rel, rel.injEq, heq_eq_eq,
-    true_and]
-  ext i; fin_cases i <;> simp
+@[simp]
+theorem substBoundBound_rel_boundedFormula₂ (R : L.Relations 2) (t₁ t₂ : L.Term (α ⊕ Fin n)) :
+    (R.boundedFormula₂ t₁ t₂).substBoundBound f =
+      R.boundedFormula₂ (t₁.substBoundBound f) (t₂.substBoundBound f) := by
+  simp [substBoundBound, Term.substBoundBound]
 
-@[simp 1100]
-theorem liftAt_imp (φ ψ : L.BoundedFormula α n) :
-    (φ ⟹ ψ).liftAt n' m = φ.liftAt n' m ⟹ ψ.liftAt n' m := by
-  simp [liftAt, mapTermRel]
+@[simp]
+theorem substBoundBound_imp (φ ψ : L.BoundedFormula α n) :
+    (φ ⟹ ψ).substBoundBound f = φ.substBoundBound f ⟹ ψ.substBoundBound f := by
+  simp [substBoundBound]
 
-@[simp 1100]
-theorem liftAt_all (φ : L.BoundedFormula α (n + 1)) :
-    (∀' φ).liftAt n' m = ∀' (φ.liftAt n' m).cast (Nat.add_right_comm _ _ _) := by
-  simp [liftAt, mapTermRel]
+@[simp]
+theorem substBoundBound_all (ψ : L.BoundedFormula α (n + 1)) :
+    (∀' ψ).substBoundBound f =
+      ∀' (ψ.substBoundBound (snoc (fun i ↦ (f i).castSucc) (last m))) := by
+  simp only [substBoundBound, Function.comp_apply, substBound_all, Term.castSucc, Term.castAdd,
+    Term.castLE, Term.substBoundBound_var_inr, all.injEq]
+  congr
+  ext i
+  induction i using lastCases with
+  | last => simp
+  | cast i' => grind [snoc_castSucc, Sum.inr.injEq]
 
+@[simp]
+theorem substBoundBound_ex (ψ : L.BoundedFormula α (n + 1)) :
+    (∃' ψ).substBoundBound f =
+      ∃' (ψ.substBoundBound (snoc (fun i ↦ (f i).castSucc) (last m))) := by
+  simp [BoundedFormula.ex, BoundedFormula.not]
 
--- @[simp]
--- theorem castLE_rfl {n} (φ : L.BoundedFormula α n) : φ.cast rfl = φ := castLE_rfl _ _
+@[simp]
+theorem substBoundBound_substBoundBound (φ : L.BoundedFormula α n) :
+    (φ.substBoundBound f).substBoundBound g = φ.substBoundBound (g ∘ f) := by
+  simp [substBoundBound]
 
--- @[simp]
--- theorem castLE_all_castLE_eq_all {m n : ℕ} (h : m = n) (φ : L.BoundedFormula α (m + 1)) :
---     (φ.cast (h ▸ rfl)).all.cast h.symm = φ.all := by
---   simp [cast]
+@[simp]
+theorem substBoundBound_id {φ : L.BoundedFormula α n} : φ.substBoundBound id = φ := by
+  induction φ with
+  | falsum => simp
+  | equal t₁ t₂ => simp
+  | rel R ts => simp
+  | imp φ₁ φ₂ ih₁ ih₂ => simp [ih₁, ih₂]
+  | all ψ ih => simp [ih]
+
+@[simp]
+def cast {m n : ℕ} (h : m = n) (φ : L.BoundedFormula α m) : L.BoundedFormula α n :=
+  φ.substBoundBound (Fin.cast h)
 
 /-- Places `m` universal quantifiers in front of a bounded formula. -/
 def all' : ∀ m, L.BoundedFormula α (n + m) → L.BoundedFormula α n
@@ -199,48 +337,52 @@ theorem all'_one (φ : L.BoundedFormula α (n + 1)) : φ.all' 1 = ∀' φ := by 
 theorem all'_succ (φ : L.BoundedFormula α (n + m + 1)) : φ.all' (m + 1) = φ.all.all' m := by rfl
 
 @[simp]
-theorem castLE_all'_eq_all'_cast (h : n ≤ n') (φ : L.BoundedFormula α (n + m)) :
-    (φ.all' m).castLE h = (φ.castLE (add_le_add_left h m)).all' m  := by
+theorem substBound_all'_eq_all'_substBound (φ : L.BoundedFormula α (n + m))
+    (ts : Fin n → L.Term (α ⊕ Fin k)) :
+    (φ.all' m).substBound ts =
+      (φ.substBound (append (fun i ↦ (ts i).castAdd m) (fun i ↦ &(i.natAdd k)))).all' m  := by
   induction m with
-  | zero => simp
-  | succ m ih => rw [all'_succ, all'_succ, ih]; congr
-
-@[simp]
-theorem castLE_all_eq_all_cast (h : n ≤ n') (φ : L.BoundedFormula α (n + 1)) :
-    (φ.all).castLE h = (φ.castLE (add_le_add_left h 1)).all := φ.castLE_all'_eq_all'_cast h
+  | zero => simp [append_right_nil]
+  | succ m ih =>
+    rw [all'_succ, all'_succ, ih, substBound_all]
+    congr
+    ext i
+    cases i using lastCases with
+    | last => simp
+    | cast j =>
+      simp only [Term.castSucc, Term.castAdd, Term.castLE, Function.comp_apply, append_nat,
+        natAdd_mk, castLE_succ_castSucc, snoc_castSucc, val_castSucc]
+      split_ifs
+      · simp only [Term.substBoundBound_substBoundBound]
+        rfl
+      · simp
 
 -- @[simp]
--- theorem all'_all_castLE_eq_all' (φ : L.BoundedFormula α (n + (m + 1))) :
---     ((φ.castLE (n.add_assoc m 1).symm).all).all' m = φ.all' (m + 1) := by
+-- theorem cast_all'_eq_all'_cast (h : n = n') (φ : L.BoundedFormula α (n + m)) :
+--     (φ.all' m).cast h = (φ.cast (Nat.add_left_inj.mpr h)).all' m  := by
 --   induction m with
 --   | zero => simp
---   | succ m ih => rw [all', all', ← ih]; congr
+--   | succ m ih =>
+--     rw [all'_succ, all'_succ, ih]
+--     congr
+--     simp only [cast, substBoundBound_all]
+--     congr
+--     simp only [castSucc, Fin.cast, castAdd_mk]
+--     rw [snoc_val_last_eq_cast (by omega)]
+
+-- @[simp]
+-- theorem cast_all_eq_all_cast (h : n = n') (φ : L.BoundedFormula α (n + 1)) :
+--     (φ.all).cast h = (φ.cast (Nat.add_left_inj.mpr h)).all := φ.cast_all'_eq_all'_cast h
 
 theorem all'_all'_eq_all'_cast (φ : L.BoundedFormula α (n + m + k)) :
     (φ.all' k).all' m = (φ.cast (n.add_assoc m k)).all' (m + k) := by
   induction k with
   | zero => simp
-  | succ k ih => simp [all', ih]
-
-
--- @[simp]
--- theorem all'_castLE_eq_alls (φ : L.BoundedFormula α n) :
---     (φ.cast (Nat.zero_add n).symm).all' n = φ.alls := by
---   induction n with
---   | zero => simp [alls]
---   | succ n ih => rw [all', alls]; convert ih _; simp
-
-@[simp]
-theorem liftAt_all'_eq_all'_cast_liftAt (φ : L.BoundedFormula α (n + m)) :
-    (φ.all' m).liftAt n' k = ((φ.liftAt n' k).cast (add_right_comm _ _ _)).all' m := by
-  induction m with
-  | zero => simp
-  | succ m ih => simp [all'_succ, all'_succ, ih]
-
-@[simp]
-theorem liftAt_all_eq_all_cast_liftAt (φ : L.BoundedFormula α (n + 1)) :
-    φ.all.liftAt n' k = ((φ.liftAt n' k).cast (add_right_comm _ _ _)).all :=
-  φ.liftAt_all'_eq_all'_cast_liftAt
+  | succ k ih =>
+    simp only [all', add_eq, ih, cast, substBoundBound_all]
+    congr
+    simp only [castSucc, Fin.cast, castAdd_mk]
+    rw [snoc_val_last_eq_cast (by omega)]
 
 /-- Places `m` existential quantifiers in front of a bounded formula. -/
 def ex' : ∀ m, L.BoundedFormula α (n + m) → L.BoundedFormula α n
@@ -256,82 +398,88 @@ theorem ex'_one (φ : L.BoundedFormula α (n + 1)) : φ.ex' 1 = ∃' φ := by rf
 theorem ex'_succ (φ : L.BoundedFormula α (n + m + 1)) : φ.ex' (m + 1) = φ.ex.ex' m := by rfl
 
 @[simp]
-theorem castLE_ex'_eq_ex'_cast (h : n ≤ n') (φ : L.BoundedFormula α (n + m)) :
-    (φ.ex' m).castLE h = (φ.castLE (add_le_add_left h m)).ex' m  := by
+theorem substBound_ex'_eq_ex'_substBound (φ : L.BoundedFormula α (n + m))
+    (ts : Fin n → L.Term (α ⊕ Fin k)) :
+    (φ.ex' m).substBound ts =
+      (φ.substBound (append (fun i ↦ (ts i).castAdd m) (fun i ↦ &(i.natAdd k)))).ex' m  := by
   induction m with
-  | zero => simp
-  | succ m ih => rw [ex'_succ, ex'_succ, ih]; congr
+  | zero => simp [append_right_nil]
+  | succ m ih =>
+    rw [ex'_succ, ex'_succ, ih, substBound_ex]
+    congr
+    ext i
+    induction i using lastCases with
+    | last => simp
+    | cast j =>
+      simp only [Term.castSucc, Term.castAdd, Term.castLE, Function.comp_apply, append_nat,
+        natAdd_mk, castLE_succ_castSucc, snoc_castSucc, val_castSucc]
+      split_ifs
+      · simp only [Term.substBoundBound_substBoundBound]
+        rfl
+      · simp
 
-@[simp]
-theorem castLE_ex_eq_ex_cast (h : n ≤ n') (φ : L.BoundedFormula α (n + 1)) :
-    (φ.ex).castLE h = (φ.castLE (add_le_add_left h 1)).ex := φ.castLE_ex'_eq_ex'_cast h
 
 -- @[simp]
--- theorem ex'_ex_castLE_eq_ex' (φ : L.BoundedFormula α (n + (m + 1))) :
---     ((φ.castLE (n.add_assoc m 1).symm).ex).ex' m = φ.ex' (m + 1) := by
+-- theorem cast_ex'_eq_ex'_cast (h : n = n') (φ : L.BoundedFormula α (n + m)) :
+--     (φ.ex' m).cast h = (φ.cast (Nat.add_left_inj.mpr h)).ex' m  := by
 --   induction m with
 --   | zero => simp
---   | succ m ih => rw [ex', ex', ← ih]; congr
+--   | succ m ih =>
+--     rw [ex'_succ, ex'_succ, ih]
+--     congr
+--     simp only [cast, substBoundBound_ex]
+--     congr
+--     simp only [castSucc, Fin.cast, castAdd_mk]
+--     rw [snoc_val_last_eq_cast (by omega)]
+
+
+-- @[simp]
+-- theorem cast_ex_eq_ex_cast (h : n = n') (φ : L.BoundedFormula α (n + 1)) :
+--     (φ.ex).cast h = (φ.cast (Nat.add_left_inj.mpr h)).ex := φ.cast_ex'_eq_ex'_cast h
 
 theorem ex'_ex'_eq_ex'_cast (φ : L.BoundedFormula α (n + m + k)) :
     (φ.ex' k).ex' m = (φ.cast (n.add_assoc m k)).ex' (m + k) := by
   induction k with
   | zero => simp
   | succ k ih =>
-    simp only [ex', add_eq, ih, cast, castLE]
+    simp only [ex', add_eq, ih, cast, substBoundBound_ex]
     congr
-
--- @[simp]
--- theorem ex'_cast_eq_exs (φ : L.BoundedFormula α n) :
---     (φ.cast (Nat.zero_add n).symm).ex' n = φ.exs := by
---   induction n with
---   | zero => simp [exs]
---   | succ n ih => rw [ex', exs]; convert ih _; simp; rfl
-
-@[simp]
-theorem liftAt_ex'_eq_ex'_cast_liftAt (φ : L.BoundedFormula α (n + m)) :
-    (φ.ex' m).liftAt n' k = ((φ.liftAt n' k).cast (add_right_comm _ _ _)).ex' m := by
-  induction m with
-  | zero => simp
-  | succ m ih => simp [ex'_succ, BoundedFormula.ex, BoundedFormula.not, Bot.bot, ih]
-
-@[simp]
-theorem liftAt_ex_eq_ex_cast_liftAt (φ : L.BoundedFormula α (n + 1)) :
-    φ.ex.liftAt n' k = ((φ.liftAt n' k).cast (add_right_comm _ _ _)).ex :=
-  φ.liftAt_ex'_eq_ex'_cast_liftAt
+    simp only [castSucc, Fin.cast, castAdd_mk]
+    rw [snoc_val_last_eq_cast (by omega)]
 
 /-- The largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-1" => &(Fin.last _)
+scoped[FirstOrder] notation "&-1" => &(last _)
 
 /-- The second largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-2" => &(Fin.last _ - 1)
+scoped[FirstOrder] notation "&-2" => &(castAdd 1 (last _))
 
 /-- The third largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-3" => &(Fin.last _ - 2)
+scoped[FirstOrder] notation "&-3" => &(castAdd 2 (last _))
 
 /-- The fourth largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-4" => &(Fin.last _ - 3)
+scoped[FirstOrder] notation "&-4" => &(castAdd 3 (last _))
 
-/-- The fifth largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-5" => &(Fin.last _ - 4)
+-- /-- The fifth largest index of the bounded variables -/
+-- scoped[FirstOrder] notation "&-5" => &(Fin.last _ - 4)
 
-/-- The sixth largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-6" => &(Fin.last _ - 5)
+-- /-- The sixth largest index of the bounded variables -/
+-- scoped[FirstOrder] notation "&-6" => &(Fin.last _ - 5)
 
-/-- The seventh largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-7" => &(Fin.last _ - 6)
+-- /-- The seventh largest index of the bounded variables -/
+-- scoped[FirstOrder] notation "&-7" => &(Fin.last _ - 6)
 
-/-- The eighth largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-8" => &(Fin.last _ - 7)
+-- /-- The eighth largest index of the bounded variables -/
+-- scoped[FirstOrder] notation "&-8" => &(Fin.last _ - 7)
 
-/-- The ninth largest index of the bounded variables -/
-scoped[FirstOrder] notation "&-9" => &(Fin.last _ - 8)
+-- /-- The ninth largest index of the bounded variables -/
+-- scoped[FirstOrder] notation "&-9" => &(Fin.last _ - 8)
 
 /-- Puts a `∃!` quantifier on a bounded formula. -/
 protected def exUnique (φ : L.BoundedFormula α (n + 1)) : L.BoundedFormula α n :=
-  ∃' (φ ⊓ ∀' (φ.liftAt 1 n ⟹ &-1 =' &-2))
+  ∃' (φ ⊓ ∀' (φ.substBoundBound (snoc (castAdd 2) (last _)) ⟹ &-1 =' &-2))
 
 @[inherit_doc] scoped[FirstOrder] prefix:110 "∃!' " => FirstOrder.Language.BoundedFormula.exUnique
+
 
 end BoundedFormula
 

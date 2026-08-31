@@ -3,9 +3,9 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
-import Astlib.ModelTheory.Defs
+import Astlib.Basic.SetOperation.MemStructure.Defs
 import Astlib.Mathlib.Sum.Basic
-import Astlib.ModelTheory.Levy
+import Astlib.Basic.SetOperation.MemStructure.Levy
 /-!
 file docstring
 -/
@@ -14,7 +14,7 @@ open FirstOrder Language BoundedFormula Fin
 
 namespace FirstOrder.Language.MemStructure
 
-variable (L : FirstOrder.Language) [HasMem L] (M : MemStructure)
+variable (L : FirstOrder.Language) [L.HasMem] (M : MemStructure)
 
 /-- Subset relation -/
 protected def Subset (x y : M) : Prop :=
@@ -50,25 +50,32 @@ instance : Trans (α := M) (β := M) (γ := M)
 
 end MemStructure
 
-variable {α : Type*} {n : ℕ} {L : FirstOrder.Language} [HasMem L]
+variable {α : Type*} {n : ℕ} {L : FirstOrder.Language} [L.HasMem]
   {M : MemStructure} (v : α → M) (xs : Fin n → M)
 
-/-- `t₁ ⊆ t₂`. -/
-def Term.subset (t₁ t₂ : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
-  ∀'∈ t₁ &-1 ∈' t₂.castSucc
+/-- `t₁ ⊆ t₂` as a `Δ₀` formula -/
+def Term.subset₀ (t₁ t₂ : L.Term' n) : L.DeltaZeroBoundedFormula n :=
+  ∀₀∈ t₁ (&-1 ∈₀ t₂.castSucc)
 
-theorem Term.isDeltaZero_subset (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.subset t₂).IsDeltaZero := by
-  simp [subset, DeltaZero.isDeltaZero]
+-- theorem Term.isDeltaZero_subset (t₁ t₂ : L.Term' n) : (t₁.subset t₂).IsDeltaZero := by
+--   simp [subset, DeltaZero.isDeltaZero]
 
-instance (t₁ t₂ : L.Term (α ⊕ Fin n)) : (t₁.subset t₂).DeltaZero := ⟨Term.isDeltaZero_subset _ _⟩
+
+@[inherit_doc] scoped[FirstOrder.Language]
+infix:88 " ⊆₀ " => FirstOrder.Language.Term.subset₀
+
+/-- `t₁ ⊆ t₂` as a formula -/
+def Term.subset (t₁ t₂ : L.Term' n) := (t₁ ⊆₀ t₂).toBoundedFormula
 
 @[inherit_doc] scoped[FirstOrder.Language]
 infix:88 " ⊆' " => FirstOrder.Language.Term.subset
 
-variable (t₁ t₂ : M.L.Term (α ⊕ Fin n))
+instance (t₁ t₂ : L.Term' n) : (t₁ ⊆' t₂).DeltaZero := ⟨t₁ ⊆₀ t₂, rfl⟩
+
+variable (t₁ t₂ : M.L.Term' n)
 
 @[simp]
-theorem Term.subset_iff : (t₁ ⊆' t₂)〘v, xs〙 ↔ t₁〘v, xs〙 ⊆ t₂〘v, xs〙 := by
-  simp [M.subset_iff, Term.subset, allMem, realize', Fin.castLE_succ_castSucc]
+theorem Term.subset_iff : (t₁ ⊆' t₂) 〘xs〙 ↔ t₁〘xs〙 ⊆ t₂〘xs〙 := by
+  simp [M.subset_iff, Term.subset, Term.subset₀, allMem]
 
 end FirstOrder.Language

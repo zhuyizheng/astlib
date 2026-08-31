@@ -10,7 +10,7 @@ file docstring
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} (x y : M)
+variable {M : MemStructure} [M.RudClosed] (x y : M)
 
 def IsChoiceFunction (f F : M) :=
   IsFunction f ∧ dom f = dom F ∧ ∀ x ∈ dom F, F ﹫ x ≠ ∅ → f ﹫ x ∈ F ﹫ x

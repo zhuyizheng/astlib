@@ -10,7 +10,7 @@ file docstring
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} (x y : M)
+variable {M : MemStructure} [M.RudClosed] (x y : M)
 
 def IsMemMin (a x : M) := a ∈ x ∧ ∀ y ∈ a, y ∉ x
 
@@ -34,23 +34,23 @@ theorem memMin_mem [Foundational M] {x : M} (hx : x ≠ ∅) : memMin x ∈ x :=
   grind [isMemMin_memMin, IsMemMin]
 
 @[simp, grind .]
-theorem notMem_memMin [M.HasEmpty] [Foundational M] {x y : M} (hy : y ∈ x) :
+theorem notMem_memMin [Foundational M] {x y : M} (hy : y ∈ x) :
     y ∉ memMin x := by
   have : x ≠ ∅ := by grind
   grind [isMemMin_memMin, IsMemMin]
 
 @[simp]
-theorem notMem_of_mem_memMin [M.HasEmpty] [Foundational M] {x y : M} (hy : y ∈ memMin x) :
+theorem notMem_of_mem_memMin [Foundational M] {x y : M} (hy : y ∈ memMin x) :
     y ∉ x := by
   grind
 
 @[simp, grind .]
-theorem notMem_self [M.HasEmpty] [M.ClosedUnderPair] [Foundational M] : x ∉ x := by
+theorem notMem_self [Foundational M] : x ∉ x := by
   have := memMin_mem (x := ({x} : M)) (by simp)
   grind
 
 @[simp, grind .]
-theorem succ_neq [M.Extensional] [M.HasEmpty] [M.ClosedUnderPair] [M.ClosedUnderSUnion]
+theorem succ_neq [M.Extensional]
     [Foundational M] :
     succ x ≠ x := by
   grind [succ]

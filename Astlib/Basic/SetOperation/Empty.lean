@@ -5,78 +5,91 @@ Authors: Yizheng Zhu
 -/
 import Astlib.Basic.SetOperation.Extensional
 import Astlib.Mathlib.Sum.Basic
-import Astlib.ModelTheory.Semantics
+import Astlib.Basic.SetOperation.Rudimentary.Semantics
 /-!
 file docstring
 -/
 
-namespace FirstOrder.Language.MemStructure
+namespace FirstOrder.Language
+namespace MemStructure
 
-variable {M : MemStructure} (x : M)
+variable {M : MemStructure} [M.RudClosed] (x : M)
 
-def IsEmpty (a : M) := ∀ (x : M), x ∉ a
 
-noncomputable instance : Decidable (∃ a : M, IsEmpty a) :=
-  Classical.propDecidable _
-
-noncomputable instance : EmptyCollection M :=
-  ⟨dite (∃ a : M, IsEmpty a) Classical.choose default⟩
-
-variable (M) in
-/- `M` has an empty set `∅` -/
-class HasEmpty : Prop where
-  protected hasEmpty : ∃ a : M, IsEmpty a
 
 @[simp, grind .]
-theorem notin_empty [hM : M.HasEmpty] : x ∉ (∅ : M) := by
-  convert Classical.choose_spec hM.hasEmpty x
-  simp [EmptyCollection.emptyCollection, HasEmpty.hasEmpty]
+theorem notin_empty : x ∉ (∅ : M) := by
+  simp [EmptyCollection.emptyCollection]
 
-theorem empty_iff [M.Extensional] [M.HasEmpty] : x = ∅ ↔ ∀ y, y ∉ x := by
+theorem empty_iff [M.Extensional] : x = ∅ ↔ ∀ y, y ∉ x := by
   rw [eq_iff]; grind
 
-theorem ne_empty_iff [M.Extensional] [M.HasEmpty] : x ≠ ∅ ↔ ∃ y, y ∈ x := by
+theorem ne_empty_iff [M.Extensional] : x ≠ ∅ ↔ ∃ y, y ∈ x := by
   simp [empty_iff]
 
 @[grind .]
-theorem empty_subset [M.HasEmpty] : ∅ ⊆ x := by grind
+theorem empty_subset : ∅ ⊆ x := by grind
 
 end MemStructure
 
-section Syntax
 
-variable {L : FirstOrder.Language} [HasMem L] {α : Type*} {n : ℕ}
+namespace RudimentaryTerm
 
-/-- `t = ∅` -/
-def Term.isEmpty (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
-  ∀'∈ t ⊥
+variable {L : FirstOrder.Language} [L.HasMem]
 
-theorem Term.isDeltaZero_isEmpty (t : L.Term (α ⊕ Fin n)) : (t.isEmpty).IsDeltaZero := by
-  rw [isEmpty]
-  exact BoundedFormula.DeltaZero.isDeltaZero
+instance [NeZero n] : Inhabited (L.RudimentaryTerm n) := ⟨ᵣ0⟩
 
-instance (t : L.Term (α ⊕ Fin n)) : (t.isEmpty).DeltaZero := ⟨Term.isDeltaZero_isEmpty _⟩
+instance [NeZero n] : EmptyCollection (L.RudimentaryTerm n) :=
+  ⟨ᵣ0 \ ᵣ0⟩
+
+@[simp]
+theorem castLHom_empty {M : MemStructure} [NeZero n] :
+    (∅ : M.L'.RudimentaryTerm n).castLHom = (∅ : M.L.RudimentaryTerm n) := by
+  simp [EmptyCollection.emptyCollection]
+
+variable {M : MemStructure} {n : ℕ} (xs : Fin n → M)
+
+@[simp, grind =]
+theorem realize_empty [NeZero n] [M.Extensional] [M.RudClosed] :
+    (∅ : M.L.RudimentaryTerm n)〘xs〙 = ∅ := by
+  ext
+  simp [EmptyCollection.emptyCollection]
+
+end RudimentaryTerm
+-- section Syntax
+
+-- variable {L : FirstOrder.Language} [L.HasMem] {α : Type*} {n : ℕ}
+
+-- /-- `t = ∅` -/
+-- def Term.isEmpty (t : L.Term (α ⊕ Fin n)) : L.BoundedFormula α n :=
+--   ∀'∈ t ⊥
+
+-- theorem Term.isDeltaZero_isEmpty (t : L.Term (α ⊕ Fin n)) : (t.isEmpty).IsDeltaZero := by
+--   rw [isEmpty]
+--   exact BoundedFormula.DeltaZero.isDeltaZero
+
+-- instance (t : L.Term (α ⊕ Fin n)) : (t.isEmpty).DeltaZero := ⟨Term.isDeltaZero_isEmpty _⟩
 
 -- /-- There exists an empty set -/
 -- def exEmptyset : L.Sentence := ∃' ((&0).isEmpty)
 
-variable {M : MemStructure}
+-- variable {M : MemStructure}
 
--- theorem Sentence.Realize.exists_empty_of_exEmptyset (hM : M ⊨ M.L.exEmptyset) :
---     ∃ a : M, ∀ x, x ∉ a := by
---   use Classical.choose (exists_of_ex hM)
---   simpa using Classical.choose_spec (exists_of_ex hM)
+-- -- theorem Sentence.Realize.exists_empty_of_exEmptyset (hM : M ⊨ M.L.exEmptyset) :
+-- --     ∃ a : M, ∀ x, x ∉ a := by
+-- --   use Classical.choose (exists_of_ex hM)
+-- --   simpa using Classical.choose_spec (exists_of_ex hM)
 
--- noncomputable instance (hM : M ⊨ M.L.exEmptyset) : M.HasEmpty :=
---   MemStructure.instHasEmpty hM.exists_empty_of_exEmptyset
+-- -- noncomputable instance (hM : M ⊨ M.L.exEmptyset) : M.HasEmpty :=
+-- --   MemStructure.instHasEmpty hM.exists_empty_of_exEmptyset
 
-@[simp]
-theorem Term.isEmpty_iff [M.Extensional] [M.HasEmpty]
-    (t : M.L.Term (α ⊕ Fin n))
-    (v : α → M) (xs : Fin n → M) :
-    t.isEmpty〘v, xs〙 ↔ t〘v, xs〙 = (∅ : M) := by
-  simp [M.empty_iff, isEmpty]
+-- @[simp]
+-- theorem Term.isEmpty_iff [M.Extensional] [M.HasEmpty]
+--     (t : M.L.Term (α ⊕ Fin n))
+--     (v : α → M) (xs : Fin n → M) :
+--     t.isEmpty〘v, xs〙 ↔ t〘v, xs〙 = (∅ : M) := by
+--   simp [M.empty_iff, isEmpty]
 
-end Syntax
+-- end Syntax
 
 end FirstOrder.Language

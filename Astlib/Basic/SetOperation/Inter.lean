@@ -3,7 +3,7 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
-import Astlib.Basic.SetOperation.Comprehension
+-- import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Union
 /-!
 file docstring
@@ -11,18 +11,44 @@ file docstring
 
 open FirstOrder.Language.BoundedFormula
 
-namespace FirstOrder.Language.MemStructure
+namespace FirstOrder.Language
+
+instance {n} {L : FirstOrder.Language} [L.HasMem] :
+  Inter (L.RudimentaryTerm n) := ⟨fun r₁ r₂ ↦ r₁ \ (r₁ \ r₂)⟩
+
+@[simp]
+theorem RudimentaryTerm.castLHom_inter {M : MemStructure} (r₁ r₂ : M.L'.RudimentaryTerm n) :
+    (r₁ ∩ r₂).castLHom = r₁.castLHom ∩ r₂.castLHom := by
+  simp [Inter.inter]
+
+namespace MemStructure
 
 variable {M : MemStructure} (x y z : M)
 
-variable (M) in
-noncomputable instance : Inter M := ⟨fun x y ↦ (&1 ∈' &0) 〘y, ∈ x〙₀⟩
+-- variable (M) in
+-- noncomputable instance : Inter M := ⟨fun x y ↦ inter x y⟩
 
-variable [M.ClosedUnderDeltaZeroComprehension]
+-- variable [M.ClosedUnderDeltaZeroComprehension]
+
+-- @[simp, grind =]
+-- theorem mem_inter_iff : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
+--   simp [Inter.inter]
+noncomputable instance : Inter M := ⟨fun x y ↦ (ᵣ0 ∩ ᵣ1)〘x, y〙₂⟩
+
+@[simp, grind =]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inter (xs : Fin n → M) : (r₁ ∩ r₂)〘xs〙 = r₁〘xs〙 ∩ r₂〘xs〙 := by
+  simp [Inter.inter]
+
+@[grind =]
+theorem inter_eq : x ∩ y = x \ (x \ y) := by
+  simp only [Inter.inter, Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue]
+  rfl
+
+variable [M.RudClosed]
 
 @[simp, grind =]
 theorem mem_inter_iff : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
-  simp [Inter.inter]
+  grind
 
 @[grind =]
 theorem inter_comm [M.Extensional] : x ∩ y = y ∩ x := by
@@ -69,12 +95,12 @@ theorem inter_self [M.Extensional] :
   ext; grind
 
 @[grind! .]
-theorem inter_subset_left [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+theorem inter_subset_left :
     x ∩ y ⊆ x := by
   grind
 
 @[grind! .]
-theorem inter_subset_right [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+theorem inter_subset_right :
     x ∩ y ⊆ y := by
   grind
 
@@ -102,7 +128,7 @@ theorem inter_eq_left_iff_subset :
     x ∩ y = x ↔ x ⊆ y := by
   grind
 
-variable [M.ClosedUnderSUnion] [M.ClosedUnderPair]
+-- variable [M.ClosedUnderSUnion] [M.ClosedUnderPair]
 
 theorem inter_union_distrib_left : x ∩ (y ∪ z) = x ∩ y ∪ x ∩ z := by
   ext; grind

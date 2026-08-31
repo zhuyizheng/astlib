@@ -4,75 +4,81 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
 import Astlib.Basic.SetOperation.SDiff
+import Astlib.Basic.SetOperation.Singleton
 import Astlib.Basic.SetOperation.Powerset
 /-!
 file docstring
 -/
 
-namespace FirstOrder.Language.MemStructure
+open FirstOrder Language RudimentaryTerm BoundedFormula Fin
+
+namespace FirstOrder.Language
+
+instance {n} {L : FirstOrder.Language} [L.HasMem] :
+  SProd (L.RudimentaryTerm n) (L.RudimentaryTerm n) (L.RudimentaryTerm n) :=
+  ⟨fun r₁ r₂ ↦ ((ᵣ0).iUnion ((ᵣ1).iUnion {ᵣ(ᵣ2, ᵣ3)})).substBoundRud ![r₁, r₂]⟩
+
+@[simp]
+theorem castLHom_sprod {M : MemStructure}
+    (r₁ r₂ : M.L'.RudimentaryTerm n) :
+    (r₁ ×ˢ r₂).castLHom = r₁.castLHom ×ˢ r₂.castLHom := by
+  simp only [SProd.sprod, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, castLHom_substBoundRud,
+    castLHom_iUnion, castLHom_var, castLHom_singleton, castLHom_orderedPair]
+  congr
+  ext i; fin_cases i <;> simp
+
+namespace MemStructure
 
 variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
-noncomputable instance : Decidable (∃ a : M, ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v)) :=
-  Classical.propDecidable _
+noncomputable def sprod (x y : M) : M :=
+  ((ᵣ0 : M.L.RudimentaryTerm 2) ×ˢ (ᵣ1 : M.L.RudimentaryTerm 2)) 〘x, y〙₂
 
 noncomputable instance : SProd M M M :=
-  ⟨fun x y ↦ dite (∃ a : M, ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v)) Classical.choose default⟩
+  ⟨fun x y ↦ ((ᵣ0 : M.L.RudimentaryTerm 2) ×ˢ (ᵣ1 : M.L.RudimentaryTerm 2)) 〘x, y〙₂⟩
 
-variable (M) in
-/- `M` is closed under the Cartesian product `×ˢ` -/
-class ClosedUnderSProd : Prop where
-  protected closedUnderSProd (x y z : M) : z ∈ x ×ˢ y ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v)
+theorem sprod_eq : x ×ˢ y = iUnion x (fun u ↦ iUnion y fun v ↦ {!(u, v)}) := by
+  simp only [SProd.sprod, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, realize_substBoundRud,
+    realize_iUnion, realize_basic, Matrix.cons_val_zero, realize_singleton, realize_orderedPair]
+  rfl
 
-theorem instClosedUnderSProd
-    (h : ∀ x y : M, ∃ a : M, ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v)) :
-    M.ClosedUnderSProd :=
-    ⟨fun x y ↦ by convert Classical.choose_spec (h x y); simp [SProd.sprod, h]⟩
+@[simp, grind =]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_sprod (r₁ r₂ : M.L.RudimentaryTerm n) (xs : Fin n → M) : (r₁ ×ˢ r₂)〘xs〙 = r₁〘xs〙 ×ˢ r₂〘xs〙 := by
+  simp only [SProd.sprod, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, realize_substBoundRud]
+  congr
+  ext i; fin_cases i <;>simp
 
-theorem exists_sprod [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
-    [M.ClosedUnderDeltaZeroComprehension]
-    [M.HasPowerset (x ∪ y)] [M.HasPowerset (𝒫 (x ∪ y))] :
-    ∃ a : M, ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) := by
-  use (∃'∈ &0 ∃'∈ &1 (&2).eqOrderedPair &3 &4) 〘![x, y], ∈ 𝒫 (𝒫 (x ∪ y))〙
-  suffices ∀ (z x_1 : ↑M), x_1 ∈ x → ∀ x_2 ∈ y, z = !(x_1, x_2) → z ⊆ 𝒫 (x ∪ y) by
-    simpa
-  intro z u hu v hv hz
-  rw [hz, orderedPair]
-  intro p
-  simp [mem_unorderedPair_iff, mem_powerset_iff]
+variable [M.RudClosed]
+
+@[simp, grind =]
+theorem mem_sprod_iff : z ∈ x ×ˢ y ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) := by
+  simp [SProd.sprod, snoc_nat]
+
+@[grind .]
+theorem isOrderedPair_of_mem_sprod (h : z ∈ x ×ˢ y) : IsOrderedPair z := by
   grind
 
-noncomputable instance [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
-  [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderPowerset] :
-  M.ClosedUnderSProd := instClosedUnderSProd (fun x y ↦ M.exists_sprod x y)
-
 @[simp, grind =]
-theorem mem_sprod_iff [M.ClosedUnderSProd] : z ∈ x ×ˢ y ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) :=
-  ClosedUnderSProd.closedUnderSProd x y z
-
-@[simp, grind =]
-theorem pair_mem_sprod_iff [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd] :
+theorem pair_mem_sprod_iff [M.Extensional] :
     !(u, v) ∈ x ×ˢ y ↔ u ∈ x ∧ v ∈ y := by
   grind
 
-theorem mem_sprod [M.ClosedUnderSProd] (hu : u ∈ x) (hv : v ∈ y) : !(u, v) ∈ x ×ˢ y := by
+theorem mem_sprod (hu : u ∈ x) (hv : v ∈ y) : !(u, v) ∈ x ×ˢ y := by
   grind
 
-variable [M.ClosedUnderSProd]
-
 @[simp, grind =]
-theorem sprod_empty [M.Extensional] [M.HasEmpty] :
+theorem sprod_empty [M.Extensional] :
     x ×ˢ (∅ : M) = ∅ := by
   ext; grind
 
 @[simp, grind =]
-theorem empty_sprod [M.Extensional] [M.HasEmpty] :
+theorem empty_sprod [M.Extensional] :
     (∅ : M) ×ˢ x = ∅ := by
   ext; grind
 
 @[simp, grind =]
-theorem singleton_sprod_singleton [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair]
-    [M.ClosedUnderDeltaZeroComprehension] :
+theorem singleton_sprod_singleton [M.Extensional]
+    :
     ({x} : M) ×ˢ ({y} : M) = {!(x, y)} := by
   ext; grind
 
@@ -82,32 +88,48 @@ theorem sprod_mono_left {x₁ x₂ : M} (h : x₁ ⊆ x₂) : x₁ ×ˢ y ⊆ x�
 theorem sprod_mono_right {y₁ y₂ : M} (h : y₁ ⊆ y₂) : x ×ˢ y₁ ⊆ x ×ˢ y₂ := by
   grind
 
-theorem union_sprod [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+theorem union_sprod [M.Extensional] :
     (x₁ ∪ x₂) ×ˢ y = x₁ ×ˢ y ∪ x₂ ×ˢ y := by
   ext; grind
 
-theorem sprod_union [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+theorem sprod_union [M.Extensional] :
     x ×ˢ (y₁ ∪ y₂) = x ×ˢ y₁ ∪ x ×ˢ y₂ := by
-  ext; grind
+  ext
+  simp only [mem_sprod_iff]
+  grind
 
-theorem inter_sprod [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderDeltaZeroComprehension] :
+theorem inter_sprod [M.Extensional] :
     (x₁ ∩ x₂) ×ˢ y = x₁ ×ˢ y ∩ x₂ ×ˢ y := by
-  ext; grind
+  ext z
+  simp only [mem_sprod_iff]
+  constructor
+  · grind
+  · intro h
+    simp only [mem_inter_iff, mem_sprod_iff] at h
+    obtain ⟨⟨u, hu, v, hv, huv⟩, ⟨u', hu', v', hv', huv'⟩⟩ := h
+    grind
 
-theorem sprod_inter [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderDeltaZeroComprehension] :
+theorem sprod_inter [M.Extensional] :
     x ×ˢ (y₁ ∩ y₂) = x ×ˢ y₁ ∩ x ×ˢ y₂ := by
-  ext; grind
+  ext
+  simp only [mem_sprod_iff, mem_inter_iff]
+  grind
 
-theorem sdiff_sprod [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderDeltaZeroComprehension] :
+
+theorem sdiff_sprod [M.Extensional] :
     (x₁ \ x₂) ×ˢ y = x₁ ×ˢ y \ x₂ ×ˢ y := by
-  ext; grind
+  ext
+  simp only [mem_sprod_iff, mem_sdiff_iff, not_exists, not_and]
+  grind
 
-theorem sprod_sdiff [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderDeltaZeroComprehension] :
+theorem sprod_sdiff [M.Extensional] :
     x ×ˢ (y₁ \ y₂) = x ×ˢ y₁ \ x ×ˢ y₂ := by
-  ext; grind
+  ext
+  simp only [mem_sprod_iff, mem_sdiff_iff, not_exists, not_and]
+  grind
 
-theorem sprod_inter_sprod [M.Extensional] [M.ClosedUnderPair]
-    [M.ClosedUnderDeltaZeroComprehension] :
+theorem sprod_inter_sprod [M.Extensional]
+    :
     x₁ ×ˢ y₁ ∩ x₂ ×ˢ y₂ = (x₁ ∩ x₂) ×ˢ (y₁ ∩ y₂) := by
   ext z; simp only [mem_inter_iff, mem_sprod_iff]
   exact ⟨fun ⟨⟨u₁, hu₁, v₁, hv₁, hz₁⟩, ⟨u₂, hu₂, v₂, hv₂, hz₂⟩⟩ ↦ ⟨u₁, (by grind), v₁, (by grind)⟩,

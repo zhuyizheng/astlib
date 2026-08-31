@@ -12,17 +12,7 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} (x y z : M)
-
-variable (M) in
-noncomputable instance : SDiff M where
-  sdiff x y := (∼(&1 ∈' &0))〘y, ∈ x〙₀
-
-variable [M.ClosedUnderDeltaZeroComprehension]
-
-@[simp, grind =]
-theorem mem_sdiff : x ∈ y \ z ↔ x ∈ y ∧ x ∉ z := by
-  simp [SDiff.sdiff]
+variable {M : MemStructure} [M.RudClosed] (x y z : M)
 
 @[simp, grind =, push]
 theorem empty_sdiff [M.Extensional] :
@@ -40,17 +30,17 @@ theorem sdiff_self [M.Extensional] :
   ext; grind
 
 @[grind! .]
-theorem sdiff_subset_left [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+theorem sdiff_subset_left :
     x \ y ⊆ x := by
   grind
 
 @[simp, grind! ., push]
-theorem sdiff_inter_right [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+theorem sdiff_inter_right [M.Extensional] :
     (x \ y) ∩ y = ∅ := by
   ext; grind
 
 @[simp, grind! ., push]
-theorem sdiff_union_right [M.Extensional] [M.ClosedUnderSUnion] [M.ClosedUnderPair] :
+theorem sdiff_union_right [M.Extensional] :
     (x \ y) ∪ (x ∩ y) = x := by
   ext; grind
 
@@ -67,6 +57,7 @@ theorem subset_of_sdiff_empty {x y : M} (h : x \ y = ∅) : x ⊆ y := by
   rw [ne_empty_iff]
   exact ⟨z, by grind⟩
 
+@[simp]
 theorem sdiff_empty_iff_subset {x y : M} : x \ y = ∅ ↔ x ⊆ y := by
   grind
 
@@ -83,7 +74,7 @@ theorem sdiff_eq_left_iff_inter_empty :
     x \ y = x ↔ x ∩ y = ∅ := by
   grind
 
-variable [M.ClosedUnderSUnion] [M.ClosedUnderPair]
+-- variable [M.ClosedUnderPair]
 
 theorem sdiff_union_sdiff_inter_sdiff : x \ (y ∪ z) = (x \ y) ∩ (x \ z) := by
   ext; grind
@@ -99,5 +90,11 @@ theorem sdiff_inter_sdiff_union_sdiff : x \ (y ∩ z) = (x \ y) ∪ (x \ z) := b
 
 theorem inter_sdiff_distrib : (x ∩ y) \ z = (x \ z) ∩ (y \ z) := by
   ext; grind
+
+@[simp, grind =]
+theorem sdiff_union_sdiff_empty_iff {x y : M} : (x \ y) ∪ (y \ x) = ∅ ↔ x = y := by
+  refine ⟨?_, by grind⟩
+  simp only [union_empty_iff, sdiff_empty_iff_subset, and_imp]
+  grind
 
 end FirstOrder.Language.MemStructure
