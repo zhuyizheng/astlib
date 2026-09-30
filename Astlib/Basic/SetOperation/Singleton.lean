@@ -14,7 +14,9 @@ namespace FirstOrder.Language
 
 namespace MemStructure
 
-variable {M : MemStructure} (x y : M)
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M]
+  (x y : M)
 
 variable (M) in
 noncomputable instance : Singleton M M := ⟨fun x ↦ {ᵣ0}〘x〙₁⟩
@@ -26,11 +28,11 @@ theorem singleton_eq : {x} = unorderedPair x x := by
 
 @[simp]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_singleton
-    (r : M.L.RudimentaryTerm n) (xs : Fin n → M) :
+    (r : L.RudimentaryTerm n) (xs : Fin n → M) :
     {r}〘xs〙 = {r〘xs〙} := by
   simp [singleton]
 
-variable [M.RudClosed]
+variable [PairClosed M] [SDiffClosed M]
 
 @[simp, grind =, push]
 theorem mem_singleton_iff : y ∈ ({x} : M) ↔ y = x := by
@@ -46,7 +48,7 @@ theorem mem_singleton : x ∈ ({x} : M) := by simp
 theorem singleton_eq_singleton_iff : ({x} : M) = {y} ↔ x = y := by
   grind [mem_singleton]
 
-theorem eq_singleton_iff [M.Extensional] : y = ({x} : M) ↔ (∀ z, z ∈ y ↔ z = x) := by
+theorem eq_singleton_iff [Extensional M] : y = ({x} : M) ↔ (∀ z, z ∈ y ↔ z = x) := by
   simp [MemStructure.ext_iff]
 
 @[simp]
@@ -62,7 +64,7 @@ theorem singleton_subset_singleton : ({x} : M) ⊆ {y} ↔ x = y := by
   grind [mem_singleton]
 
 @[grind =]
-theorem subset_singleton_iff [M.Extensional] : x ⊆ {y} ↔ x = ∅ ∨ x = {y} := by
+theorem subset_singleton_iff [Extensional M] : x ⊆ {y} ↔ x = ∅ ∨ x = {y} := by
   refine ⟨fun hx ↦ ?_, by grind⟩
   by_cases hx₁ : x = ∅
   · exact Or.inl hx₁
@@ -70,8 +72,12 @@ theorem subset_singleton_iff [M.Extensional] : x ⊆ {y} ↔ x = ∅ ∨ x = {y}
   ext z
   exact ⟨fun hz ↦ hx hz, by grind [ne_empty_iff]⟩
 
+omit [PairClosed M] [SDiffClosed M]
+
+variable [RudClosed M]
+
 @[simp, grind =, push]
-theorem sUnion_singleton [M.Extensional] :
+theorem sUnion_singleton [Extensional M] :
     ⋃₀ {x} = x := by
   ext; grind
 

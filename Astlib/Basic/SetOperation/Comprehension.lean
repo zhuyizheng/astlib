@@ -12,74 +12,73 @@ import Astlib.Basic.SetOperation.Multiclass.Levy
 file docstring
 -/
 
-open Fin
+open Fin FirstOrder Language MemStructure
 
 namespace FirstOrder.Language
 
-variable {M : MemStructure}
-variable {L : Language} [L.HasMem]
-
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M]
 namespace MemStructure
 
 variable (x y z : M) {n : ℕ}
 
-def IsComprehension (a x : M) (A : M.Class) := ∀ z, z ∈ a ↔ z ∈ x ∧ A z
+def IsComprehension (a x : M) (A : Class M) := ∀ z, z ∈ a ↔ z ∈ x ∧ A z
 
-noncomputable instance (x : M) (A : M.Class) :
+noncomputable instance (x : M) (A : Class M) :
   Decidable (∃ a : M, IsComprehension a x A) :=
   Classical.propDecidable _
 
 /-- The subset of `x` containing `z` for which `φ〘v, snoc xs z〙` holds -/
-noncomputable def comprehension (x : M) (A : M.Class) :=
+noncomputable def comprehension (x : M) (A : Class M) :=
   dite (∃ a : M, IsComprehension a x A)
     Classical.choose default
 
 @[inherit_doc] scoped[FirstOrder.Language]
 infix:88 " ∩₀ " => FirstOrder.Language.MemStructure.comprehension
 
-class HasComprehension (x : M) (A : M.Class) : Prop where
+class HasComprehension (x : M) (A : Class M) : Prop where
   protected hasComprehension : ∃ a : M, IsComprehension a x A
 
 @[simp, grind =, push]
-theorem mem_comprehension_iff (x : M) (A : M.Class) [hx : HasComprehension x A] (z : M) :
+theorem mem_comprehension_iff (x : M) (A : Class M) [hx : HasComprehension x A] (z : M) :
     z ∈ x ∩₀ A ↔ z ∈ x ∧ A z := by
   convert Classical.choose_spec hx.hasComprehension z
   simp [MemStructure.comprehension, HasComprehension.hasComprehension]
 
-theorem comprehension_subset (x : M) (A : M.Class) [HasComprehension x A] :
+theorem comprehension_subset (x : M) (A : Class M) [HasComprehension x A] :
     x ∩₀ A ⊆ x := by
   grind
 
 @[simp]
-theorem comprehension_eq_iff [M.Extensional] (x : M) (A B : M.Class)
+theorem comprehension_eq_iff [Extensional M] (x : M) (A B : Class M)
     [HasComprehension x A] [HasComprehension x B] :
     x ∩₀ A = x ∩₀ B ↔ ∀ z ∈ x, A z ↔ B z := by
   simp [eq_iff]
 
 @[simp]
-theorem comprehension_eq_univ_iff [M.Extensional] (x : M) (A : M.Class) [HasComprehension x A] :
+theorem comprehension_eq_univ_iff [Extensional M] (x : M) (A : Class M) [HasComprehension x A] :
     x ∩₀ A = x ↔ ∀ z ∈ x, A z := by
   simp [eq_iff]
 
 @[simp]
-theorem comprehension_eq_empty_iff [M.Extensional] [M.RudClosed] (x : M) (A : M.Class)
+theorem comprehension_eq_empty_iff [Extensional M] [RudClosed M] (x : M) (A : Class M)
     [HasComprehension x A] :
     x ∩₀ A = ∅ ↔ ∀ z ∈ x, ¬A z := by
   simp [eq_iff]
 
 variable (M) in
 class ClosedUnderDefinableComprehension : Prop where
-  closedUnderDefinableComprehension (x : M) (A : M.Class)
+  closedUnderDefinableComprehension (x : M) (A : Class M)
     [A.Definable Set.univ] :
     ∃ a : M, IsComprehension a x A
 
-export ClosedUnderDefinableComprehension (closedUnderDefinableComprehension)
+-- export ClosedUnderDefinableComprehension (closedUnderDefinableComprehension)
 
-instance [M.ClosedUnderDefinableComprehension] (A : M.Class) [A.Definable Set.univ] :
+instance [ClosedUnderDefinableComprehension M] (A : Class M) [A.Definable Set.univ] :
   HasComprehension x A :=
-  ⟨closedUnderDefinableComprehension x A⟩
+  ⟨ClosedUnderDefinableComprehension.closedUnderDefinableComprehension x A⟩
 
-variable [M.RudClosed] [M.Extensional]
+variable [RudClosed M] [Extensional M]
 
 def IsZeroOrOne (x : M) := x = ∅ ∨ x = {∅}
 
@@ -88,13 +87,13 @@ theorem isZeroOrOne_iff_subset_singleton_empty {x : M} :
     IsZeroOrOne x ↔ x ⊆ {∅} := by
   grind [IsZeroOrOne]
 
-omit [M.Extensional] in
+omit [Extensional M] in
 @[simp, grind .]
 theorem IsZeroOrOne.singleton_empty_iff_ne_empty {x : M} (hx : IsZeroOrOne x) :
     x = {∅} ↔ x ≠ ∅ := by
   grind [IsZeroOrOne]
 
-omit [M.Extensional] in
+omit [Extensional M] in
 @[grind .]
 theorem IsZeroOrOne.empty_of_mem {x z : M} (hx : IsZeroOrOne x) (hz : z ∈ x) : z = ∅ := by
   grind [IsZeroOrOne]
@@ -106,54 +105,61 @@ namespace RudimentaryTerm
 
 open MemStructure
 
-variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+-- variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
 
 /-- The rudimentary term that maps `xs` to `1` is `t〘xs〙 ≠ ∅`, `0` otherwise -/
-def isNonempty (r : L.RudimentaryTerm n) := r.iUnion {∅}
+def isNonempty {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) := r.iUnion {∅}
 
-def not [NeZero n] (r : L.RudimentaryTerm n) := {∅} \ r
+def not {L : Language} [L.HasMem] [NeZero n] (r : L.RudimentaryTerm n) := {∅} \ r
 
-def isEmpty [NeZero n] (r : L.RudimentaryTerm n) := r.isNonempty.not
+def isEmpty {L : Language} [L.HasMem] [NeZero n] (r : L.RudimentaryTerm n) := r.isNonempty.not
 
-def eqChar [NeZero n] (r₁ r₂ : L.RudimentaryTerm n) :=
+def eqChar {L : Language} [L.HasMem] [NeZero n] (r₁ r₂ : L.RudimentaryTerm n) :=
   ((r₁ \ r₂) ∪ (r₂ \ r₁)).isEmpty
 
 /-- If `r_truth〘xs〙 ≠ ∅`, then takes value `r〘xs〙`, else `∅` -/
-def ifNonempty (r : L.RudimentaryTerm n) (r_truth : L.RudimentaryTerm n) :=
+def ifNonempty {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) (r_truth : L.RudimentaryTerm n) :=
   r_truth.iUnion r.castSucc
 
-variable {M : MemStructure} (r r₁ r₂ : M.L'.RudimentaryTerm n)
+@[simp]
+theorem isCharFree_isNonempty {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n)
+    (hr : r.IsCharFree) :
+    r.isNonempty.IsCharFree := by
+  simp [isNonempty, hr]
 
 @[simp]
-theorem castLHom_isNonempty :
-    r.isNonempty.castLHom = r.castLHom.isNonempty := by
-  simp [isNonempty]
+theorem isCharFree_not [NeZero n] {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n)
+    (hr : r.IsCharFree) :
+    r.not.IsCharFree := by
+  simp [not, hr]
 
 @[simp]
-theorem castLHom_not [NeZero n] :
-    r.not.castLHom = r.castLHom.not := by
-  simp [not]
+theorem isCharFree_isEmpty [NeZero n] {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n)
+    (hr : r.IsCharFree) :
+    r.isEmpty.IsCharFree := by
+  simp [isEmpty, hr]
 
 @[simp]
-theorem castLHom_isEmpty [NeZero n] :
-    r.isEmpty.castLHom = r.castLHom.isEmpty := by
-  simp [isEmpty]
+theorem isCharFree_eqChar [NeZero n] {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+    (r₁ r₂ : L.RudimentaryTerm n)
+    (hr₁ : r₁.IsCharFree) (hr₂ : r₂.IsCharFree) :
+    (r₁.eqChar r₂).IsCharFree := by
+  grind [eqChar, isCharFree_isEmpty, isCharFree_union, isCharFree_sdiff']
 
 @[simp]
-theorem castLHom_eqChar [NeZero n] :
-    (r₁.eqChar r₂).castLHom = r₁.castLHom.eqChar r₂.castLHom := by
-  simp [eqChar]
+theorem isCharFree_ifNonempty {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n) (r_truth : L.RudimentaryTerm n)
+    (hr : r.IsCharFree) (hr_truth : r_truth.IsCharFree) :
+    (r.ifNonempty r_truth).IsCharFree := by
+  simp [ifNonempty, hr, hr_truth]
 
-@[simp]
-theorem castLHom_ifNonempty [NeZero n] :
-    (r₁.ifNonempty r₂).castLHom = r₁.castLHom.ifNonempty r₂.castLHom := by
-  simp [ifNonempty]
-
-variable [M.RudClosed]
-variable [M.Extensional]
+variable [RudClosed M] [Extensional M] (r r₁ r₂ : L.RudimentaryTerm n)
 
 -- @[simp, grind =]
-theorem realize_isNonempty_of_ne_empty {t : M.L.RudimentaryTerm n} {xs : Fin n → M}
+theorem realize_isNonempty_of_ne_empty {t : L.RudimentaryTerm n} {xs : Fin n → M}
     (h : t〘xs〙 ≠ ∅) :
     (t.isNonempty)〘xs〙 = {∅} := by
   rw [ne_empty_iff] at h
@@ -161,7 +167,7 @@ theorem realize_isNonempty_of_ne_empty {t : M.L.RudimentaryTerm n} {xs : Fin n �
   simp [isNonempty, h]
 
 -- @[simp, grind =]
-theorem realize_isNonempty_of_empty {t : M.L.RudimentaryTerm n} {xs : Fin n → M}
+theorem realize_isNonempty_of_empty {t : L.RudimentaryTerm n} {xs : Fin n → M}
     (h : t〘xs〙 = ∅) :
     (t.isNonempty)〘xs〙 = ∅ := by
   rw [empty_iff] at h
@@ -170,50 +176,50 @@ theorem realize_isNonempty_of_empty {t : M.L.RudimentaryTerm n} {xs : Fin n → 
 
 @[simp, grind .]
 theorem isZeroOrOne_realize_isNonempty [NeZero n]
-    {t : M.L.RudimentaryTerm n}
+    {t : L.RudimentaryTerm n}
     {xs : Fin n → M} :
-    IsZeroOrOne (t.isNonempty)〘xs〙 := by
+    IsZeroOrOne (t.isNonempty〘xs〙 : M) := by
   grind [IsZeroOrOne, realize_isNonempty_of_ne_empty, realize_isNonempty_of_empty]
 
 @[simp, grind =]
 theorem realize_isNonempty_empty_iff [NeZero n]
-    {t : M.L.RudimentaryTerm n}
+    {t : L.RudimentaryTerm n}
     {xs : Fin n → M} :
     (t.isNonempty)〘xs〙 = ∅ ↔ t〘xs〙 = ∅ := by
   grind [realize_isNonempty_of_ne_empty, realize_isNonempty_of_empty]
 
 @[simp, grind =]
 theorem realize_not_of_singleton_empty [NeZero n]
-    {t : M.L.RudimentaryTerm n} {xs : Fin n → M}
+    {t : L.RudimentaryTerm n} {xs : Fin n → M}
     (h : t〘xs〙 = {∅}) :
     (t.not)〘xs〙 = ∅ := by
   simp [not, h, singleton]
 
 @[simp, grind =]
 theorem realize_not_of_empty [NeZero n]
-    {t : M.L.RudimentaryTerm n} {xs : Fin n → M}
+    {t : L.RudimentaryTerm n} {xs : Fin n → M}
     (h : t〘xs〙 = ∅) :
     (t.not)〘xs〙 = {∅} := by
   simp [not, h, singleton]
 
 @[simp, grind .]
 theorem isZeroOrOne_realize_not [NeZero n]
-    (t : M.L.RudimentaryTerm n)
+    (t : L.RudimentaryTerm n)
     (xs : Fin n → M) :
-    IsZeroOrOne (t.not)〘xs〙 := by
+    IsZeroOrOne (t.not〘xs〙 : M) := by
   rw [isZeroOrOne_iff_subset_singleton_empty]
   simp only [not, realize_sdiff, realize_singleton, realize_empty]
   grind
 
 -- @[simp, grind =]
-theorem realize_isEmpty_of_ne_empty [NeZero n] {t : M.L.RudimentaryTerm n}
+theorem realize_isEmpty_of_ne_empty [NeZero n] {t : L.RudimentaryTerm n}
     {xs : Fin n → M}
     (h : t〘xs〙 ≠ ∅) :
     (t.isEmpty)〘xs〙 = ∅ := by
   simp [isEmpty, h]
 
 -- @[simp, grind =]
-theorem realize_isEmpty_of_empty [NeZero n] {t : M.L.RudimentaryTerm n}
+theorem realize_isEmpty_of_empty [NeZero n] {t : L.RudimentaryTerm n}
     {xs : Fin n → M}
     (h : t〘xs〙 = ∅) :
     (t.isEmpty)〘xs〙 = {∅} := by
@@ -221,26 +227,26 @@ theorem realize_isEmpty_of_empty [NeZero n] {t : M.L.RudimentaryTerm n}
 
 @[simp, grind .]
 theorem isZeroOrOne_realize_isEmpty [NeZero n]
-    (t : M.L.RudimentaryTerm n)
+    (t : L.RudimentaryTerm n)
     (xs : Fin n → M) :
-    IsZeroOrOne (t.isEmpty)〘xs〙 :=
+    IsZeroOrOne (t.isEmpty〘xs〙 : M) :=
   isZeroOrOne_realize_not _ _
 
 @[simp, grind =]
 theorem realize_isEmpty_empty_iff [NeZero n]
-    {t : M.L.RudimentaryTerm n}
+    {t : L.RudimentaryTerm n}
     {xs : Fin n → M} :
     (t.isEmpty)〘xs〙 = ∅ ↔ t〘xs〙 ≠ ∅ := by
   grind [realize_isEmpty_of_ne_empty, realize_isEmpty_of_empty]
 
 -- @[simp, grind =]
-theorem realize_eqChar_of_eq [NeZero n] {t₁ t₂ : M.L.RudimentaryTerm n}
+theorem realize_eqChar_of_eq [NeZero n] {t₁ t₂ : L.RudimentaryTerm n}
     {xs : Fin n → M}
     (h : t₁〘xs〙 = t₂〘xs〙) :
     (t₁.eqChar t₂)〘xs〙 = {∅} := by
   simp [eqChar, h]
 
-theorem realize_eqChar_of_ne [NeZero n] {t₁ t₂ : M.L.RudimentaryTerm n}
+theorem realize_eqChar_of_ne [NeZero n] {t₁ t₂ : L.RudimentaryTerm n}
     {xs : Fin n → M}
     (h : t₁〘xs〙 ≠ t₂〘xs〙) :
     (t₁.eqChar t₂)〘xs〙 = ∅ := by
@@ -249,21 +255,21 @@ theorem realize_eqChar_of_ne [NeZero n] {t₁ t₂ : M.L.RudimentaryTerm n}
 
 @[simp, grind .]
 theorem isZeroOrOne_realize_eqChar [NeZero n]
-    (t₁ t₂ : M.L.RudimentaryTerm n)
+    (t₁ t₂ : L.RudimentaryTerm n)
     (xs : Fin n → M) :
-    IsZeroOrOne (t₁.eqChar t₂)〘xs〙 :=
+    IsZeroOrOne ((t₁.eqChar t₂)〘xs〙 : M) :=
   isZeroOrOne_realize_not _ _
 
 @[simp, grind =]
 theorem realize_eqChar_empty_iff [NeZero n]
-    (t₁ t₂ : M.L.RudimentaryTerm n)
+    (t₁ t₂ : L.RudimentaryTerm n)
     (xs : Fin n → M) :
     (t₁.eqChar t₂)〘xs〙 = ∅ ↔ t₁〘xs〙 ≠ t₂〘xs〙 := by
   grind [realize_eqChar_of_eq, realize_eqChar_of_ne]
 
 @[simp]
-theorem realize_ifNonempty_of_empty (r : M.L.RudimentaryTerm n)
-    {r_truth : M.L.RudimentaryTerm n}
+theorem realize_ifNonempty_of_empty (r : L.RudimentaryTerm n)
+    {r_truth : L.RudimentaryTerm n}
     {xs : Fin n → M} (h : r_truth〘xs〙 = ∅) :
     (r.ifNonempty r_truth)〘xs〙 = ∅ := by
   simp only [ifNonempty]
@@ -272,8 +278,8 @@ theorem realize_ifNonempty_of_empty (r : M.L.RudimentaryTerm n)
   grind [ne_empty_iff]
 
 @[simp]
-theorem realize_ifNonempty_of_ne_empty (r : M.L.RudimentaryTerm n)
-    {r_truth : M.L.RudimentaryTerm n}
+theorem realize_ifNonempty_of_ne_empty (r : L.RudimentaryTerm n)
+    {r_truth : L.RudimentaryTerm n}
     {xs : Fin n → M} (h : r_truth〘xs〙 ≠ ∅) :
     (r.ifNonempty r_truth)〘xs〙 = r〘xs〙 := by
   rw [ne_empty_iff] at h
@@ -283,15 +289,15 @@ theorem realize_ifNonempty_of_ne_empty (r : M.L.RudimentaryTerm n)
   grind
 
 @[simp]
-theorem realize_ifNonempty_subset {r : M.L.RudimentaryTerm n}
-    {r_truth : M.L.RudimentaryTerm n}
+theorem realize_ifNonempty_subset {r : L.RudimentaryTerm n}
+    {r_truth : L.RudimentaryTerm n}
     {xs : Fin n → M} :
     (r.ifNonempty r_truth)〘xs〙 ⊆ r〘xs〙 := by
   by_cases r_truth〘xs〙 = ∅ <;> grind [realize_ifNonempty_of_empty, realize_ifNonempty_of_ne_empty]
 
 @[simp]
-theorem mem_realize_ifNonempty_iff (r : M.L.RudimentaryTerm n)
-    (r_truth : M.L.RudimentaryTerm n)
+theorem mem_realize_ifNonempty_iff (r : L.RudimentaryTerm n)
+    (r_truth : L.RudimentaryTerm n)
     (xs : Fin n → M)
     (z : M) :
     z ∈ (r.ifNonempty r_truth)〘xs〙 ↔ z ∈ r〘xs〙 ∧ r_truth〘xs〙 ≠ ∅ := by
@@ -301,13 +307,15 @@ end RudimentaryTerm
 
 namespace DeltaZeroBoundedFormula
 
-variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n m k : ℕ}
-  {M : MemStructure} [M.L.ExtraConstantsUnaryRelationsOnly] [M.Extensional] [M.RudClosed]
+variable [L.ExtraConstantsUnaryRelationsOnly]
+  [Extensional M] [RudClosed M]
+variable {n m k : ℕ}
 
 open MemStructure RudimentaryTerm
 
 /-- The characteristic function of `φ` that maps `xs` to `1` if `φ〘xs〙` holds, `0` otherwise -/
-noncomputable def charRudimentaryTerm {n : ℕ} [NeZero n]
+noncomputable def charRudimentaryTerm {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+  {n : ℕ} [NeZero n]
   (φ : L.DeltaZeroBoundedFormula n) :
   L.RudimentaryTerm n :=
   match φ with
@@ -318,34 +326,26 @@ noncomputable def charRudimentaryTerm {n : ℕ} [NeZero n]
   | allMem t ψ => (t.toRudimentaryTerm.iUnion ψ.charRudimentaryTerm.not).not
   | rel R t => .char R t.toRudimentaryTerm
 
-omit [M.Extensional] [M.RudClosed] in
 @[simp]
-theorem castLHom_charRudimentaryTerm {n : ℕ}
-    [NeZero n]
-    (φ : M.L'.DeltaZeroBoundedFormula n) :
-    (φ.charRudimentaryTerm : M.L'.RudimentaryTerm n).castLHom = φ.castLHom.charRudimentaryTerm := by
-  cases φ with
-  | falsum => simp [charRudimentaryTerm]
-  | equal t₁ t₂ => simp [charRudimentaryTerm]
-  | mem t₁ t₂ => simp [charRudimentaryTerm]
-  | imp φ₁ φ₂ =>
-    simp [charRudimentaryTerm, φ₁.castLHom_charRudimentaryTerm, φ₂.castLHom_charRudimentaryTerm]
-  | allMem t ψ => simp [charRudimentaryTerm, ψ.castLHom_charRudimentaryTerm]
-  | rel R t => simp [charRudimentaryTerm, castLHom]
-
-  -- revert n φ
-  -- induction φ with
-  -- | falsum =>
-  --   simp [charRudimentaryTerm]
-  --   convert castLHom_empty
-  --   · rfl
-  --   · rfl
-  --   · rfl
-  -- r_truth.iUnion r.castSucc
+theorem isCharFree_charRudimentaryTerm {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ} [NeZero n]
+    (φ : L.DeltaZeroBoundedFormula n)
+    (hφ : φ.IsRelFree) :
+    φ.charRudimentaryTerm.IsCharFree := match φ with
+  | falsum => by simp [charRudimentaryTerm]
+  | equal t₁ t₂ => by simp [charRudimentaryTerm]
+  | mem t₁ t₂ => by simp [charRudimentaryTerm]
+  | imp φ₁ φ₂ => by
+    simp only [isRelFree_imp] at hφ
+    simp [charRudimentaryTerm, isCharFree_charRudimentaryTerm φ₁ hφ.left,
+      isCharFree_charRudimentaryTerm φ₂ hφ.right]
+  | allMem t ψ => by
+    simp only [isRelFree_allMem] at hφ
+    simp [charRudimentaryTerm, isCharFree_charRudimentaryTerm ψ hφ]
+  | rel R t => by simp at hφ
 
 mutual
   theorem realize_charRudimentaryTerm_of_realize {n : ℕ} [NeZero n]
-      {φ : M.L.DeltaZeroBoundedFormula n} {xs : Fin n → M}
+      {φ : L.DeltaZeroBoundedFormula n} {xs : Fin n → M}
       (h : φ.toBoundedFormula〘xs〙) :
       φ.charRudimentaryTerm 〘xs〙 = {∅} := match φ with
     | falsum => by simp at h
@@ -386,7 +386,7 @@ mutual
       simp [charRudimentaryTerm, h, singleton_eq]
 
   theorem realize_charRudimentaryTerm_of_not_realize {n : ℕ} [NeZero n]
-      {φ : M.L.DeltaZeroBoundedFormula n} {xs : Fin n → M}
+      {φ : L.DeltaZeroBoundedFormula n} {xs : Fin n → M}
       (h : ¬φ.toBoundedFormula〘xs〙) :
       φ.charRudimentaryTerm 〘xs〙 = ∅ := match φ with
     | falsum => by simp [charRudimentaryTerm]
@@ -423,13 +423,13 @@ end
 
 @[grind .]
 theorem isZeroOrOne_charRudimentaryTerm {n : ℕ} [NeZero n]
-    (φ : M.L.DeltaZeroBoundedFormula n) (xs : Fin n → M) :
-    IsZeroOrOne φ.charRudimentaryTerm〘xs〙 := by
+    (φ : L.DeltaZeroBoundedFormula n) (xs : Fin n → M) :
+    IsZeroOrOne (φ.charRudimentaryTerm〘xs〙 : M) := by
   grind [realize_charRudimentaryTerm_of_realize, realize_charRudimentaryTerm_of_not_realize]
 
 @[simp, grind .]
 theorem realize_charRudimentaryTerm_empty_iff {n : ℕ} [NeZero n]
-    (φ : M.L.DeltaZeroBoundedFormula n) (xs : Fin n → M) :
+    (φ : L.DeltaZeroBoundedFormula n) (xs : Fin n → M) :
     φ.charRudimentaryTerm〘xs〙 = ∅ ↔ ¬φ.toBoundedFormula〘xs〙 := by
   grind [realize_charRudimentaryTerm_of_realize, realize_charRudimentaryTerm_of_not_realize]
 
@@ -437,28 +437,27 @@ end DeltaZeroBoundedFormula
 
 namespace RudimentaryTerm
 
-variable [L.ExtraConstantsUnaryRelationsOnly] [M.L.ExtraConstantsUnaryRelationsOnly]
+-- variable [L.ExtraConstantsUnaryRelationsOnly]
 
 /-- If `r_truth〘xs〙 ≠ ∅`, then takes value `r〘xs〙`, else `∅` -/
-noncomputable def ifTrue
+noncomputable def ifTrue {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
   [NeZero n]
   (r : L.RudimentaryTerm n) (φ : L.DeltaZeroBoundedFormula n) :=
   r.ifNonempty φ.charRudimentaryTerm
-  -- r_truth.iUnion r.castSucc
 
 
 @[simp]
-theorem castLHom_ifTrue
-    [NeZero n]
-    (r : M.L'.RudimentaryTerm n) (φ : M.L'.DeltaZeroBoundedFormula n) :
-    (r.ifTrue φ).castLHom = r.castLHom.ifTrue φ.castLHom := by
-  simp [ifTrue]
+theorem isCharFree_ifTrue {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] [NeZero n]
+    (r : L.RudimentaryTerm n) (φ : L.DeltaZeroBoundedFormula n)
+    (hr : r.IsCharFree) (hφ : φ.IsRelFree) :
+    (r.ifTrue φ).IsCharFree := by
+  simp [ifTrue, hr, hφ]
 
-variable [M.Extensional] [M.RudClosed]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 @[simp]
-theorem realize_ifTrue_of_false [NeZero n] (r : M.L.RudimentaryTerm n)
-    {φ : M.L.DeltaZeroBoundedFormula n}
+theorem realize_ifTrue_of_false [NeZero n] (r : L.RudimentaryTerm n)
+    {φ : L.DeltaZeroBoundedFormula n}
     {xs : Fin n → M} (h : ¬φ.toBoundedFormula〘xs〙) :
     (r.ifTrue φ)〘xs〙 = ∅ := by
   simp only [ifTrue]
@@ -466,8 +465,8 @@ theorem realize_ifTrue_of_false [NeZero n] (r : M.L.RudimentaryTerm n)
   simp [h]
 
 @[simp]
-theorem realize_ifTrue_of_true [NeZero n] (r : M.L.RudimentaryTerm n)
-    {φ : M.L.DeltaZeroBoundedFormula n}
+theorem realize_ifTrue_of_true [NeZero n] (r : L.RudimentaryTerm n)
+    {φ : L.DeltaZeroBoundedFormula n}
     {xs : Fin n → M} (h : φ.toBoundedFormula〘xs〙) :
     (r.ifTrue φ)〘xs〙 = r〘xs〙 := by
   simp only [ifTrue]
@@ -475,15 +474,15 @@ theorem realize_ifTrue_of_true [NeZero n] (r : M.L.RudimentaryTerm n)
   simp [h]
 
 @[simp]
-theorem realize_ifTrue_subset [NeZero n] (r : M.L.RudimentaryTerm n)
-    {φ : M.L.DeltaZeroBoundedFormula n}
+theorem realize_ifTrue_subset [NeZero n] (r : L.RudimentaryTerm n)
+    {φ : L.DeltaZeroBoundedFormula n}
     {xs : Fin n → M} :
     (r.ifTrue φ)〘xs〙 ⊆ r〘xs〙 := by
   simp [ifTrue]
 
 @[simp]
-theorem mem_realize_ifTrue_iff [NeZero n] (r : M.L.RudimentaryTerm n)
-    (φ : M.L.DeltaZeroBoundedFormula n)
+theorem mem_realize_ifTrue_iff [NeZero n] (r : L.RudimentaryTerm n)
+    (φ : L.DeltaZeroBoundedFormula n)
     (xs : Fin n → M)
     (z : M) :
     z ∈ (r.ifTrue φ)〘xs〙 ↔ z ∈ r〘xs〙 ∧ φ.toBoundedFormula〘xs〙 := by
@@ -493,18 +492,19 @@ end RudimentaryTerm
 
 namespace DeltaZeroBoundedFormula
 
-variable [L.ExtraConstantsUnaryRelationsOnly] [M.L.ExtraConstantsUnaryRelationsOnly]
-variable [M.Extensional] [M.RudClosed]
-
-noncomputable def comprehensionRudimentaryTerm (φ : L.DeltaZeroBoundedFormula (n + 1)) :
+noncomputable def comprehensionRudimentaryTerm {L : Language} [L.HasMem]
+  [L.ExtraConstantsUnaryRelationsOnly]
+  (φ : L.DeltaZeroBoundedFormula (n + 1)) :
   L.RudimentaryTerm (n + 1) :=
   (ᵣ-1).iUnion <| ({ᵣ-1} : L.RudimentaryTerm (n + 2)).ifTrue <|
     (φ.substBoundBound (cons (last _) (castAdd 2)))
   -- φ.charRudimentaryTerm.iUnion {ᵣ0}
 
+variable [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M]
+
 @[simp]
 theorem mem_realize_comprehensionRudimentaryTerm_iff
-    (φ : M.L.DeltaZeroBoundedFormula (n + 1))
+    (φ : L.DeltaZeroBoundedFormula (n + 1))
     (xs : Fin (n + 1) → M) (z : M) :
     z ∈ φ.comprehensionRudimentaryTerm 〘xs〙 ↔
       z ∈ xs (last _) ∧ φ.toBoundedFormula 〘cons z (init xs)〙 := by
@@ -514,15 +514,10 @@ theorem mem_realize_comprehensionRudimentaryTerm_iff
 
 @[simp]
 theorem mem_realize_comprehensionRudimentaryTerm_iff_snoc
-    (φ : M.L.DeltaZeroBoundedFormula (n + 1))
+    (φ : L.DeltaZeroBoundedFormula (n + 1))
     (x : M) (xs : Fin n → M) (z : M) :
     z ∈ φ.comprehensionRudimentaryTerm 〘snoc xs x〙 ↔ z ∈ x ∧ φ.toBoundedFormula 〘cons z xs〙 := by
   convert mem_realize_comprehensionRudimentaryTerm_iff (M := M) _ _ _ <;> simp
-
-@[simp]
-theorem castLHom_comprehensionRudimentaryTerm (φ : M.L'.DeltaZeroBoundedFormula (n + 1)) :
-    φ.comprehensionRudimentaryTerm.castLHom = φ.castLHom.comprehensionRudimentaryTerm := by
-  simp [comprehensionRudimentaryTerm]
 
 end DeltaZeroBoundedFormula
 
@@ -530,12 +525,12 @@ namespace MemStructure
 
 open RudimentaryTerm Structure
 
-variable [L.ExtraConstantsUnaryRelationsOnly]
+-- variable [L.ExtraConstantsUnaryRelationsOnly]
 
-variable [M.L.ExtraConstantsUnaryRelationsOnly] [M.Extensional] [M.RudClosed]
+variable [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M]
   (x y z : M) {n : ℕ}
 
-instance (A : M.Class) [hA : A.DeltaZero Set.univ] : HasComprehension x A where
+instance (A : Class M) [hA : A.DeltaZero Set.univ] : HasComprehension x A where
   hasComprehension := by
     obtain ⟨n, _, ⟨φ, rfl⟩, vs, -, hvs⟩ := hA.toDeltaZero
     use (φ.cast (by omega)).comprehensionRudimentaryTerm 〘snoc vs x〙
@@ -551,7 +546,7 @@ theorem comprehension_top (x : M) :
   ext; simp
 
 @[simp]
-theorem comprehension_bot (x : M) :
+theorem comprehension_bot [RudClosed M] (x : M) :
     x ∩₀ ⊥ = ∅ := by
   ext; simp
 

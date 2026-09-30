@@ -110,7 +110,7 @@ def castLE (h : m ≤ n) (t : L.Term (α ⊕ Fin m)) :
 @[simp]
 def cast (h : m = n) (t : L.Term (α ⊕ Fin m)) : L.Term (α ⊕ Fin n) := t.castLE h.le
 
-/-- Cast a `L.Term (α ⊕ Fin n)` to `L.Term (α ⊕ (Fin (n + 1)))` -/
+/-- Cast a `L.Term (α ⊕ Fin n)` to `L.Term (α ⊕ (Fin (n + m)))` -/
 @[simp]
 def castAdd (t : L.Term (α ⊕ Fin n)) (m : ℕ) : L.Term (α ⊕ Fin (n + m)) :=
   t.castLE (n.le_add_right m)

@@ -13,7 +13,7 @@ namespace FirstOrder.Language.MemStructure
 
 open Fin
 
-variable {M : MemStructure}
+variable {L : FirstOrder.Language.{u, v}} {M : Type max u v} [L.MemStructure M]
 
 variable (M) in
 /- `M` is extensional -/
@@ -36,7 +36,7 @@ class Extensional : Prop where
 -- instance [hM : M.Extensional] : M.toExtraConstantsOnly.Extensional where
 --   extensional := hM.extensional
 
-variable [M.Extensional] {x y : M}
+variable [Extensional M] {x y : M}
 
 @[ext]
 theorem ext (h : ∀ z, z ∈ x ↔ z ∈ y) : x = y :=

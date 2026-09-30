@@ -8,38 +8,50 @@ import Astlib.Basic.SetOperation.Relation
 file docstring
 -/
 
+open Fin FirstOrder Language MemStructure RudimentaryTerm DeltaZeroBoundedFormula
+
 namespace FirstOrder.Language.MemStructure
 
-variable {L' : Language} [L'.HasMem] [L'.ExtraConstantsOnly]
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M]
 
 section Basic
 
 open RudimentaryTerm Fin
 
-variable {M : MemStructure} [M.L.ExtraConstantsUnaryRelationsOnly] [M.Extensional] [M.RudClosed]
+variable [Extensional M] [RudClosed M]
 
 def IsFunction (f : M) :=
   IsRelation f ∧ ∀ ⦃x y₁ y₂ : M⦄, x [f] y₁ → x [f] y₂ → y₁ = y₂
 
-noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isFunction (r : L'.RudimentaryTerm n) :
-  L'.DeltaZeroBoundedFormula n :=
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isFunction
+  {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) :
+  L.DeltaZeroBoundedFormula n :=
   ((ᵣ0).isRelation ⊓ ∀₀∈ &0 ∀₀∈ &0
     ((&0 =₀ &1).substBoundRud ![(ᵣ1).left, (ᵣ2).left] ⟹
     (&0 =₀ &1).substBoundRud ![(ᵣ1).right, (ᵣ2).right])) |>.substBoundRud ![r]
 
 @[simp]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isFunction
-    (r : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    r.isFunction.castLHom.toBoundedFormula 〘xs〙 ↔ IsFunction (r.castLHom〘xs〙) := by
-  suffices IsRelation r.castLHom〘xs〙 →
-      ((∀ a ∈ r.castLHom〘xs〙,
-        ∀ a_2 ∈ r.castLHom〘xs〙,
-        (ᵣ1).left.castLHom〘snoc (snoc (fun i ↦ r.castLHom〘xs〙) a) a_2〙 =
-            (ᵣ2).left.castLHom〘snoc (snoc (fun i ↦ r.castLHom〘xs〙) a) a_2〙 →
-          (ᵣ1).right.castLHom〘snoc (snoc (fun i ↦ r.castLHom〘xs〙) a) a_2〙 =
-            (ᵣ2).right.castLHom〘snoc (snoc (fun i ↦ r.castLHom〘xs〙) a) a_2〙) ↔
-        ∀ ⦃x y₁ y₂ : ↑M⦄, !(x, y₁) ∈ r.castLHom〘xs〙 → !(x, y₂) ∈ r.castLHom〘xs〙 → y₁ = y₂) by
-    simpa [isFunction, IsFunction, snoc_nat]
+    [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n) (hr : r.IsCharFree) (xs : Fin n → M) :
+    r.isFunction.toBoundedFormula 〘xs〙 ↔ IsFunction (r〘xs〙 : M) := by
+  simp only [isFunction, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, Function.comp_apply,
+    IsFunction]
+  rw [DeltaZeroBoundedFormula.realize_substBoundRud]
+  pick_goal 2
+  · simp
+  pick_goal 2
+  · simp [hr]
+  suffices IsRelation (r〘xs〙 : M) →
+      ((∀ a ∈ r〘xs〙,
+        ∀ a_2 ∈ r〘xs〙,
+        ((ᵣ1).left〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M) =
+            ((ᵣ2).left〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M)→
+          ((ᵣ1).right〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M) =
+            ((ᵣ2).right〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M)) ↔
+        ∀ ⦃x y₁ y₂ : ↑M⦄, !(x, y₁) ∈ r〘xs〙 → !(x, y₂) ∈ r〘xs〙 → y₁ = y₂) by
+    simpa [isFunction, IsFunction, snoc_nat, hr]
   intro hr
   constructor
   · intro h x y₁ y₂ hxy₁ hxy₂
@@ -82,7 +94,7 @@ theorem IsFunction.eq
     {f x y₁ y₂: M} (hf : IsFunction f) (h₁ : x [f] y₁) (h₂ : x [f] y₂) : y₁ = y₂ := by
   grind [IsFunction]
 
--- variable [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+-- variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 @[simp, grind .]
 theorem isFunction_empty : IsFunction (∅ : M) := by
@@ -108,22 +120,24 @@ theorem IsFunction.sdiff
 
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.val
-    (r s : L'.RudimentaryTerm n) : L'.RudimentaryTerm n :=
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+    (r s : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
   (ᵣ0).iUnion ((ᵣ2).right.ifTrue
     ((ᵣ2).isOrderedPair ⊓ (&0 =₀ &1).substBoundRud ![(ᵣ2).left, ᵣ1]))
     |>.substBoundRud ![r, s]
 
-noncomputable def val (f a : M) := ((ᵣ0).val (ᵣ1)).castLHom 〘f, a〙₂
+variable [L.ExtraConstantsUnaryRelationsOnly]
+
+noncomputable def val (f a : M) := ((ᵣ0).val (ᵣ1)) 〘f, a〙₂
 
 infix:88 " ﹫ " => FirstOrder.Language.MemStructure.val
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_val
-    (r s : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    (r.val s).castLHom〘xs〙 = r.castLHom〘xs〙 ﹫ s.castLHom〘xs〙 := by
+    (r s : L.RudimentaryTerm n) (xs : Fin n → M) :
+    (r.val s)〘xs〙 = (r〘xs〙 ﹫ s〘xs〙 : M) := by
   simp only [RudimentaryTerm.val, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, Function.comp_apply,
-    castLHom_substBoundRud, castLHom_iUnion, castLHom_var, castLHom_ifTrue,
-    DeltaZeroBoundedFormula.castLHom_inf, realize_substBoundRud, val]
+    RudimentaryTerm.realize_substBoundRud, val]
   congr
   ext i; fin_cases i <;> simp
 
@@ -134,23 +148,21 @@ theorem IsFunction.rel_iff_val_eq
   obtain ⟨y₀, hy₀⟩ := hx
   suffices f ﹫ x = y₀ by grind
   simp only [val, Nat.succ_eq_add_one, Nat.reduceAdd, RudimentaryTerm.val, isValue,
-    Function.comp_apply, castLHom_substBoundRud, castLHom_iUnion, castLHom_var, castLHom_ifTrue,
-    DeltaZeroBoundedFormula.castLHom_inf, realize_substBoundRud]
+    Function.comp_apply, RudimentaryTerm.realize_substBoundRud]
   ext z
-  simp only [isValue, mem_realize_iUnion_iff, realize_basic, Matrix.cons_val_zero, castLHom_var,
-    Nat.reduceAdd, mem_realize_ifTrue_iff, DeltaZeroBoundedFormula.toBoundedFormula_inf,
-    BoundedFormula.realize'_inf, realize_isOrderedPair,
-    DeltaZeroBoundedFormula.realize_substBoundRud, DeltaZeroBoundedFormula.castLHom_bdEqual,
-    Term.castLHom_var', Function.comp_apply, DeltaZeroBoundedFormula.toBoundedFormula.eq_2,
-    BoundedFormula.realize'_bdEqual, Term.realize'_var', Matrix.cons_val_one,
-    Matrix.cons_val_fin_one]
+  simp only [isValue, mem_realize_iUnion_iff, realize_basic, Matrix.cons_val_zero, Nat.reduceAdd,
+    mem_realize_ifTrue_iff, toBoundedFormula_inf, BoundedFormula.realize'_inf, isCharFree_var,
+    realize_isOrderedPair, DeltaZeroBoundedFormula.isRelFree_eq, forall_fin_two, isCharFree_left,
+    Matrix.cons_val_one, Matrix.cons_val_fin_one, and_self,
+    DeltaZeroBoundedFormula.realize_substBoundRud, toBoundedFormula,
+    BoundedFormula.realize'_bdEqual, Term.realize'_var']
   constructor
   · intro ⟨w, hw₁, hw₂, ⟨x', y', hx'y'⟩, hw₃⟩
     convert hw₂
     symm
     convert realize_right _ (x := x) (y := y₀)
     simp only [isValue, snoc_nat, Nat.reduceAdd, coe_ofNat_eq_mod, Nat.mod_succ, lt_self_iff_false,
-      ↓reduceDIte, castLHom_var, realize_basic] at hx'y' ⊢
+      ↓reduceDIte, realize_basic] at hx'y' ⊢
     subst hx'y'
     suffices x' = x by grind
     convert hw₃
@@ -163,7 +175,7 @@ theorem IsFunction.rel_iff_val_eq
     simp only [isValue, IsOrderedPair, snoc_nat, coe_ofNat_eq_mod, Nat.mod_succ, lt_self_iff_false,
       ↓reduceDIte, orderedPair_eq_orderedPair_iff, exists_and_left, ↓existsAndEq, and_true,
       exists_eq', Nat.one_mod, Order.lt_two_iff, Std.le_refl, mk_one, Matrix.cons_val_one,
-      Matrix.cons_val_fin_one, castLHom_var, realize_basic, true_and]
+      Matrix.cons_val_fin_one, realize_basic, true_and]
     constructor
     · convert hz
       convert realize_right _ (x := x) (y := y₀)
@@ -216,7 +228,7 @@ theorem IsFunction.mem_dom_iff {f : M} (x : M) (hf : IsFunction f) :
 @[grind =]
 theorem IsFunction.mem_ran_iff {f : M} (y : M) (hf : IsFunction f) :
     y ∈ ran f ↔ ∃ x ∈ dom f, f ﹫ x = y := by
-  rw [M.mem_ran_iff]
+  rw [MemStructure.mem_ran_iff]
   exact exists_congr (by grind)
 
 theorem IsFunction.subset_dom_sprod_ran {f : M} (hf : IsFunction f) :
@@ -253,9 +265,7 @@ end Basic
 
 section Comp
 
-variable {M : MemStructure}
-
-variable [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 theorem IsFunction.comp
     {f g : M} (hf : IsFunction f) (hg : IsFunction g) : IsFunction (f !∘ g) := by
@@ -305,9 +315,7 @@ end Comp
 
 section Id
 
-variable {M : MemStructure}
-
-variable [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 @[simp, grind .]
 theorem isFunction_id
@@ -334,8 +342,7 @@ end Id
 
 section IsFunctionFromTo
 
-variable {M : MemStructure}
-  [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 def IsFunctionFromTo (f a b : M) := IsFunction f ∧ dom f = a ∧ ran f ⊆ b
 
@@ -386,8 +393,7 @@ end IsFunctionFromTo
 
 section IsInjectionFromTo
 
-variable {M : MemStructure}
-  [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 def IsInjectionFromTo (f a b : M) :=
     f !: a → b ∧ ∀ ⦃x y⦄, x ∈ a → y ∈ a → f ﹫ x = f ﹫ y → x = y
@@ -456,8 +462,7 @@ end IsInjectionFromTo
 
 section IsSurjectionFromTo
 
-variable {M : MemStructure}
-  [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 def IsSurjectionFromTo (f a b : M) := f !: a → b ∧ ran f = b
 
@@ -530,8 +535,7 @@ end IsSurjectionFromTo
 
 section IsBijectionFromTo
 
-variable {M : MemStructure}
-  [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 def IsBijectionFromTo (f a b : M) := f !: a ↪ b ∧ f !: a ↠ b
 
@@ -638,24 +642,24 @@ end IsBijectionFromTo
 
 section Restrict
 
-variable {M : MemStructure}
-  [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.restrict
-    (r s : L'.RudimentaryTerm n) : L'.RudimentaryTerm n :=
+  {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+  (r s : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
   r ∩ (s ×ˢ r.ran)
 
 infix:88 " ↾ " => FirstOrder.Language.RudimentaryTerm.restrict
 
-noncomputable def restrict (f a : M) := ((ᵣ0).restrict (ᵣ1)).castLHom 〘f, a〙₂
+noncomputable def restrict (f a : M) := ((ᵣ0).restrict (ᵣ1)) 〘f, a〙₂
 -- noncomputable def restrict (f a : M) := (∃'∈ &0 (&2).eqLeft &1) 〘a, ∈ f〙₀
 
 infix:88 " ↾ " => FirstOrder.Language.MemStructure.restrict
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_restrict
-    (r s : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    (r ↾ s).castLHom〘xs〙 = r.castLHom〘xs〙 ↾ s.castLHom〘xs〙:= by
+    (r s : L.RudimentaryTerm n) (xs : Fin n → M) :
+    (r ↾ s)〘xs〙 = (r〘xs〙 ↾ s〘xs〙 : M) := by
   simp [restrict, RudimentaryTerm.restrict]
 
 theorem restrict_eq (f a : M) :
@@ -735,8 +739,7 @@ end Restrict
 
 section Image
 
-variable {M : MemStructure}
-  [M.Extensional] [M.RudClosed] [M.L.ExtraConstantsUnaryRelationsOnly]
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
 noncomputable def image (f a : M) := ran (f ↾ a)
 

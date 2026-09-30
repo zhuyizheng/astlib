@@ -14,11 +14,10 @@ open Fin FirstOrder Language MemStructure RudimentaryTerm DeltaZeroBoundedFormul
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} [M.L.ExtraConstantsUnaryRelationsOnly] (x y z x₁ x₂ y₁ y₂ u v : M)
-  [M.Extensional] [M.RudClosed]
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M]
+  (x y z x₁ x₂ y₁ y₂ u v : M)
 
-
-variable {L L' : Language} [L.HasMem] [L'.HasMem] [L'.ExtraConstantsOnly]
 
 section Basic
 
@@ -29,16 +28,23 @@ def IsRelation (R : M) :=
 notation:50 x " [" R:50 "] " y:50 => !(x, y) ∈ R
 
 
-noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isRelation (r : L'.RudimentaryTerm n) :
-  L'.DeltaZeroBoundedFormula n :=
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isRelation
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) :
+  L.DeltaZeroBoundedFormula n :=
   ∀₀∈ &0 (ᵣ1).isOrderedPair |>.substBoundRud ![r]
 
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isRelFree_isRelation
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
+    r.isRelation.IsRelFree := by
+  simp [isRelation, hr]
 
 @[simp]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isRelation
-    (r : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    r.isRelation.castLHom.toBoundedFormula 〘xs〙 ↔ IsRelation (r.castLHom〘xs〙) := by
-  simp [isRelation, IsRelation, snoc_nat]
+    [RudClosed M] [Extensional M] [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n) (hr : r.IsCharFree) (xs : Fin n → M) :
+    r.isRelation.toBoundedFormula 〘xs〙 ↔ IsRelation (r〘xs〙 : M) := by
+  simp [isRelation, IsRelation, hr, snoc_nat]
 
 -- theorem IsRelation.exists_exists {R : M} (hR : IsRelation R)
 --     {z : M} (hz : z ∈ R) : ∃ x y, z = !(x, y) := hR hz
@@ -50,14 +56,16 @@ lemma IsRelation.subset_iff {R S : M} (hR : IsRelation R) :
   exact hxy ▸ (h x y) (hxy ▸ hz)
 
 @[grind .]
-theorem IsRelation.ext [M.Extensional] {R S : M} (hR : IsRelation R) (hS : IsRelation S)
+theorem IsRelation.ext [Extensional M] {R S : M} (hR : IsRelation R) (hS : IsRelation S)
     (h : ∀ x y : M, x [R] y ↔ x [S] y) : R = S :=
   eq_of_subset_of_subset (hR.subset_iff.mpr (by grind)) (hS.subset_iff.mpr (by grind))
 
 @[grind .]
-theorem IsRelation.eq_iff [M.Extensional] {R S : M} (hR : IsRelation R) (hS : IsRelation S) :
+theorem IsRelation.eq_iff [Extensional M] {R S : M} (hR : IsRelation R) (hS : IsRelation S) :
     R = S ↔ ∀ x y : M, x [R] y ↔ x [S] y := by
   grind
+
+variable [RudClosed M]
 
 @[simp, grind .]
 theorem isRelation_empty : IsRelation (∅ : M) := by
@@ -67,7 +75,7 @@ theorem isRelation_empty : IsRelation (∅ : M) := by
 theorem isRelation_sprod : IsRelation (x ×ˢ y) := by
   grind
 
-omit [M.RudClosed] in
+omit [RudClosed M] in
 @[simp, grind .]
 theorem IsRelation.subset {R S : M} (hR : IsRelation R) (hSR : S ⊆ R) :
     IsRelation S := by
@@ -97,26 +105,38 @@ theorem IsRelation.sUnion {X : M}
   -- {M' : MemStructure} [M'.L.ExtraConstantsOnly] [M'.Extensional] [M'.RudClosed]
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.dom
-    (r : L'.RudimentaryTerm n) : L'.RudimentaryTerm n :=
-  (ᵣ0).iUnion (({(ᵣ1).left} : L'.RudimentaryTerm 2).ifTrue (ᵣ1).isOrderedPair)
+    {L : Language} [L.HasMem]
+    [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  (ᵣ0).iUnion (({(ᵣ1).left} : L.RudimentaryTerm 2).ifTrue (ᵣ1).isOrderedPair)
     |>.substBoundRud ![r]
 
-noncomputable def dom (R : M) := (ᵣ0).dom.castLHom 〘R〙₁
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_dom
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
+    r.dom.IsCharFree := by
+  simp only [dom, isValue]
+  apply isCharFree_substBoundRud
+  · apply isCharFree_ifTrue <;> simp
+  · simp [hr]
+
+variable [L.ExtraConstantsUnaryRelationsOnly] [Extensional M]
+
+noncomputable def dom (R : M) := (ᵣ0).dom 〘R〙₁
 
 @[simp, grind =]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_dom (r : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    r.dom.castLHom〘xs〙 = dom r.castLHom〘xs〙 := by
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_dom (r : L.RudimentaryTerm n) (xs : Fin n → M) :
+    r.dom〘xs〙 = dom (r〘xs〙 : M) := by
   simp [dom, RudimentaryTerm.dom]
 
 @[grind =]
 theorem mem_dom_iff (R x : M) :
     x ∈ dom R ↔ ∃ y, x [R] y := by
-  suffices (∃ z ∈ R, x = (ᵣ1).left.castLHom〘snoc (fun i ↦ R) z〙 ∧ IsOrderedPair z) ↔
+  suffices (∃ z ∈ R, x = (ᵣ1).left〘snoc (fun i ↦ R) z〙 ∧ IsOrderedPair z) ↔
       ∃ y, !(x, y) ∈ R by
     simpa [dom, RudimentaryTerm.dom, snoc_nat]
   constructor
   · intro ⟨z, hz₁, hz₂, ⟨x', y', hx'y'⟩⟩
-    have := realize_left (r := (ᵣ1 : M.L'.RudimentaryTerm 2))
+    have := realize_left (r := (ᵣ1 : L.RudimentaryTerm 2))
       (xs := snoc (fun i ↦ R) z) (x := x') (y := y') (by simp [snoc_nat, hx'y'])
     rw [this] at hz₂
     grind
@@ -151,25 +171,35 @@ theorem dom_sprod
   exact ⟨v, by grind⟩
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.ran
-    (r : L'.RudimentaryTerm n) : L'.RudimentaryTerm n :=
-  (ᵣ0).iUnion (({(ᵣ1).right} : L'.RudimentaryTerm 2).ifTrue (ᵣ1).isOrderedPair)
+    {L : Language} [L.HasMem]
+    [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  (ᵣ0).iUnion (({(ᵣ1).right} : L.RudimentaryTerm 2).ifTrue (ᵣ1).isOrderedPair)
     |>.substBoundRud ![r]
 
-noncomputable def ran (R : M) := (ᵣ0).ran.castLHom 〘R〙₁
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_ran
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
+    r.ran.IsCharFree := by
+  simp only [ran, isValue]
+  apply isCharFree_substBoundRud
+  · apply isCharFree_ifTrue <;> simp
+  · simp [hr]
+
+noncomputable def ran (R : M) := (ᵣ0).ran 〘R〙₁
 
 @[simp, grind =]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_ran (r : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    r.ran.castLHom〘xs〙 = ran r.castLHom〘xs〙 := by
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_ran (r : L.RudimentaryTerm n) (xs : Fin n → M) :
+    r.ran〘xs〙 = ran (r〘xs〙 : M) := by
   simp [ran, RudimentaryTerm.ran]
 
 @[grind =]
 theorem mem_ran_iff (R y : M) :
     y ∈ ran R ↔ ∃ x, x [R] y := by
-  suffices (∃ z ∈ R, y = (ᵣ1).right.castLHom〘snoc (fun i ↦ R) z〙 ∧ IsOrderedPair z) ↔ ∃ x, !(x, y) ∈ R by
+  suffices (∃ z ∈ R, y = (ᵣ1).right〘snoc (fun i ↦ R) z〙 ∧ IsOrderedPair z) ↔ ∃ x, !(x, y) ∈ R by
     simpa [ran, RudimentaryTerm.ran, snoc_nat]
   constructor
   · intro ⟨z, hz₁, hz₂, ⟨x', y', hx'y'⟩⟩
-    have := realize_right (r := (ᵣ1 : M.L'.RudimentaryTerm 2))
+    have := realize_right (r := (ᵣ1 : L.RudimentaryTerm 2))
       (xs := snoc (fun i ↦ R) z) (x := x') (y := y') (by simp [snoc_nat, hx'y'])
     rw [this] at hz₂
     grind
@@ -214,31 +244,44 @@ end Basic
 
 section Comp
 
--- variable [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+-- variable [Extensional M] [M.ClosedUnderPair] [M.ClosedUnderSProd]
 --   [M.ClosedUnderDeltaZeroComprehension] [M.ClosedUnderSUnion]
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.comp
-    (r s : L'.RudimentaryTerm n) : L'.RudimentaryTerm n :=
-  (ᵣ0).iUnion ((ᵣ1).iUnion (({ᵣ((ᵣ3).left, (ᵣ2).right)} : L'.RudimentaryTerm 4).ifTrue
+    {L : Language} [L.HasMem]
+    [L.ExtraConstantsUnaryRelationsOnly]
+    (r s : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  (ᵣ0).iUnion ((ᵣ1).iUnion (({ᵣ((ᵣ3).left, (ᵣ2).right)} : L.RudimentaryTerm 4).ifTrue
     ((ᵣ3).isOrderedPair ⊓ (ᵣ2).isOrderedPair ⊓
       (&0 =₀ &1).substBoundRud (![(ᵣ3).right, (ᵣ2).left]))))
     |>.substBoundRud ![r, s]
 
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_comp
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r s : L.RudimentaryTerm n) (hr : r.IsCharFree) (hs : s.IsCharFree) :
+    (r.comp s).IsCharFree := by
+  simp only [comp, isValue, Nat.reduceAdd, Nat.succ_eq_add_one, Function.comp_apply]
+  apply isCharFree_substBoundRud
+  · apply isCharFree_ifTrue <;> simp
+  · simp [hr, hs]
+
+variable [L.ExtraConstantsUnaryRelationsOnly] [Extensional M]
+
 /-- `R ∘ S` in set theory, denoted by `R !∘ S` in lean -/
 noncomputable def comp (R S : M) : M :=
-   ((ᵣ0).comp (ᵣ1)).castLHom 〘R, S〙₂
+   ((ᵣ0).comp (ᵣ1)) 〘R, S〙₂
 
 @[inherit_doc] infixr:90 " !∘ "  => FirstOrder.Language.MemStructure.comp
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_comp
-    (r s : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    (r.comp s).castLHom〘xs〙 = r.castLHom〘xs〙 !∘ s.castLHom〘xs〙 := by
+    (r s : L.RudimentaryTerm n) (xs : Fin n → M) :
+    (r.comp s)〘xs〙 = (r〘xs〙 !∘ s〘xs〙 : M) := by
   simp only [RudimentaryTerm.comp, isValue, Nat.reduceAdd, Nat.succ_eq_add_one, Function.comp_apply,
-    castLHom_substBoundRud, castLHom_iUnion, castLHom_var, castLHom_ifTrue, castLHom_singleton,
-    castLHom_orderedPair, castLHom_inf, RudimentaryTerm.realize_substBoundRud, comp]
+    RudimentaryTerm.realize_substBoundRud, comp]
   congr
   ext i; fin_cases i <;> simp
+
+variable [RudClosed M]
 
 @[grind =]
 theorem mem_comp_iff
@@ -247,11 +290,11 @@ theorem mem_comp_iff
   suffices (∃ z_1 ∈ R,
     ∃ z_2 ∈ S,
       z =
-          !((ᵣ3).left.castLHom〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i).castLHom〘R, S〙₂) z_1) z_2〙,
-            (ᵣ2).right.castLHom〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i).castLHom〘R, S〙₂) z_1) z_2〙) ∧
+          !(((ᵣ3).left〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙 : M),
+            (ᵣ2).right〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙) ∧
         (IsOrderedPair z_2 ∧ IsOrderedPair z_1) ∧
-          (ᵣ3).right.castLHom〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i).castLHom〘R, S〙₂) z_1) z_2〙 =
-            (ᵣ2).left.castLHom〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i).castLHom〘R, S〙₂) z_1) z_2〙) ↔
+          (ᵣ3).right〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙 =
+            (ᵣ2).left〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙) ↔
   ∃ a b c, z = !(a, c) ∧ !(a, b) ∈ S ∧ !(b, c) ∈ R by
     simpa [comp, RudimentaryTerm.comp, snoc_nat]
   constructor
@@ -320,23 +363,35 @@ section Id
 
 -- variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
--- variable [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderSProd]
+-- variable [Extensional M] [M.ClosedUnderPair] [M.ClosedUnderSProd]
 --   [M.ClosedUnderDeltaZeroComprehension]
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.id
-    (r : L'.RudimentaryTerm n) : L'.RudimentaryTerm n :=
+    {L : Language} [L.HasMem]
+    -- [L.ExtraConstantsUnaryRelationsOnly]
+    (r : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
   (ᵣ0).iUnion {ᵣ(ᵣ1, ᵣ1)}
     |>.substBoundRud ![r]
 
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_id
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
+    r.id.IsCharFree := by
+  simp only [RudimentaryTerm.id, Nat.succ_eq_add_one, Nat.reduceAdd, isValue]
+  apply isCharFree_substBoundRud
+  · simp
+  · simp [hr]
+
 /-- `R ∘ S` in set theory, denoted by `R !∘ S` in lean -/
 noncomputable def id (a : M) : M :=
-  (ᵣ0).id.castLHom 〘a〙₁
+  (ᵣ0).id 〘a〙₁
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_id
-    (r : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    r.id.castLHom〘xs〙 = id r.castLHom〘xs〙 := by
+    (r : L.RudimentaryTerm n) (xs : Fin n → M) :
+    r.id〘xs〙 = (id r〘xs〙 : M) := by
   simp [id, RudimentaryTerm.id]
+
+variable [RudClosed M]
 
 @[grind =]
 theorem mem_id_iff (x z : M) : z ∈ id x ↔ ∃ a ∈ x, z = !(a, a) := by
@@ -355,8 +410,10 @@ theorem eq_of_id {x y z : M} (h : y [id x] z) : y = z := by
 theorem id_isRelation (a : M) : IsRelation (id a) := by
   grind
 
+variable [L.ExtraConstantsUnaryRelationsOnly] [Extensional M]
+
 @[simp, grind =]
-theorem dom_id (a : M) : dom (id a) = a := by
+theorem dom_id (a : M) : dom (id a : M) = a := by
   ext z
   rw [mem_dom_iff]
   exact ⟨by grind, fun hz ↦ ⟨z, by grind⟩⟩
@@ -386,29 +443,43 @@ section Inv
 -- variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
 /-- `y [R⁻¹] x` means `x [R] y` -/
-noncomputable instance : Inv (L'.RudimentaryTerm n) :=
-  ⟨fun r ↦ (ᵣ0).iUnion (({ᵣ((ᵣ1).right, (ᵣ1).left)} : L'.RudimentaryTerm 2).ifTrue ((ᵣ1).isOrderedPair))
+noncomputable instance
+    {L : Language} [L.HasMem]
+    [L.ExtraConstantsUnaryRelationsOnly] : Inv (L.RudimentaryTerm n) :=
+  ⟨fun r ↦ (ᵣ0).iUnion (({ᵣ((ᵣ1).right, (ᵣ1).left)} : L.RudimentaryTerm 2).ifTrue ((ᵣ1).isOrderedPair))
     |>.substBoundRud ![r]⟩
 
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_inv
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
+    r⁻¹.IsCharFree := by
+  simp only [Inv.inv, isValue]
+  apply isCharFree_substBoundRud
+  · apply isCharFree_ifTrue <;> simp
+  · simp [hr]
+
 -- noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.inv
---     (r : L'.RudimentaryTerm n) : L'.RudimentaryTerm n :=
---   ((ᵣ0).iUnion {ᵣ((ᵣ1).right, (ᵣ1).left)}).ifTrue ((L'.isOrderedPair.substBoundRud ![ᵣ1]))
+--     (r : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+--   ((ᵣ0).iUnion {ᵣ((ᵣ1).right, (ᵣ1).left)}).ifTrue ((L.isOrderedPair.substBoundRud ![ᵣ1]))
 --     |>.substBoundRud ![r]
+
+variable [L.ExtraConstantsUnaryRelationsOnly]
 
 /-- `y [R⁻¹] x` means `x [R] y` -/
 noncomputable instance : Inv M :=
-  ⟨fun R ↦ (ᵣ0)⁻¹.castLHom 〘R〙₁⟩
+  ⟨fun R ↦ (ᵣ0)⁻¹ 〘R〙₁⟩
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inv
-    (r : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    r⁻¹.castLHom〘xs〙 = (r.castLHom〘xs〙)⁻¹ := by
+    (r : L.RudimentaryTerm n) (xs : Fin n → M) :
+    r⁻¹〘xs〙 = (r〘xs〙)⁻¹ := by
   simp [Inv.inv]
+
+variable [RudClosed M] [Extensional M]
 
 @[grind =]
 theorem mem_inv (R z : M) : z ∈ R⁻¹ ↔ ∃ a b : M, z = !(a, b) ∧ b [R] a := by
   suffices (∃ z_1 ∈ R,
-    z = !((ᵣ1).right.castLHom〘snoc (fun i ↦ R) z_1〙, (ᵣ1).left.castLHom〘snoc (fun i ↦ R) z_1〙) ∧ IsOrderedPair z_1) ↔
+    z = !(((ᵣ1).right〘snoc (fun i ↦ R) z_1〙 : M), (ᵣ1).left〘snoc (fun i ↦ R) z_1〙) ∧ IsOrderedPair z_1) ↔
       ∃ a b, z = !(a, b) ∧ !(b, a) ∈ R by
     simpa [Inv.inv, snoc_nat]
   constructor
@@ -461,9 +532,11 @@ section Restrict
 
 -- variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
--- variable [M.ClosedUnderDeltaZeroComprehension] [M.Extensional] [M.ClosedUnderPair]
+-- variable [M.ClosedUnderDeltaZeroComprehension] [Extensional M] [M.ClosedUnderPair]
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.restrict₂
+    {L : Language} [L.HasMem]
+    [L.ExtraConstantsUnaryRelationsOnly]
     (r s : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
   ᵣ0 ∩ ((ᵣ1 : L.RudimentaryTerm 2) ×ˢ (ᵣ1 : L.RudimentaryTerm 2))
     |>.substBoundRud ![r, s]
@@ -471,37 +544,39 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.restrict₂
 infix:88 " ↾↾ " => FirstOrder.Language.RudimentaryTerm.restrict₂
 
 @[simp]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.castLHom_restrict₂
-    {M : MemStructure} (r s : M.L'.RudimentaryTerm n) :
-    (r ↾↾ s).castLHom = r.castLHom ↾↾ s.castLHom := by
-  simp only [restrict₂, isValue, castLHom_substBoundRud, castLHom_inter, castLHom_var,
-    castLHom_sprod]
-  congr
-  ext i; fin_cases i <;> simp
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_restrict₂
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r s : L.RudimentaryTerm n) (hr : r.IsCharFree) (hs : s.IsCharFree) :
+    (r ↾↾ s).IsCharFree := by
+  simp only [restrict₂, isValue]
+  apply isCharFree_substBoundRud
+  · apply isCharFree_inter <;> simp
+  · simp [hr, hs]
+
+variable [L.ExtraConstantsUnaryRelationsOnly]
 
 noncomputable def restrict₂ (R a : M) :=
-  (ᵣ0 ↾↾ ᵣ1).castLHom 〘R, a〙₂
+  (ᵣ0 ↾↾ ᵣ1) 〘R, a〙₂
 
 infix:88 " ↾↾ " => FirstOrder.Language.MemStructure.restrict₂
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_restrict₂
-    (r s : M.L.RudimentaryTerm n) (xs : Fin n → M) :
-    (r ↾↾ s)〘xs〙 = r〘xs〙 ↾↾ s〘xs〙:= by
+    (r s : L.RudimentaryTerm n) (xs : Fin n → M) :
+    (r ↾↾ s)〘xs〙 = (r〘xs〙 ↾↾ s〘xs〙 : M) := by
   simp [restrict₂, RudimentaryTerm.restrict₂]
 
 @[simp]
 theorem restrict₂_eq (R a : M) :
     R ↾↾ a = R ∩ (a ×ˢ a) := by
-  simp only [restrict₂, Nat.succ_eq_add_one, Nat.reduceAdd, RudimentaryTerm.restrict₂, Inter.inter,
-    isValue, castLHom_substBoundRud, castLHom_sdiff', castLHom_var, castLHom_sprod,
-    RudimentaryTerm.realize_substBoundRud, realize_sdiff, realize_basic, Matrix.cons_val_zero,
-    Matrix.cons_val_one, Matrix.cons_val_fin_one]
-  congr 1
+  simp [restrict₂, RudimentaryTerm.restrict₂]
+
+variable [RudClosed M]
 
 theorem mem_restrict₂_iff (R a z : M) :
     z ∈ R ↾↾ a ↔ z ∈ R ∧ ∃ x ∈ a, ∃ y ∈ a, z = !(x, y) := by
   simp
+
+variable [Extensional M]
 
 theorem rel_restrict₂_iff (R x y : M) :
     x [R ↾↾ a] y ↔ x [R] y ∧ x ∈ a ∧ y ∈ a := by
@@ -544,18 +619,26 @@ section IsRelationOn
 
 -- variable {M : MemStructure} (x y z x₁ x₂ y₁ y₂ u v : M)
 
+variable [L.ExtraConstantsUnaryRelationsOnly]
+
 def IsRelationOn (R a : M) := IsRelation R ∧ R ↾↾ a = R
 
-noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isRelationOn (r s : L'.RudimentaryTerm n) :
-  L'.DeltaZeroBoundedFormula n :=
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isRelationOn (r s : L.RudimentaryTerm n) :
+  L.DeltaZeroBoundedFormula n :=
   (ᵣ0).isRelation ⊓ (&0 =₀ &1).substBoundRud ![ᵣ0 ↾↾ ᵣ1, ᵣ0] |>.substBoundRud ![r, s]
+
+variable [RudClosed M] [Extensional M]
 
 @[simp]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isRelationOn
-    (r s : M.L'.RudimentaryTerm n) (xs : Fin n → M) :
-    (r.isRelationOn s).castLHom.toBoundedFormula 〘xs〙 ↔
-      IsRelationOn r.castLHom〘xs〙 s.castLHom〘xs〙:= by
-  simp [isRelationOn, IsRelationOn]
+    (r s : L.RudimentaryTerm n)
+    (hr : r.IsCharFree) (hs : s.IsCharFree)
+    (xs : Fin n → M) :
+    (r.isRelationOn s).toBoundedFormula 〘xs〙 ↔
+      IsRelationOn (r〘xs〙 : M) s〘xs〙:= by
+  simp only [isRelationOn, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, Function.comp_apply,
+    IsRelationOn, restrict₂_eq, inter_eq_left_iff_subset]
+  rw [DeltaZeroBoundedFormula.realize_substBoundRud] <;> simp [hr, hs]
 
 @[simp, grind .]
 theorem IsRelationOn.isRelation {R a : M} (h : IsRelationOn R a) : IsRelation R := h.left
@@ -563,7 +646,7 @@ theorem IsRelationOn.isRelation {R a : M} (h : IsRelationOn R a) : IsRelation R 
 @[simp, grind .]
 theorem IsRelationOn.restrict_eq {R a : M} (h : IsRelationOn R a) : R ↾↾ a = R := h.right
 
--- variable [M.Extensional] [M.ClosedUnderPair] [M.ClosedUnderDeltaZeroComprehension]
+-- variable [Extensional M] [M.ClosedUnderPair] [M.ClosedUnderDeltaZeroComprehension]
 
 @[simp, grind .]
 theorem IsRelationOn.isSubset {R a : M} (h : IsRelationOn R a) :

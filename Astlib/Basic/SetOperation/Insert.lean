@@ -18,7 +18,9 @@ instance {n} {L : FirstOrder.Language} [L.HasMem] :
 
 namespace MemStructure
 
-variable {M : MemStructure} (x y z : M)
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M]
+  (x y z : M)
 
 noncomputable instance : Insert M M := ⟨fun x y ↦ ({ᵣ0} ∪ ᵣ1)〘x, y〙₂⟩
 
@@ -27,14 +29,14 @@ theorem insert_eq : insert x y = {x} ∪ y := by
   simp only [singleton, union_eq, sUnion_eq]
   rfl
 
-variable [M.RudClosed]
+variable [RudClosed M]
 
 @[simp, grind! .]
 theorem mem_insert : x ∈ insert x y := by
   grind
 
 @[simp]
-theorem insert_ne_empty [M.Extensional] :
+theorem insert_ne_empty [Extensional M] :
     insert x y ≠ ∅ := by
   grind
 
@@ -48,7 +50,7 @@ theorem mem_insert_iff :
   grind
 
 @[simp, grind .]
-theorem insert_eq_self [M.Extensional] :
+theorem insert_eq_self [Extensional M] :
     insert x y = y ↔ x ∈ y :=
   ⟨by grind, fun _ ↦ by ext; grind⟩
 

@@ -10,6 +10,7 @@ import Astlib.Basic.SetOperation.Inter
 import Astlib.Basic.SetOperation.MemStructure.Defs
 import Astlib.Basic.SetOperation.MemStructure.Levy
 import Astlib.Basic.SetOperation.MemStructure.Semantics
+import Astlib.Basic.SetOperation.MemStructure.Substructure
 import Astlib.Basic.SetOperation.MemStructure.Syntax
 import Astlib.Basic.SetOperation.Multiclass.Defs
 import Astlib.Basic.SetOperation.Multiclass.Levy
@@ -17,7 +18,8 @@ import Astlib.Basic.SetOperation.Pair.Basic
 import Astlib.Basic.SetOperation.Pair.Syntax
 import Astlib.Basic.SetOperation.Powerset
 import Astlib.Basic.SetOperation.Relation
-import Astlib.Basic.SetOperation.Rudimentary.Formulas
+import Astlib.Basic.SetOperation.Rudimentary.Basis.Semantics
+import Astlib.Basic.SetOperation.Rudimentary.Basis.Syntax
 import Astlib.Basic.SetOperation.Rudimentary.Semantics
 import Astlib.Basic.SetOperation.Rudimentary.Syntax
 import Astlib.Basic.SetOperation.SDiff

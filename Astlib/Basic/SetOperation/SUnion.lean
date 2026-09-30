@@ -9,10 +9,12 @@ import Astlib.Basic.SetOperation.Empty
 file docstring
 -/
 
-open FirstOrder Language BoundedFormula RudimentaryTerm Fin
+open FirstOrder Language BoundedFormula RudimentaryTerm Fin MemStructure
+
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M] [RudClosed M] (x : M)
 
 namespace FirstOrder.Language
-
 
 def RudimentaryTerm.sUnion {n} {L : FirstOrder.Language} [L.HasMem]
   (r : L.RudimentaryTerm n) := ((ᵣ0).iUnion (ᵣ1)).substBoundRud ![r]
@@ -21,29 +23,29 @@ def RudimentaryTerm.sUnion {n} {L : FirstOrder.Language} [L.HasMem]
 @[inherit_doc] prefix:110 "ᵣ⋃₀ " => FirstOrder.Language.RudimentaryTerm.sUnion
 
 @[simp]
-theorem castLHom_sUnion
-    (M : MemStructure)
-    (r : M.L'.RudimentaryTerm n) :
-    (ᵣ⋃₀ r).castLHom = ᵣ⋃₀ r.castLHom := by
-  simp [RudimentaryTerm.sUnion, Matrix.const_fin1_eq]
+theorem RudimentaryTerm.isCharFree_sUnion {n} {L : FirstOrder.Language} [L.HasMem]
+    (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
+    (ᵣ⋃₀ r).IsCharFree := by
+  simp [sUnion, hr]
+
 
 namespace MemStructure
 
-variable {M : MemStructure} [M.RudClosed] (x y a : M)
+variable (x y a : M)
 
 /-- `⋃ x` in set theory, denoted by `⋃₀ x` in lean -/
 noncomputable def sUnion (x : M) := (ᵣ⋃₀ ᵣ0)〘x〙₁
 
 @[inherit_doc] prefix:110 "⋃₀ " => sUnion
 
-omit [M.RudClosed] in
+omit [RudClosed M] in
 -- @[simp]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_sUnion
-    (r : M.L.RudimentaryTerm n) (xs : Fin n → M) :
-    (ᵣ⋃₀ r)〘xs〙 = ⋃₀ r〘xs〙 := by
+    (r : L.RudimentaryTerm n) (xs : Fin n → M) :
+    (ᵣ⋃₀ r)〘xs〙 = (⋃₀ r〘xs〙 : M) := by
   simp [sUnion, RudimentaryTerm.sUnion]
 
-omit [M.RudClosed] in
+omit [RudClosed M] in
 @[grind =]
 theorem sUnion_eq : ⋃₀ x = iUnion x id := by
   simp [sUnion, Nat.succ_eq_add_one, Nat.reduceAdd, RudimentaryTerm.sUnion, isValue]
@@ -53,12 +55,12 @@ theorem sUnion_eq : ⋃₀ x = iUnion x id := by
 theorem mem_sUnion_iff : x ∈ ⋃₀ a ↔ ∃ y ∈ a, x ∈ y := by
   simp [sUnion, RudimentaryTerm.sUnion, snoc_nat]
 
-theorem eq_sUnion_iff [M.Extensional] : x = ⋃₀ a ↔
+theorem eq_sUnion_iff [Extensional M] : x = ⋃₀ a ↔
     (∀ z ∈ x, ∃ y ∈ a, z ∈ y) ∧ ∀ y ∈ a, ∀ z ∈ y, z ∈ x :=
   ⟨by grind, fun _ ↦ by ext; grind⟩
 
 @[simp, grind! ., push]
-theorem sUnion_empty [M.Extensional] : ⋃₀ (∅ : M) = ∅ := by
+theorem sUnion_empty [Extensional M] : ⋃₀ (∅ : M) = ∅ := by
   ext; grind
 
 theorem sUnion_mono {x y : M} (h : x ⊆ y) : ⋃₀ x ⊆ ⋃₀ y := by
@@ -152,7 +154,7 @@ end MemStructure
 -- --   simp [memSUnion, MemStructure.mem_sUnion_iff]
 
 -- -- @[simp]
--- -- theorem Term.eqSUnion_iff [M.Extensional] [M.ClosedUnderSUnion] :
+-- -- theorem Term.eqSUnion_iff [Extensional M] [M.ClosedUnderSUnion] :
 -- --     (t₁.eqSUnion t₂)〘v, xs〙 ↔ t₁〘v, xs〙 = ⋃₀ t₂〘v, xs〙 := by
 -- --   simp only [eqSUnion, Function.comp_apply, castSucc, Nat.succ_eq_add_one, realize_inf,
 -- --     realize_allMem, memSUnion_iff, realize'_castLE, castLE_succ_castSucc, snoc_comp_castSucc,

@@ -10,12 +10,13 @@ file docstring
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} [M.RudClosed] (x y : M)
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [L.ExtraConstantsUnaryRelationsOnly] [Inhabited M] (x y : M)
 
 def IsChoiceFunction (f F : M) :=
   IsFunction f ∧ dom f = dom F ∧ ∀ x ∈ dom F, F ﹫ x ≠ ∅ → f ﹫ x ∈ F ﹫ x
 
-noncomputable instance : Decidable
+noncomputable instance (F : M) : Decidable
   (∃ f, IsChoiceFunction f F) :=
   Classical.propDecidable _
 

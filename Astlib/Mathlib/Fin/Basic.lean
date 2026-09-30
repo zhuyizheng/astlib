@@ -74,14 +74,14 @@ theorem snoc_snoc_comp_castSucc_castSucc {α : Sort*} {a b : α} {f : Fin n → 
     (snoc (snoc f a : Fin (n + 1) → α) b) ∘ castSucc ∘ castSucc = f := by
   simp [← Function.comp_assoc]
 
-theorem castAdd_two_eq_castSucc_castSucc :
+theorem castLE_add_two_eq_castSucc_castSucc :
     castLE (n := n) (m := n + 2) (by omega) =  castSucc ∘ castSucc := by
   ext; simp
 
 @[simp]
 theorem snoc_snoc_comp_castLE {α : Sort*} {a b : α} {f : Fin n → α} :
     (snoc (snoc f a : Fin (n + 1) → α) b) ∘ (castLE (by omega)) = f := by
-  simp [castAdd_two_eq_castSucc_castSucc]
+  simp [castLE_add_two_eq_castSucc_castSucc]
 
 @[simp]
 theorem Fin.val_last_plus_one_minus_one : (last (n + 1) - 1).val = n := by

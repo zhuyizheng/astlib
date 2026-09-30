@@ -12,7 +12,9 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} [M.RudClosed] (x y : M)
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M]
+  (x y : M)
 
 def IsPowerset (a x : M) := ∀ z, z ∈ a ↔ z ⊆ x
 
@@ -31,7 +33,7 @@ variable (M) in
 class ClosedUnderPowerset : Prop where
   protected closedUnderPowerset : ∀ x : M, ∃ a, IsPowerset a x
 
-instance [hM : M.ClosedUnderPowerset] (x : M) : HasPowerset x := ⟨hM.closedUnderPowerset x⟩
+instance [hM : ClosedUnderPowerset M] (x : M) : HasPowerset x := ⟨hM.closedUnderPowerset x⟩
 
 @[simp, grind =, push]
 theorem mem_powerset_iff {x : M} [hx : HasPowerset x] (z : M) : z ∈ 𝒫 x ↔ z ⊆ x := by
@@ -42,11 +44,11 @@ theorem mem_powerset_iff {x : M} [hx : HasPowerset x] (z : M) : z ∈ 𝒫 x ↔
 theorem mem_powerset_self [HasPowerset x] : x ∈ 𝒫 x := by grind
 
 @[grind! .]
-theorem empty_mem_powerset [HasPowerset x] : ∅ ∈ 𝒫 x := by grind
+theorem empty_mem_powerset [RudClosed M] [HasPowerset x] : ∅ ∈ 𝒫 x := by grind
 
 theorem powerset_mono {x y : M} (h : x ⊆ y) [HasPowerset x] [HasPowerset y] : 𝒫 x ⊆ 𝒫 y := by grind
 
-theorem eq_of_powerset_eq [M.Extensional] {x y : M} [HasPowerset x] [HasPowerset y]
+theorem eq_of_powerset_eq [Extensional M] {x y : M} [HasPowerset x] [HasPowerset y]
     (h : 𝒫 x = 𝒫 y) : x = y := by
   ext; grind
 

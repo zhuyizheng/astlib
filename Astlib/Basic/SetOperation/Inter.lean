@@ -5,25 +5,28 @@ Authors: Yizheng Zhu
 -/
 -- import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Union
+import Astlib.Basic.SetOperation.Rudimentary.Semantics
 /-!
 file docstring
 -/
 
-open FirstOrder.Language.BoundedFormula
+open FirstOrder Language BoundedFormula RudimentaryTerm
 
 namespace FirstOrder.Language
 
 instance {n} {L : FirstOrder.Language} [L.HasMem] :
   Inter (L.RudimentaryTerm n) := ⟨fun r₁ r₂ ↦ r₁ \ (r₁ \ r₂)⟩
 
-@[simp]
-theorem RudimentaryTerm.castLHom_inter {M : MemStructure} (r₁ r₂ : M.L'.RudimentaryTerm n) :
-    (r₁ ∩ r₂).castLHom = r₁.castLHom ∩ r₂.castLHom := by
-  simp [Inter.inter]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_inter
+    {L : Language} [L.HasMem] (r s : L.RudimentaryTerm n) (hr : r.IsCharFree) (hs : s.IsCharFree) :
+    (r ∩ s).IsCharFree := by
+  simp [Inter.inter, hr, hs]
 
 namespace MemStructure
 
-variable {M : MemStructure} (x y z : M)
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M]
+  (x y z : M)
 
 -- variable (M) in
 -- noncomputable instance : Inter M := ⟨fun x y ↦ inter x y⟩
@@ -44,28 +47,28 @@ theorem inter_eq : x ∩ y = x \ (x \ y) := by
   simp only [Inter.inter, Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue]
   rfl
 
-variable [M.RudClosed]
+variable [RudClosed M]
 
 @[simp, grind =]
 theorem mem_inter_iff : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
   grind
 
 @[grind =]
-theorem inter_comm [M.Extensional] : x ∩ y = y ∩ x := by
+theorem inter_comm [Extensional M] : x ∩ y = y ∩ x := by
   ext; grind
 
 variable (M) in
-instance [M.Extensional] :
+instance [Extensional M] :
   Std.Commutative (α := M) Inter.inter where
   comm := fun x y ↦ inter_comm x y
 
 @[grind =]
-theorem inter_assoc [M.Extensional] :
+theorem inter_assoc [Extensional M] :
     (x ∩ y) ∩ z = x ∩ (y ∩ z) := by
   ext; grind
 
 variable (M) in
-instance [M.Extensional] :
+instance [Extensional M] :
   Std.Associative (α := M) Inter.inter where
   assoc := fun x y z ↦ inter_assoc x y z
 
@@ -80,17 +83,17 @@ theorem notin_of_inter_empty_mem_right (h : x ∩ y = ∅) (hz : z ∈ y) : z �
   grind
 
 @[simp, grind =, push]
-theorem empty_inter [M.Extensional] :
+theorem empty_inter [Extensional M] :
     (∅ : M) ∩ x = ∅ := by
   ext; grind
 
 @[simp, grind =, push]
-theorem inter_empty [M.Extensional] :
+theorem inter_empty [Extensional M] :
     x ∩ (∅ : M) = ∅ := by
   grind
 
 @[simp, grind =, push]
-theorem inter_self [M.Extensional] :
+theorem inter_self [Extensional M] :
     x ∩ x = x := by
   ext; grind
 
@@ -104,7 +107,7 @@ theorem inter_subset_right :
     x ∩ y ⊆ y := by
   grind
 
-variable [M.Extensional]
+variable [Extensional M]
 
 @[simp, grind =]
 theorem inter_of_subset_right
@@ -127,8 +130,6 @@ theorem inter_eq_right_iff_subset :
 theorem inter_eq_left_iff_subset :
     x ∩ y = x ↔ x ⊆ y := by
   grind
-
--- variable [M.ClosedUnderSUnion] [M.ClosedUnderPair]
 
 theorem inter_union_distrib_left : x ∩ (y ∪ z) = x ∩ y ∪ x ∩ z := by
   ext; grind

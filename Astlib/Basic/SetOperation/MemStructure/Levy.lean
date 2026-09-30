@@ -19,11 +19,13 @@ namespace FirstOrder
 
 namespace Language
 
+/-- `Δ₀` bounded formulas in `L` -/
 inductive DeltaZeroBoundedFormula [L.HasMem] : ℕ → Type max u v
   | falsum {n : ℕ} : DeltaZeroBoundedFormula n
   | equal {n : ℕ} (t₁ t₂ : L.Term' n) : DeltaZeroBoundedFormula n
   | mem {n : ℕ} (t₁ t₂ : L.Term' n) : DeltaZeroBoundedFormula n
   | imp {n : ℕ} (f₁ f₂ : DeltaZeroBoundedFormula n) : DeltaZeroBoundedFormula n
+  /-- For all `x ∈ t`, `f` holds with the last bound variable evaluated at `x` -/
   | allMem {n : ℕ} (t : L.Term' n) (f : DeltaZeroBoundedFormula (n + 1)) :
     DeltaZeroBoundedFormula n
   | rel {n : ℕ} (R : L.Relations 1) (t : L.Term' n) :
@@ -79,6 +81,50 @@ def exMem (t : L.Term' n) (φ : L.DeltaZeroBoundedFormula (n + 1)) :
 @[inherit_doc, match_pattern] scoped[FirstOrder]
 notation "∃₀∈ " x:arg y:50 => FirstOrder.Language.DeltaZeroBoundedFormula.exMem x y
 
+@[elab_as_elim] def neZeroCases
+  {n} [NeZero n]
+  {motive : ∀ {n}, ∀ [NeZero n], L.DeltaZeroBoundedFormula n → Sort _}
+  (falsum : ∀ {n}, ∀ [NeZero n], motive (falsum : L.DeltaZeroBoundedFormula n))
+  (equal : ∀ {n}, ∀ [NeZero n], ∀ t₁ t₂ : L.Term' n, motive (t₁ =₀ t₂))
+  (mem : ∀ {n}, ∀ [NeZero n], ∀ t₁ t₂ : L.Term' n, motive (t₁ ∈₀ t₂))
+  (imp : ∀ {n}, ∀ [NeZero n], ∀ φ₁ φ₂ : L.DeltaZeroBoundedFormula n,
+    motive φ₁ → motive φ₂ → motive (φ₁ ⟹ φ₂))
+  (allMem : ∀ {n}, ∀ [NeZero n], ∀ t : L.Term' n, ∀ φ : L.DeltaZeroBoundedFormula (n + 1),
+    motive φ → motive (∀₀∈t φ))
+  (rel : ∀ {n}, ∀ [NeZero n], ∀ R : L.Relations 1, ∀ t : L.Term' n,
+    motive (rel R t))
+  (φ : L.DeltaZeroBoundedFormula n) :
+  motive φ := by
+  cases φ with
+  | falsum => exact falsum
+  | equal => exact equal _ _
+  | mem => exact mem _ _
+  | imp φ₁ φ₂ =>
+    exact imp φ₁ φ₂ (neZeroCases falsum equal mem imp allMem rel φ₁)
+      (neZeroCases falsum equal mem imp allMem rel φ₂)
+  | allMem t φ =>
+    exact allMem t φ (neZeroCases falsum equal mem imp allMem rel φ)
+  | rel => exact rel _ _
+
+/-- The depth of bounded quantifiers -/
+def depth (φ : L.DeltaZeroBoundedFormula n) : ℕ := match φ with
+  | falsum => 0
+  | equal _ _ => 0
+  | mem _ _ => 0
+  | imp φ₁ φ₂ => max φ₁.depth φ₂.depth
+  | allMem _ ψ => ψ.depth + 1
+  | rel _ _ => 0
+
+/-- `φ` does not have any unary relation symbol -/
+def IsRelFree (φ : L.DeltaZeroBoundedFormula n) : Prop := match φ with
+  | falsum => True
+  | equal _ _ => True
+  | mem _ _ => True
+  | imp φ₁ φ₂ => φ₁.IsRelFree ∧ φ₂.IsRelFree
+  | allMem _ ψ => ψ.IsRelFree
+  | rel _ _ => False
+
+/-- Turn a `Δ₀` formula into a bounded formula -/
 @[coe, simp]
 def toBoundedFormula (φ : L.DeltaZeroBoundedFormula n) : L.BoundedFormula' n :=
   match φ with
@@ -138,19 +184,17 @@ def substBound
 
 @[simp]
 theorem substBound_bot
-  {L : Language} [L.HasMem]
   (ts : Fin n → L.Term' m) :
   (⊥ : L.DeltaZeroBoundedFormula n).substBound ts = ⊥ := rfl
 
 @[simp]
 theorem substBound_falsum
-  {L : Language} [L.HasMem]
   (ts : Fin n → L.Term' m) :
   (falsum : L.DeltaZeroBoundedFormula n).substBound ts = ⊥ := rfl
 
 @[simp, norm_cast]
 theorem coe_substBound
-    {L : Language} [L.HasMem] {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
     (ts : Fin n → L.Term' m) :
     (φ.substBound ts) = (φ : L.BoundedFormula' n).substBound ts := by
   induction φ generalizing m with
@@ -166,156 +210,220 @@ theorem coe_substBound
     simp [substBound, toBoundedFormula]
 
 def substBoundBound
-  {L : Language} [L.HasMem] {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+  {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
   (f : Fin n → Fin m) : L.DeltaZeroBoundedFormula m :=
   φ.substBound (fun i ↦ &(f i))
 
 @[simp, norm_cast]
 theorem coe_substBoundBound
-    {L : Language} [L.HasMem] {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
     (f : Fin n → Fin m) :
     (φ.substBoundBound f) = (φ : L.BoundedFormula' n).substBoundBound f :=
   φ.coe_substBound (fun i ↦ &(f i))
 
 def cast
-  {L : Language} [L.HasMem] {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+  {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
   (h : n = m) : L.DeltaZeroBoundedFormula m :=
   φ.substBoundBound (Fin.cast h)
 
 @[simp, norm_cast]
 theorem coe_cast
-    {L : Language} [L.HasMem] {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
     (h : n = m) :
     (φ.cast h) = (φ : L.BoundedFormula' n).cast h :=
   φ.coe_substBoundBound (Fin.cast h)
 
-
-variable {M : MemStructure}
-
-def castLHom : M.L'.DeltaZeroBoundedFormula n → M.L.DeltaZeroBoundedFormula n
-  | falsum => falsum
-  | equal t₁ t₂  => equal t₁.castLHom t₂.castLHom
-  | mem t₁ t₂ => mem t₁.castLHom t₂.castLHom
-  | imp f₁ f₂ => imp f₁.castLHom f₂.castLHom
-  | allMem t f => allMem t.castLHom f.castLHom
-  | rel R t => rel (M.LHom.onRelation R) t.castLHom
+@[simp]
+theorem depth_falsum :
+    (falsum : L.DeltaZeroBoundedFormula n).depth = 0 := by
+  simp [depth]
 
 @[simp]
-theorem castLHom_falsum :
-    (falsum : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      (⊥ : M.L.DeltaZeroBoundedFormula n) := rfl
+theorem depth_bot :
+    (⊥ : L.DeltaZeroBoundedFormula n).depth = 0 := by
+  simp [depth]
 
 @[simp]
-theorem castLHom_bot :
-    (⊥ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      (⊥ : M.L.DeltaZeroBoundedFormula n) := rfl
+theorem depth_eq (t₁ t₂ : L.Term' n) :
+    (t₁ =₀ t₂).depth = 0 := by
+  simp [depth]
 
 @[simp]
-theorem castLHom_top :
-    (⊤ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      (⊤ : M.L.DeltaZeroBoundedFormula n) := rfl
+theorem depth_mem (t₁ t₂ : L.Term' n) :
+    (t₁ ∈₀ t₂).depth = 0 := by
+  simp [depth]
 
 @[simp]
-theorem castLHom_bdEqual :
-    (equal t₁ t₂ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      equal t₁.castLHom t₂.castLHom := rfl
+theorem depth_rel (R : L.Relations 1) (t : L.Term' n) :
+    (rel R t).depth = 0 := by
+  simp [depth]
 
--- @[simp]
--- theorem castLHom_bdEqual' :
---     L.extraConstantsOnlyLHom.onBoundedFormula (t₁ ∈' t₂) =
---       L.extraConstantsOnlyLHom.onTerm t₁ ∈' L.extraConstantsOnlyLHom.onTerm t₂ := rfl
+variable (φ φ₁ φ₂ : L.DeltaZeroBoundedFormula n)
 
 @[simp]
-theorem castLHom_mem :
-    (mem t₁ t₂ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      (mem t₁.castLHom t₂.castLHom : M.L.DeltaZeroBoundedFormula n) := by
-  rfl
-
--- @[simp]
--- theorem castLHom_mem' :
---     L.extraConstantsOnlyLHom.onBoundedFormula (&i ∈' &j) = (&i ∈' &j : L.BoundedFormula' n) := by
---   simp [Function.comp_apply]
+theorem depth_imp :
+    (φ₁ ⟹ φ₂).depth = max φ₁.depth φ₂.depth := by
+  simp [depth]
 
 @[simp]
-theorem castLHom_imp :
-    (φ ⟹ ψ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      φ.castLHom ⟹ ψ.castLHom := rfl
+theorem depth_not :
+    (∼φ).depth = φ.depth := by
+  simp [not]
 
 @[simp]
-theorem castLHom_not :
-    (∼φ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      ∼(φ.castLHom) := rfl
+theorem depth_sup :
+    (φ₁ ⊔ φ₂).depth = max φ₁.depth φ₂.depth := by
+  simp only [depth, max, sup, not]
+  grind
 
 @[simp]
-theorem castLHom_sup :
-    (φ ⊔ ψ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      φ.castLHom ⊔ ψ.castLHom := rfl
+theorem depth_inf :
+    (φ₁ ⊓ φ₂).depth = max φ₁.depth φ₂.depth := by
+  simp [min, inf, not]
 
 @[simp]
-theorem castLHom_inf :
-    (φ ⊓ ψ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      φ.castLHom ⊓ ψ.castLHom := rfl
+theorem depth_iff :
+    (φ₁ ⇔ φ₂).depth = max φ₁.depth φ₂.depth := by
+  simp only [depth, iff, inf, not]
+  grind
 
 @[simp]
-theorem castLHom_iff :
-    (φ ⇔ ψ : M.L'.DeltaZeroBoundedFormula n).castLHom =
-      φ.castLHom ⇔ ψ.castLHom := rfl
+theorem depth_top :
+    (⊤ : L.DeltaZeroBoundedFormula n).depth = 0 := by
+  simp [Top.top]
 
 @[simp]
-theorem castLHom_allMem (φ : M.L'.DeltaZeroBoundedFormula (n + 1))
-    (t : M.L'.Term' n) :
-    (∀₀∈ t φ).castLHom = ∀₀∈ t.castLHom φ.castLHom := by
-  simp [castLHom]
+theorem depth_allMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) :
+    (∀₀∈t ψ).depth = ψ.depth + 1 := by
+  simp [depth]
 
 @[simp]
-theorem castLHom_exMem (φ : M.L'.DeltaZeroBoundedFormula (n + 1))
-    (t : M.L'.Term' n) :
-    (∃₀∈ t φ).castLHom = ∃₀∈ t.castLHom φ.castLHom := by
+theorem depth_exMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) :
+    (∃₀∈t ψ).depth = ψ.depth + 1 := by
   simp [exMem]
 
 @[simp]
-theorem castLHom_toBoundedFormula (φ : M.L'.DeltaZeroBoundedFormula n) :
-    φ.toBoundedFormula.castLHom = φ.castLHom.toBoundedFormula := by
-  induction φ with
-  | falsum => simp
-  | equal t₁ t₂  => simp
-  | mem t₁ t₂ => simp
-  | imp f₁ f₂ => simp [*]
-  | allMem t f => simp [*]
-  | rel R t =>
-    simp only [BoundedFormula.castLHom, toBoundedFormula, Relations.boundedFormula₁,
-      Relations.boundedFormula, LHom.onBoundedFormula, castLHom, BoundedFormula.rel.injEq,
-      heq_eq_eq, true_and]
-    ext i; fin_cases i; rfl
-
-@[simp]
-theorem castLHom_substBound (φ : M.L'.DeltaZeroBoundedFormula n)
-    (ts : Fin n → M.L'.Term' m) :
-    (φ.substBound ts).castLHom = φ.castLHom.substBound (fun i ↦ (ts i).castLHom) := by
+theorem depth_substBound
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    (ts : Fin n → L.Term' m) :
+    (φ.substBound ts).depth = φ.depth := by
   induction φ generalizing m with
   | falsum => simp
-  | equal t₁ t₂  => simp [substBound]
+  | equal t₁ t₂ => simp [substBound]
   | mem t₁ t₂ => simp [substBound]
-  | imp f₁ f₂ => simp [substBound, *]
-  | allMem t f ih =>
-    simp only [substBound, Term.castSucc, Term.castAdd, Term.castLE, castLE_succ_castSucc,
-      Function.comp_apply, castLHom_allMem, Term.castLHom_substBound, ih, allMem.injEq, true_and]
-    congr
-    ext i; cases i using lastCases <;> simp
-  | rel R t =>
-    simp [substBound, castLHom]
+  | imp φ₁ φ₂ ih₁ ih₂ => simp [substBound, ih₁, ih₂]
+  | allMem t ψ ih => simp [substBound, Term.substBoundBound, ih]
+  | rel R ts => simp [substBound]
 
 @[simp]
-theorem castLHom_substBoundBound (φ : M.L'.DeltaZeroBoundedFormula n)
+theorem depth_substBoundBound
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
     (f : Fin n → Fin m) :
-    (φ.substBoundBound f).castLHom = φ.castLHom.substBoundBound f :=
-  castLHom_substBound _ _
+    (φ.substBoundBound f).depth = φ.depth :=
+  depth_substBound _ _
 
 @[simp]
-theorem castLHom_cast (φ : M.L'.DeltaZeroBoundedFormula n)
-    (h : n = n') :
-    (φ.cast h).castLHom = φ.castLHom.cast h :=
-  castLHom_substBound _ _
+theorem depth_cast
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    (h : n = m) :
+    (φ.cast h).depth = φ.depth :=
+  depth_substBound _ _
+
+@[simp]
+theorem isRelFree_falsum :
+    (falsum : L.DeltaZeroBoundedFormula n).IsRelFree := by
+  simp [IsRelFree]
+
+@[simp]
+theorem isRelFree_bot :
+    (⊥ : L.DeltaZeroBoundedFormula n).IsRelFree := by
+  simp [IsRelFree]
+
+@[simp]
+theorem isRelFree_eq (t₁ t₂ : L.Term' n) :
+    (t₁ =₀ t₂).IsRelFree := by
+  simp [IsRelFree]
+
+@[simp]
+theorem isRelFree_mem (t₁ t₂ : L.Term' n) :
+    (t₁ ∈₀ t₂).IsRelFree := by
+  simp [IsRelFree]
+
+@[simp]
+theorem not_isRelFree_rel (R : L.Relations 1) (t : L.Term' n) :
+    ¬(rel R t).IsRelFree := by
+  simp [IsRelFree]
+
+variable (φ φ₁ φ₂ : L.DeltaZeroBoundedFormula n)
+
+@[simp]
+theorem isRelFree_imp :
+    (φ₁ ⟹ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
+  simp [IsRelFree]
+
+@[simp]
+theorem isRelFree_not :
+    (∼φ).IsRelFree ↔ φ.IsRelFree := by
+  simp [IsRelFree, not]
+
+@[simp]
+theorem isRelFree_sup :
+    (φ₁ ⊔ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
+  simp only [IsRelFree, max, sup, not]
+  grind
+
+@[simp]
+theorem isRelFree_inf :
+    (φ₁ ⊓ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
+  simp [IsRelFree, min, inf, not]
+
+@[simp]
+theorem isRelFree_iff :
+    (φ₁ ⇔ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
+  simp only [IsRelFree, iff, inf, not]
+  tauto
+
+@[simp]
+theorem isRelFree_top :
+    (⊤ : L.DeltaZeroBoundedFormula n).IsRelFree := by
+  simp [Top.top]
+
+@[simp]
+theorem isRelFree_allMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) :
+    (∀₀∈t ψ).IsRelFree ↔ ψ.IsRelFree := by
+  simp [IsRelFree]
+
+@[simp]
+theorem isRelFree_exMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) :
+    (∃₀∈t ψ).IsRelFree ↔ ψ.IsRelFree := by
+  simp [exMem]
+
+@[simp]
+theorem isRelFree_substBound
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    (ts : Fin n → L.Term' m) :
+    (φ.substBound ts).IsRelFree ↔ φ.IsRelFree := by
+  induction φ generalizing m with
+  | falsum => simp [IsRelFree]
+  | equal t₁ t₂ => simp [substBound, IsRelFree]
+  | mem t₁ t₂ => simp [substBound, IsRelFree]
+  | imp φ₁ φ₂ ih₁ ih₂ => simp [substBound, IsRelFree, ih₁, ih₂]
+  | allMem t ψ ih => simp [substBound, IsRelFree, Term.substBoundBound, ih]
+  | rel R ts => simp [substBound, IsRelFree]
+
+@[simp]
+theorem isRelFree_substBoundBound
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    (f : Fin n → Fin m) :
+    (φ.substBoundBound f).IsRelFree ↔ φ.IsRelFree :=
+  isRelFree_substBound _ _
+
+@[simp]
+theorem isRelFree_cast
+    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
+    (h : n = m) :
+    (φ.cast h).IsRelFree ↔ φ.IsRelFree :=
+  isRelFree_substBound _ _
 
 
 -- @[simp]
@@ -347,8 +455,10 @@ variable {n : ℕ}
 
 section SyntacticalLevyHierarchy
 
+/-- A bounded formula is `Δ₀` -/
 def IsDeltaZero (φ : L.BoundedFormula' n) := ∃ ψ : L.DeltaZeroBoundedFormula n, φ = ψ
 
+/-- A bounded formula is `Δ₀` -/
 class DeltaZero (φ : L.BoundedFormula' n) where
   isDeltaZero : IsDeltaZero φ
 

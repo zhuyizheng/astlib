@@ -12,20 +12,22 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable {M : MemStructure} [M.RudClosed] (x y z : M)
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M] [RudClosed M]
+  (x y z : M)
 
 @[simp, grind =, push]
-theorem empty_sdiff [M.Extensional] :
+theorem empty_sdiff [Extensional M] :
     (∅ : M) \ x = ∅ := by
   ext; grind
 
 @[simp, grind =, push]
-theorem sdiff_empty [M.Extensional] :
+theorem sdiff_empty [Extensional M] :
     x \ (∅ : M) = x := by
   ext; grind
 
 @[simp, grind =, push]
-theorem sdiff_self [M.Extensional] :
+theorem sdiff_self [Extensional M] :
     x \ x = ∅ := by
   ext; grind
 
@@ -35,16 +37,16 @@ theorem sdiff_subset_left :
   grind
 
 @[simp, grind! ., push]
-theorem sdiff_inter_right [M.Extensional] :
+theorem sdiff_inter_right [Extensional M] :
     (x \ y) ∩ y = ∅ := by
   ext; grind
 
 @[simp, grind! ., push]
-theorem sdiff_union_right [M.Extensional] :
+theorem sdiff_union_right [Extensional M] :
     (x \ y) ∪ (x ∩ y) = x := by
   ext; grind
 
-variable [M.Extensional]
+variable [Extensional M]
 
 @[simp, grind =]
 theorem sdiff_empty_of_subset {x y : M} (h : x ⊆ y) : x \ y = ∅ := by

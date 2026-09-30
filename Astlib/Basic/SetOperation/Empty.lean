@@ -10,10 +10,13 @@ import Astlib.Basic.SetOperation.Rudimentary.Semantics
 file docstring
 -/
 
+open FirstOrder Language MemStructure
+
+variable {L : Language.{u, v}} {M : Type max u v}
+  [L.MemStructure M] [Inhabited M] [PairClosed M] [SDiffClosed M] (x : M)
+
 namespace FirstOrder.Language
 namespace MemStructure
-
-variable {M : MemStructure} [M.RudClosed] (x : M)
 
 
 
@@ -21,10 +24,10 @@ variable {M : MemStructure} [M.RudClosed] (x : M)
 theorem notin_empty : x ∉ (∅ : M) := by
   simp [EmptyCollection.emptyCollection]
 
-theorem empty_iff [M.Extensional] : x = ∅ ↔ ∀ y, y ∉ x := by
+theorem empty_iff [Extensional M] : x = ∅ ↔ ∀ y, y ∉ x := by
   rw [eq_iff]; grind
 
-theorem ne_empty_iff [M.Extensional] : x ≠ ∅ ↔ ∃ y, y ∈ x := by
+theorem ne_empty_iff [Extensional M] : x ≠ ∅ ↔ ∃ y, y ∈ x := by
   simp [empty_iff]
 
 @[grind .]
@@ -35,23 +38,21 @@ end MemStructure
 
 namespace RudimentaryTerm
 
-variable {L : FirstOrder.Language} [L.HasMem]
+instance {L : FirstOrder.Language.{u, v}} [L.HasMem] [NeZero n] : Inhabited (L.RudimentaryTerm n) := ⟨ᵣ0⟩
 
-instance [NeZero n] : Inhabited (L.RudimentaryTerm n) := ⟨ᵣ0⟩
-
-instance [NeZero n] : EmptyCollection (L.RudimentaryTerm n) :=
+instance {L : FirstOrder.Language.{u, v}} [L.HasMem] [NeZero n] : EmptyCollection (L.RudimentaryTerm n) :=
   ⟨ᵣ0 \ ᵣ0⟩
 
 @[simp]
-theorem castLHom_empty {M : MemStructure} [NeZero n] :
-    (∅ : M.L'.RudimentaryTerm n).castLHom = (∅ : M.L.RudimentaryTerm n) := by
+theorem isCharFree_empty {L : Language} [L.HasMem] {n : ℕ} [NeZero n] :
+    (∅ : L.RudimentaryTerm n).IsCharFree := by
   simp [EmptyCollection.emptyCollection]
 
-variable {M : MemStructure} {n : ℕ} (xs : Fin n → M)
+variable {n : ℕ} (xs : Fin n → M)
 
 @[simp, grind =]
-theorem realize_empty [NeZero n] [M.Extensional] [M.RudClosed] :
-    (∅ : M.L.RudimentaryTerm n)〘xs〙 = ∅ := by
+theorem realize_empty [NeZero n] [Extensional M] :
+    (∅ : L.RudimentaryTerm n)〘xs〙 = ∅ := by
   ext
   simp [EmptyCollection.emptyCollection]
 
@@ -84,7 +85,7 @@ end RudimentaryTerm
 -- --   MemStructure.instHasEmpty hM.exists_empty_of_exEmptyset
 
 -- @[simp]
--- theorem Term.isEmpty_iff [M.Extensional] [M.HasEmpty]
+-- theorem Term.isEmpty_iff [Extensional M] [M.HasEmpty]
 --     (t : M.L.Term (α ⊕ Fin n))
 --     (v : α → M) (xs : Fin n → M) :
 --     t.isEmpty〘v, xs〙 ↔ t〘v, xs〙 = (∅ : M) := by

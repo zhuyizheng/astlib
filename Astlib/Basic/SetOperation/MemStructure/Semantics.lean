@@ -17,8 +17,8 @@ namespace FirstOrder
 
 namespace Language
 
-variable {m n : ℕ} {M : MemStructure}
-  (t : M.L.Term' n) (φ : M.L.BoundedFormula' (n + 1))
+variable {m n : ℕ} {L : Language} {M : Type*} [L.MemStructure M]
+  (t : L.Term' n) (φ : L.BoundedFormula' (n + 1))
   {xs : Fin n → M}
 
 namespace BoundedFormula
