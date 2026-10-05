@@ -36,7 +36,7 @@ variable {L : Language.{u, v}} {M : Type max u v}
 -- @[simp, grind =]
 -- theorem mem_inter_iff : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
 --   simp [Inter.inter]
-noncomputable instance : Inter M := ⟨fun x y ↦ (ᵣ0 ∩ ᵣ1)〘x, y〙₂⟩
+noncomputable instance : Inter M := ⟨fun x y ↦ x \ (x \ y)⟩
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inter (xs : Fin n → M) : (r₁ ∩ r₂)〘xs〙 = r₁〘xs〙 ∩ r₂〘xs〙 := by
@@ -44,10 +44,9 @@ theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inter (xs : Fin n →
 
 @[grind =]
 theorem inter_eq : x ∩ y = x \ (x \ y) := by
-  simp only [Inter.inter, Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue]
-  rfl
+  simp [Inter.inter]
 
-variable [RudClosed M]
+variable [SDiffClosed M] [PairClosed M]
 
 @[simp, grind =]
 theorem mem_inter_iff : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
@@ -130,6 +129,9 @@ theorem inter_eq_right_iff_subset :
 theorem inter_eq_left_iff_subset :
     x ∩ y = x ↔ x ⊆ y := by
   grind
+
+omit [PairClosed M] [SDiffClosed M]
+variable [RudClosed M]
 
 theorem inter_union_distrib_left : x ∩ (y ∪ z) = x ∩ y ∪ x ∩ z := by
   ext; grind

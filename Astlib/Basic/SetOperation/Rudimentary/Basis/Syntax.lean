@@ -24,7 +24,7 @@ inductive RudimentaryBasisTerm [L.HasMem] : ℕ → Type max u v
   | rotate (r₁ r₂ : RudimentaryBasisTerm n) : RudimentaryBasisTerm n
   | sUnion (r : RudimentaryBasisTerm n) : RudimentaryBasisTerm n
   | dom (r : RudimentaryBasisTerm n) : RudimentaryBasisTerm n
-  | memGraph (r : RudimentaryBasisTerm n) : RudimentaryBasisTerm n
+  | invMemGraph (r : RudimentaryBasisTerm n) : RudimentaryBasisTerm n
   | sliceSet (r₁ r₂ : RudimentaryBasisTerm n) : RudimentaryBasisTerm n
   | interRel (r : RudimentaryBasisTerm n) (R : L.Relations 1) : RudimentaryBasisTerm n
 
@@ -44,7 +44,7 @@ def substBoundRudBasis (r : L.RudimentaryBasisTerm n) (rs : Fin n → L.Rudiment
   | rotate r₁ r₂ => rotate (r₁.substBoundRudBasis rs) (r₂.substBoundRudBasis rs)
   | sUnion r => sUnion (r.substBoundRudBasis rs)
   | dom r => dom (r.substBoundRudBasis rs)
-  | memGraph r => memGraph (r.substBoundRudBasis rs)
+  | invMemGraph r => invMemGraph (r.substBoundRudBasis rs)
   | sliceSet r₁ r₂ => sliceSet (r₁.substBoundRudBasis rs) (r₂.substBoundRudBasis rs)
   | interRel r R => interRel (r.substBoundRudBasis rs) R
 
@@ -64,7 +64,7 @@ theorem substBoundRudBasis_substBoundRudBasis (r : L.RudimentaryBasisTerm n)
   | rotate => simp [substBoundRudBasis, *]
   | sUnion => simp [substBoundRudBasis, *]
   | dom => simp [substBoundRudBasis, *]
-  | memGraph => simp [substBoundRudBasis, *]
+  | invMemGraph => simp [substBoundRudBasis, *]
   | sliceSet => simp [substBoundRudBasis, *]
   | interRel => simp [substBoundRudBasis, *]
 
@@ -74,13 +74,22 @@ instance : Union (L.RudimentaryBasisTerm n) := ⟨fun r₁ r₂ ↦ ⋃₀ (r₁
 
 instance : Inter (L.RudimentaryBasisTerm n) := ⟨fun r₁ r₂ ↦ r₁ \ (r₁ \ r₂)⟩
 
-def iterSUnion₀ (k : ℕ) (r : L.RudimentaryBasisTerm n) := match k with
-  | 0 => r
-  | k + 1 => ((var 0).iterSUnion₀ k).substBoundRudBasis ![r ∪ (⋃₀ r)]
+def unionSUnion (r : L.RudimentaryBasisTerm n) := r ∪ (⋃₀ r)
 
-@[simp]
-theorem iterSUnion₀_zero {n} (r : L.RudimentaryBasisTerm n) :
-  r.iterSUnion₀ 0 = r := by simp [iterSUnion₀]
+instance : Singleton (L.RudimentaryBasisTerm n) (L.RudimentaryBasisTerm n) :=
+  ⟨fun r ↦ r.unorderedPair r⟩
+
+def left₀ := ⋃₀ ({var 0} : L.RudimentaryBasisTerm 1).dom
+
+def left (r : L.RudimentaryBasisTerm n) := left₀.substBoundRudBasis ![r]
+
+def ran₀ := ⋃₀ (var 0 : L.RudimentaryBasisTerm 1).sliceSet (var 0 : L.RudimentaryBasisTerm 1).dom
+
+def ran (r : L.RudimentaryBasisTerm n) := ran₀.substBoundRudBasis ![r]
+
+def right₀ := ⋃₀ ⋃₀ ({var 0} : L.RudimentaryBasisTerm 1).sliceSet ({var 0} : L.RudimentaryBasisTerm 1).dom
+--
+def right (r : L.RudimentaryBasisTerm n) := ⋃₀ ({r} : L.RudimentaryBasisTerm n).ran
 
 def orderedPair (r₁ r₂ : L.RudimentaryBasisTerm n) :=
   (r₁.unorderedPair r₁).unorderedPair (r₁.unorderedPair r₂)
@@ -96,21 +105,12 @@ theorem tuple_one (rs : Fin 1 → L.RudimentaryBasisTerm n) : tuple rs = rs 0 :=
 theorem tuple_succ {l n} (rs : Fin (l + 2) → L.RudimentaryBasisTerm n) :
   tuple rs = (tuple (rs ∘ castSucc)).orderedPair (rs (last _)) := by simp [tuple]
 
-instance : Singleton (L.RudimentaryBasisTerm n) (L.RudimentaryBasisTerm n) :=
-  ⟨fun r ↦ r.unorderedPair r⟩
+def sProd {l : ℕ} (rs : Fin (l + 1) → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  match l with
+  -- | 0 => empty
+  | 0 => rs 0
+  | _ + 1 => (sProd (rs ∘ castSucc)).sprod (rs (last _))
 
-def left₀ := ⋃₀ ({var 0} : L.RudimentaryBasisTerm 1).dom
-
-def left (r : L.RudimentaryBasisTerm n) := left₀.substBoundRudBasis ![r]
-
-def right₀ := ⋃₀ ⋃₀ ({var 0} : L.RudimentaryBasisTerm 1).sliceSet ({var 0} : L.RudimentaryBasisTerm 1).dom
-
-def right (r : L.RudimentaryBasisTerm n) := right₀.substBoundRudBasis ![r]
-
-def sPower (r : L.RudimentaryBasisTerm n) (l : ℕ) := match l with
-  | 0 => r -- junk value
-  | 1 => r
-  | l + 1 => (r.sPower l).sprod r
 
 def tupleVal (r : L.RudimentaryBasisTerm n) {l : ℕ} : Fin l → L.RudimentaryBasisTerm n :=
   match l with
@@ -127,10 +127,8 @@ theorem tupleVal_eq_substBoundRudBasis (r : L.RudimentaryBasisTerm n) {l : ℕ} 
     · simp [tupleVal, substBoundRudBasis]
     · cases i using lastCases with
       | last =>
-        simp only [tupleVal, right, snoc_last, isValue, substBoundRudBasis_substBoundRudBasis,
-          Matrix.cons_val_fin_one]
-        congr
-        ext i; fin_cases i; simp [substBoundRudBasis]
+        simp only [tupleVal, right, ran, ran₀, isValue, snoc_last]
+        rfl
       | cast i =>
         simp only [tupleVal, snoc_castSucc, isValue]
         rw [ih r.left, ih (var 0).left]
@@ -141,64 +139,87 @@ theorem tupleVal_eq_substBoundRudBasis (r : L.RudimentaryBasisTerm n) {l : ℕ} 
           Matrix.cons_val_fin_one, substBoundRudBasis_substBoundRudBasis, substBoundRudBasis]
         rfl
 
-def rotateSPower (r : L.RudimentaryBasisTerm n) (l : ℕ) (s : L.RudimentaryBasisTerm n) := match l with
-  | 0 => r
-  | l + 1 => r.rotate (s.sPower (l + 1))
-
-def iterSwitch (r : L.RudimentaryBasisTerm n) (l : ℕ) (s : L.RudimentaryBasisTerm n) := match l with
-  | 0 => r
-  | l + 1 => (r.iterSwitch l s).switch s
-
-/-- The set of elements in `sPower r (l + 1)` where after unraveling, the `l`th element is a
-member of the `i`th element. -/
-def lastMemFin {n} (i : Fin l) (r : L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
-  (r.memGraph.rotateSPower i.val r).iterSwitch (l - 1 - i.val) r
-
-/-- The set of elements in `sPower (r ∪ (iterSUnion₀ 1 c)) (l + 1)` where after unraveling, the `l`th element is a
-member of `c`. -/
-def lastMemConst {n} (c : L.Constants) (l : ℕ) (r : L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+def rotateSProd (r : L.RudimentaryBasisTerm n) {l : ℕ} (rs : Fin l → L.RudimentaryBasisTerm n) :=
   match l with
-  | 0 => const c ∩ r
-  | l + 1 => (r.sPower (l + 1)).sprod (const c ∩ r)
+  | 0 => r
+  | _ + 1 => r.rotate (sProd rs)
 
-variable [L.ExtraConstantsUnaryRelationsOnly]
+def iterSwitch (r : L.RudimentaryBasisTerm n) {l : ℕ} (rs : Fin l → L.RudimentaryBasisTerm n) := match l with
+  | 0 => r
+  | _ + 1 => (r.iterSwitch (rs ∘ castSucc)).switch (rs (last _))
 
-def unionConst (r : L.RudimentaryBasisTerm n) (t : L.Term' l) : L.RudimentaryBasisTerm n :=
-  match t with
-  | .var (Sum.inr i) => r
-  | .func F _ (l := 0) => r ∪ {const F}
-  | .func F _ (l := l + 1) => IsEmpty.elim (by infer_instance) F
+/-- The set of `l + 1`-tuples where after unraveling, the first `l` elements are in `rs`
+pointwise, and the `l`th element is a member of the `i`th element. -/
+def lastMemFin {n} (i : Fin l) (rs : Fin l → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  (rotateSProd (rs i).invMemGraph (rs ∘ Fin.castLE (n := i) (i.prop.le))).iterSwitch
+    fun j : Fin (l - (i.val + 1)) ↦ rs (⟨i.val + 1 + j.val, by omega⟩)
 
-/-- The set of elements in `sPower (r.unionConst t) (l + 1)` where after unraveling, the `l`th element is a
-member of `t`. -/
-def lastMemTerm' {n} (t : L.Term' l) (r : L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
-  match t with
-  | .var (Sum.inr i) => r.lastMemFin i
-  | .func F _ (l := 0) => r.lastMemConst F l
-  | .func F _ (l := l + 1) => IsEmpty.elim (by infer_instance) F
+/-- The set of elements `l + 1`-tuples where after unraveling, the first `l` elements are in `rs`
+pointwise, and the `l`th element is a member of `c`. -/
+def lastMemConst {n} (c : L.Constants) {l : ℕ} (rs : Fin l → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  sProd (snoc rs (const c))
 
 def symDiff (r₁ r₂ : L.RudimentaryBasisTerm n) := (r₁ \ r₂) ∪ (r₂ \ r₁)
 
-/-- The set of elements in `sPower ((r.unionIterSUnion₀Const t₁).unionIterSUnion₀Const t₂) l` where after unraveling, `t₁` is equal to `t₂`. -/
-def eq {n} (t₁ t₂ : L.Term' l) (r : L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
-  ((var 0 : L.RudimentaryBasisTerm 2).sPower l) \
-    (((var 1 : L.RudimentaryBasisTerm 2).lastMemTerm' t₁).symDiff ((var 1 : L.RudimentaryBasisTerm 2).lastMemTerm' t₂)).dom |>.substBoundRudBasis ![r, ((r.unionConst t₁).unionConst t₂).iterSUnion₀ 1]
+variable [L.ExtraConstantsUnaryRelationsOnly]
 
-/-- The set of elements in `sPower r l` where after unraveling, `t₁` is a member of `t₂`. -/
-def mem {n} (t₁ t₂ : L.Term' l) (r : L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
-  (var 0 : L.RudimentaryBasisTerm 2).sPower l ∩
-    (((var 1 : L.RudimentaryBasisTerm 2).eq (&-1) t₁.castSucc) ∩ ((var 1 : L.RudimentaryBasisTerm 2).lastMemTerm' t₂)).dom
-    |>.substBoundRudBasis ![r, r.unionConst t₁]
+mutual
+/-- The set of `l + 1`-tuples where after unraveling, the first `l` elements are in `rs`
+pointwise, and the `l`th element is a member of `t`. -/
+def lastMemRud {n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  match t with
+  | .var i  => lastMemFin i rs
+  | .const c => lastMemConst c rs
+  | .unorderedPair t₁ t₂ => lastEqRud t₁ rs ∪ lastEqRud t₂ rs
+  | .sdiff t₁ t₂ => lastMemRud t₁ rs \ lastMemRud t₂ rs
+  | .iUnion ri rf =>
+    match l with
+    | 0 =>
+      let ri_memRange := lastMemRud ri rs
+      let rf_memRange := (lastMemRud rf (snoc rs ri_memRange)).ran
+      let rs' : Fin 1 → L.RudimentaryBasisTerm n := (snoc rs rf_memRange)
+      let rs'' : Fin 2 → L.RudimentaryBasisTerm n := snoc rs' ri_memRange
+      lastMemRud (ri.castSucc) rs' ∩ memGraph ᵣ-2 (rf.substBoundBound (snoc (castAdd 2) (last _))) rs'' |>.dom
+    | l + 1 =>
+      let ri_memRange := (lastMemRud ri rs).ran
+      let rf_memRange := (lastMemRud rf (snoc rs ri_memRange)).ran
+      let rs' : Fin (l + 2) → L.RudimentaryBasisTerm n := (snoc rs rf_memRange)
+      let rs'' : Fin (l + 3) → L.RudimentaryBasisTerm n := snoc rs' ri_memRange
+      lastMemRud (ri.castSucc) rs' ∩ memGraph ᵣ-2 (rf.substBoundBound (snoc (castAdd 2) (last _))) rs'' |>.dom
+  | .char R r =>
+      match l with
+      | 0 => ({lastMemRud r rs \ lastMemRud r rs} : L.RudimentaryBasisTerm n).sprod ((interRel (image r rs) R) ∩ lastEqRud r rs)
+        |>.dom
+      | l + 1 => sProd (snoc rs (interRel (image r rs) R)) ∩ lastEqRud r rs |>.dom.sprod
+        {lastMemRud r rs \ lastMemRud r rs}
+termination_by (t.depth, 0)
+decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def, RudimentaryTerm.castAdd, RudimentaryTerm.castLE, RudimentaryTerm.castSucc]
 
-/-- The set of elements in `sPower r l` where after unraveling, the `l`-tuple is true of `φ` -/
-def truth (r : L.RudimentaryBasisTerm n) (φ : L.DeltaZeroBoundedFormula l) : L.RudimentaryBasisTerm n :=
-  match φ with
-  | .falsum => r \ r
-  | .equal t₁ t₂ => r.eq t₁ t₂
-  | .mem t₁ t₂ => r.mem t₁ t₂
-  | .imp φ₁ φ₂ => r.sPower l \ (r.truth φ₁ \ r.truth φ₂)
-  | .allMem t ψ => r.sPower l \ (((r.unionConst t).iterSUnion₀ 1).lastMemTerm' t \ ((r.unionConst t).iterSUnion₀ 1).truth ψ).dom
-  | .rel _ _ => r -- junk value
+/-- The set of `l + 1`-tuples in `sProd rs` where after unraveling, `t₁` is equal to `t₂`. -/
+def eqGraph {l} {n} (t₁ t₂ : L.RudimentaryTerm (l + 1)) (rs : Fin (l + 1) → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  sProd rs \ ((lastMemRud t₁ rs).symDiff (lastMemRud t₂ rs)).dom
+termination_by (max t₁.depth t₂.depth, 1)
+decreasing_by all_goals (simp only [Prod.lex_def]; grind)
+
+def image (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  match l with
+  | 0 => {lastMemRud t rs}
+  | _ + 1 => (lastMemRud t rs).sliceSet (sProd rs)
+termination_by (t.depth, 2)
+
+def lastEqRud {n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  eqGraph ᵣ-1 t.castSucc (snoc rs (image t rs))
+termination_by (t.depth, 3)
+decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def, RudimentaryTerm.castSucc,
+  RudimentaryTerm.castAdd, RudimentaryTerm.castLE]
+
+def memGraph {n} (t₁ t₂ : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
+  match l with
+  | 0 => ({lastMemRud t₂ rs \ lastMemRud t₂ rs} : L.RudimentaryBasisTerm n).sprod (lastMemRud t₂ rs ∩ lastEqRud t₁ rs) |>.dom
+  | _ + 1 => (lastMemRud t₂ rs ∩ lastEqRud t₁ rs).dom
+termination_by (max t₁.depth t₂.depth, 4)
+decreasing_by all_goals (simp only [Prod.lex_def]; grind)
+end
 
 end RudimentaryBasisTerm
 

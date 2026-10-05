@@ -246,14 +246,24 @@ theorem mem_sdiff_iff : x ∈ y \ z ↔ x ∈ y ∧ x ∉ z := by
   simp only [SDiff.sdiff, sdiff, SDiffClosed.sdiffClosed, ↓reduceDIte]
   rw [Classical.choose_spec (SDiffClosed.sdiffClosed y z)]
 
+-- @[simp]
+theorem mem_realize_iUnion_iff₀
+    {n : ℕ} (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1))
+    (xs : Fin n → M) (x : M)
+    (h : ∃ a, IsIUnion (M := M) a ri〘xs〙 fun y ↦ rf〘snoc xs y〙) :
+    x ∈ (ri.iUnion rf)〘xs〙 ↔
+      ∃ z ∈ ri〘xs〙, x ∈ rf〘snoc xs z〙 := by
+  simp only [iUnion, h, ↓reduceDIte, realize_iUnion]
+  rw [Classical.choose_spec h]
+
 @[simp]
 theorem mem_realize_iUnion_iff [RudClosed M]
     {n : ℕ} (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1))
     (xs : Fin n → M) (x : M) :
     x ∈ (ri.iUnion rf)〘xs〙 ↔
       ∃ z ∈ ri〘xs〙, x ∈ rf〘snoc xs z〙 := by
-  simp only [iUnion, RudClosed.iUnionClosed, ↓reduceDIte, realize_iUnion]
-  rw [Classical.choose_spec (RudClosed.iUnionClosed _ _ _)]
+  rw [mem_realize_iUnion_iff₀]
+  exact RudClosed.iUnionClosed _ _ _
 
 end MemStructure
 

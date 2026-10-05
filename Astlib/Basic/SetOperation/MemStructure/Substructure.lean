@@ -73,7 +73,7 @@ theorem mem_toSubstructure_of_mem {N : Class M} {x : M} (hx : N x) :
   simp only [toSubstructure]
   rw [← Substructure.mem_carrier]
   push_cast
-  simp only [Set.mem_union, Set.mem_ofPred_eq]
+  simp only [Set.mem_union]
   left
   exact hx
 
