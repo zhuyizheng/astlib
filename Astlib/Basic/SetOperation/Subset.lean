@@ -57,12 +57,13 @@ variable {n : ℕ} (xs : Fin n → M)
 def Term.subset₀ {L : Language} [L.HasMem] (t₁ t₂ : L.Term' n) : L.DeltaZeroBoundedFormula n :=
   ∀₀∈ t₁ (&-1 ∈₀ t₂.castSucc)
 
--- theorem Term.isDeltaZero_subset (t₁ t₂ : L.Term' n) : (t₁.subset t₂).IsDeltaZero := by
---   simp [subset, DeltaZero.isDeltaZero]
-
 
 @[inherit_doc] scoped[FirstOrder.Language]
 infix:88 " ⊆₀ " => FirstOrder.Language.Term.subset₀
+
+@[simp]
+theorem Term.isRelFree_subset₀ {L : Language} [L.HasMem] (t₁ t₂ : L.Term' n) : (t₁ ⊆₀ t₂).IsRelFree := by
+  simp [subset₀]
 
 /-- `t₁ ⊆ t₂` as a formula -/
 def Term.subset {L : Language} [L.HasMem] (t₁ t₂ : L.Term' n) := (t₁ ⊆₀ t₂).toBoundedFormula
@@ -75,7 +76,11 @@ instance (t₁ t₂ : L.Term' n) : (t₁ ⊆' t₂).DeltaZero := ⟨t₁ ⊆₀ 
 variable (t₁ t₂ : L.Term' n)
 
 @[simp]
+theorem Term.subset₀_iff : (t₁ ⊆₀ t₂).toBoundedFormula 〘xs〙 ↔ t₁〘xs〙 ⊆ t₂〘xs〙 := by
+  simp [MemStructure.subset_iff, Term.subset₀, allMem]
+
+@[simp]
 theorem Term.subset_iff : (t₁ ⊆' t₂) 〘xs〙 ↔ t₁〘xs〙 ⊆ t₂〘xs〙 := by
-  simp [MemStructure.subset_iff, Term.subset, Term.subset₀, allMem]
+  simp [Term.subset]
 
 end FirstOrder.Language

@@ -48,8 +48,13 @@ theorem mem_singleton : x ∈ ({x} : M) := by simp
 theorem singleton_eq_singleton_iff : ({x} : M) = {y} ↔ x = y := by
   grind [mem_singleton]
 
-theorem eq_singleton_iff [Extensional M] : y = ({x} : M) ↔ (∀ z, z ∈ y ↔ z = x) := by
-  simp [MemStructure.ext_iff]
+-- theorem eq_singleton_iff [Extensional M] : y = ({x} : M) ↔ (∀ z, z ∈ y ↔ z = x) := by
+--   simp [MemStructure.ext_iff]
+
+-- @[simp]
+theorem all_mem_iff_eq_iff_singleton [Extensional M] (u w : M) :
+    (∀ (v : M), v ∈ u ↔ v = w) ↔ u = {w} := by
+  simp [eq_iff]
 
 @[simp]
 theorem singleton_ne_empty : ({x} : M) ≠ ∅ := by
@@ -80,5 +85,6 @@ variable [RudClosed M]
 theorem sUnion_singleton [Extensional M] :
     ⋃₀ {x} = x := by
   ext; grind
+
 
 end FirstOrder.Language.MemStructure

@@ -65,6 +65,15 @@ theorem insert_subset_insert {y z : M} (h : y ⊆ z) :
 
 noncomputable def succ (x : M) := insert x x
 
+@[simp, grind =]
+theorem mem_succ_iff :
+    z ∈ succ x ↔ z = x ∨ z ∈ x := by
+  simp [succ]
+
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.succ
+    {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) :
+  L.RudimentaryTerm n := insert r r
+
 -- source
 -- theorem Set.insert_subset {α : Type u_1} {s t : Set α} {a : α} (ha : a ∈ t) (hs : s ⊆ t) :
 -- insert a s ⊆ t

@@ -352,7 +352,7 @@ mutual
     | equal t₁ t₂ => by simpa [charRudimentaryTerm]
     | mem t₁ t₂ => by
       simp only [toBoundedFormula, realize'_mem] at h
-      simp only [charRudimentaryTerm, eq_singleton_iff, mem_realize_iUnion_iff,
+      simp only [charRudimentaryTerm, ← all_mem_iff_eq_iff_singleton, mem_realize_iUnion_iff,
         Term.realize_toRudimentaryTerm]
       intro z
       refine ⟨fun ⟨w, hw₁, hw₂⟩ ↦ IsZeroOrOne.empty_of_mem (by simp) hw₂, ?_⟩
@@ -411,7 +411,7 @@ mutual
         exists_prop] at h
       simp only [charRudimentaryTerm]
       apply RudimentaryTerm.realize_not_of_singleton_empty
-      simp only [eq_singleton_iff, mem_realize_iUnion_iff, Term.realize_toRudimentaryTerm]
+      simp only [← all_mem_iff_eq_iff_singleton, mem_realize_iUnion_iff, Term.realize_toRudimentaryTerm]
       obtain ⟨y, hy₁, hy₂⟩ := h
       have := realize_charRudimentaryTerm_of_not_realize hy₂
       exact fun z ↦ ⟨fun ⟨v, hv₁, hv₂⟩ ↦ IsZeroOrOne.empty_of_mem (by simp) hv₂,

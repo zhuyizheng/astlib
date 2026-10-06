@@ -74,8 +74,6 @@ instance : Union (L.RudimentaryBasisTerm n) := ⟨fun r₁ r₂ ↦ ⋃₀ (r₁
 
 instance : Inter (L.RudimentaryBasisTerm n) := ⟨fun r₁ r₂ ↦ r₁ \ (r₁ \ r₂)⟩
 
-def unionSUnion (r : L.RudimentaryBasisTerm n) := r ∪ (⋃₀ r)
-
 instance : Singleton (L.RudimentaryBasisTerm n) (L.RudimentaryBasisTerm n) :=
   ⟨fun r ↦ r.unorderedPair r⟩
 

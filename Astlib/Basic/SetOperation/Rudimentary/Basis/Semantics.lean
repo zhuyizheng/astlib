@@ -367,13 +367,6 @@ theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_singleton :
     {r}〘xs〙 = {r〘xs〙} := by
   simp [Singleton.singleton]
 
--- TODO: move to Singleton.lean
-@[simp]
-theorem all_mem_iff_eq_iff_singleton (u w : M) :
-    (∀ (v : M), v ∈ u ↔ v = w) ↔ u = {w} := by
-  rw [eq_iff]
-  simp
-
 @[simp]
 theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_left (h : r〘xs〙 = !(z, w)) :
     (r.left)〘xs〙 = z := by
