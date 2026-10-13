@@ -424,23 +424,55 @@ instance : Coe (Class M) (Multiclass M 1) := ⟨toMulticlass⟩
 
 instance : Coe (Multiclass M 1) (Class M) := ⟨Multiclass.toClass⟩
 
+/-- Unfold an application of a class cast to a multiclass. This is the `simp`, `norm_cast` and
+`push_cast` normal form; `iff_toMulticlass` is the reverse direction. -/
+@[simp, norm_cast]
+theorem toMulticlass_iff (A : Class M) (xs : Fin 1 → M) :
+    (A : Multiclass M 1) xs ↔ A (xs 0) := Iff.rfl
+
+/-- Unfold an application of a multiclass cast to a class. -/
+@[simp, norm_cast]
+theorem _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_iff (A : Multiclass M 1) (x : M) :
+    (A : Class M) x ↔ A ![x] := by
+  have : (fun _ : Fin 1 ↦ x) = ![x] := by ext i; fin_cases i; rfl
+  exact iff_of_eq (congrArg A this)
+
+/-- Fold `A x` into an application of the multiclass `↑A`, for rewriting with a hypothesis about
+`(A : Multiclass M 1)`. Use `toMulticlass_iff` for the other direction. -/
 theorem iff_toMulticlass (A : Class M) (x : M) :
     A x ↔ (A : Multiclass M 1) ![x] := by
-  norm_cast
+  simp
 
 @[simp, norm_cast]
-lemma toClass_toMulticlass (A : Class M) : ((A : Multiclass M 1) : Class M) = A := by norm_cast
+lemma toClass_toMulticlass (A : Class M) : ((A : Multiclass M 1) : Class M) = A := by
+  funext x
+  simp
 
 @[simp, norm_cast]
 lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toMulticlass_toClass (A : Multiclass M 1) :
     ((A : Class M) : Multiclass M 1) = A := by
-  funext u
-  unfold Multiclass at A
-  simp only [toMulticlass, Equiv.arrowCongr, Equiv.coe_refl, _root_.Equiv.symm_symm,
-    Equiv.funUnique_apply, default_eq_zero, isValue, Function.id_comp, Equiv.refl_symm,
-    Equiv.funUnique_symm_apply, Multiclass.toClass, Equiv.coe_fn_mk, Function.comp_apply]
-  congr
-  ext i; fin_cases i; rfl
+  funext xs
+  have : xs = ![xs 0] := List.ofFn_inj.mp rfl
+  rw [eq_iff_iff, toMulticlass_iff, Multiclass.toClass_iff, ← this]
+
+@[simp, norm_cast]
+theorem toMulticlass_inj {A B : Class M} : (A : Multiclass M 1) = B ↔ A = B :=
+  ⟨fun h ↦ by rw [← toClass_toMulticlass A, h, toClass_toMulticlass], fun h ↦ h ▸ rfl⟩
+
+@[simp, norm_cast]
+theorem _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_inj {A B : Multiclass M 1} :
+    (A : Class M) = B ↔ A = B :=
+  ⟨fun h ↦ by rw [← A.toMulticlass_toClass, h, B.toMulticlass_toClass], fun h ↦ h ▸ rfl⟩
+
+/-- Move the cast to the other side of an equation between a class and a multiclass. -/
+theorem toMulticlass_eq_iff {A : Class M} {B : Multiclass M 1} :
+    (A : Multiclass M 1) = B ↔ A = (B : Class M) := by
+  rw [← toMulticlass_inj, B.toMulticlass_toClass]
+
+/-- Move the cast to the other side of an equation between a multiclass and a class. -/
+theorem _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_eq_iff {A : Multiclass M 1}
+    {B : Class M} : (A : Class M) = B ↔ A = (B : Multiclass M 1) := by
+  rw [← Multiclass.toClass_inj, toClass_toMulticlass]
 
 instance : Top (Class M) := ⟨(⊤ : Multiclass M 1)⟩
 
@@ -471,6 +503,73 @@ def iff (A B : Class M) : Class M := (A ⇔ B : Multiclass M 1)
 @[inherit_doc] scoped[FirstOrder] infixl:61 " ⇔ " =>
   FirstOrder.Language.MemStructure.Class.iff
 -- input \<=>
+
+section cast
+
+variable (A B : Class M)
+
+@[simp, norm_cast]
+lemma toMulticlass_top : ((⊤ : Class M) : Multiclass M 1) = ⊤ := Multiclass.toMulticlass_toClass _
+
+@[simp, norm_cast]
+lemma toMulticlass_bot : ((⊥ : Class M) : Multiclass M 1) = ⊥ := Multiclass.toMulticlass_toClass _
+
+@[simp, norm_cast]
+lemma toMulticlass_inf : ((A ⊓ B : Class M) : Multiclass M 1) = (A : Multiclass M 1) ⊓ B :=
+  Multiclass.toMulticlass_toClass _
+
+@[simp, norm_cast]
+lemma toMulticlass_sup : ((A ⊔ B : Class M) : Multiclass M 1) = (A : Multiclass M 1) ⊔ B :=
+  Multiclass.toMulticlass_toClass _
+
+@[simp, norm_cast]
+lemma toMulticlass_not : ((∼A : Class M) : Multiclass M 1) = ∼(A : Multiclass M 1) :=
+  Multiclass.toMulticlass_toClass _
+
+@[simp, norm_cast]
+lemma toMulticlass_imp : ((A ⟹ B : Class M) : Multiclass M 1) = (A : Multiclass M 1) ⟹ B :=
+  Multiclass.toMulticlass_toClass _
+
+@[simp, norm_cast]
+lemma toMulticlass_iff' : ((A ⇔ B : Class M) : Multiclass M 1) = (A : Multiclass M 1) ⇔ B :=
+  Multiclass.toMulticlass_toClass _
+
+variable (A B : Multiclass M 1)
+
+@[simp, norm_cast]
+lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_top :
+    ((⊤ : Multiclass M 1) : Class M) = ⊤ := rfl
+
+@[simp, norm_cast]
+lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_bot :
+    ((⊥ : Multiclass M 1) : Class M) = ⊥ := rfl
+
+@[simp, norm_cast]
+lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_inf :
+    ((A ⊓ B : Multiclass M 1) : Class M) = (A : Class M) ⊓ B := by
+  rw [← toMulticlass_inj]; simp
+
+@[simp, norm_cast]
+lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_sup :
+    ((A ⊔ B : Multiclass M 1) : Class M) = (A : Class M) ⊔ B := by
+  rw [← toMulticlass_inj]; simp
+
+@[simp, norm_cast]
+lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_not :
+    ((∼A : Multiclass M 1) : Class M) = ∼(A : Class M) := by
+  rw [← toMulticlass_inj]; simp
+
+@[simp, norm_cast]
+lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_imp :
+    ((A ⟹ B : Multiclass M 1) : Class M) = ((A : Class M) ⟹ (B : Class M) : Class M) := by
+  rw [← toMulticlass_inj]; simp
+
+@[simp, norm_cast]
+lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toClass_iff' :
+    ((A ⇔ B : Multiclass M 1) : Class M) = ((A : Class M) ⇔ (B : Class M) : Class M) := by
+  rw [← toMulticlass_inj]; simp
+
+end cast
 
 variable (A B : Class M) (x : M)
 
@@ -512,6 +611,11 @@ def Subset (c : M) : Class M := Multiclass.Subset 2 0 1 |>.slice₀ c
 
 @[simp]
 theorem subset_iff (c x : M) : Subset c x ↔ x ⊆ c := by norm_cast
+
+def Rel (R : L.Relations 1) : Class M := fun x ↦ Structure.RelMap R ![x]
+
+@[simp]
+theorem rel_iff (x : M) (R : L.Relations 1) : Rel R x ↔ Structure.RelMap R ![x] := by rfl
 
 end Class
 

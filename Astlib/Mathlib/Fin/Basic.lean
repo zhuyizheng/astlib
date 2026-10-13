@@ -6,6 +6,7 @@ Authors: Yizheng Zhu
 import Mathlib.Algebra.Group.Basic
 import Mathlib.Algebra.Group.Nat.Defs
 import Mathlib.Data.Fin.Tuple.Basic
+import Mathlib.Data.Fin.VecNotation
 import Mathlib.Tactic.FinCases
 import Mathlib.Data.Fintype.Basic
 /-!
@@ -164,7 +165,9 @@ theorem Fin.append_last (a : Fin m → α) (b : Fin (n + 1) → α) :
 @[simp]
 theorem Fin.append_comp_append_castAdd (f : Fin p → Fin (m + n)) :
     append a b ∘ append (castAdd n) f = append a (append a b ∘ f) := by
-  grind [append_nat]
+  ext i
+  cases i using Fin.addCases <;> simp
+
 
 @[simp]
 theorem Fin.append_comp_snoc_castAdd (x : Fin (m + n)) :
@@ -176,7 +179,8 @@ theorem Fin.append_comp_snoc_castAdd (x : Fin (m + n)) :
 @[simp]
 theorem Fin.append_comp_append_natAdd (f : Fin p → Fin (m + n)) :
     append a b ∘ append f (natAdd m) = append (append a b ∘ f) b := by
-  grind [append_nat]
+  ext i
+  cases i using Fin.addCases <;> simp
 
 -- @[simp]
 -- theorem Fin.append_comp_natAdd' {l : ℕ} (f : Fin l → Fin n) :
@@ -186,18 +190,16 @@ theorem Fin.append_comp_append_natAdd (f : Fin p → Fin (m + n)) :
 @[simp]
 theorem Fin.append_comp_natAdd_comp {l : ℕ} (f : Fin l → Fin n) :
     append a b ∘ (natAdd m ∘ f) = b ∘ f := by
-  grind [append_nat]
+  ext i
+  simp
 
 @[simp]
 theorem Fin.append_append_comp_append_castAdd_castAdd_natAdd :
     append (append a b) c ∘ append (castAdd p ∘ castAdd n) (fun i ↦ natAdd (m + n) i) =
       append a c := by
   ext i
-  simp only [Function.comp_apply, append_nat, castAdd_mk, natAdd_mk]
-  by_cases hi : i.val < m
-  · grind
-  · have : ¬(m + n + (↑i - m) < m + n) := by omega
-    simp [hi, this]
+  cases i using Fin.addCases <;> simp
+
 -- @[simp]
 -- theorem Fin.append_append_comp_append_castAdd_append_natAdd_natAdd_natAdd_castAdd
 -- append xs (append zs ys) ∘
@@ -207,8 +209,7 @@ theorem Fin.append_append_comp_append_castAdd_castAdd_natAdd :
 theorem Fin.append_comp_append_natAdd_castAdd :
     append b a ∘ append (natAdd n) (castAdd m) = append a b := by
   ext i
-  simp only [Function.comp_apply, append_nat, natAdd_mk, castAdd_mk]
-  grind
+  cases i using Fin.addCases <;> simp
 
 -- /-- `Fin.gap n n' m : Fin n → Fin (n + n')` is the function that is the identity on numbers `< m`,
 -- and adds `n'` to numbers `≥ m` -/
@@ -281,6 +282,11 @@ theorem Fin.snoc_snoc_comp_snoc_castAdd_two_last (xs : Fin n → α) (x a : α) 
   grind [snoc_nat]
 
 @[simp]
+theorem Fin.snoc_snoc_snoc_comp_snoc_castAdd_three_last (xs : Fin n → α) (x a b : α) :
+    (snoc (snoc (snoc xs b) x) a) ∘ snoc (castAdd 3) (last _) = snoc xs a := by
+  grind [snoc_nat]
+
+@[simp]
 theorem Fin.snoc_snoc_comp_cons_last_castAdd_two (xs : Fin n → α) (x a : α) :
     snoc (snoc xs x) a ∘ cons (last _) (castAdd 2) = cons a xs := by
   ext i
@@ -290,6 +296,33 @@ theorem Fin.snoc_snoc_comp_cons_last_castAdd_two (xs : Fin n → α) (x a : α) 
     simp only [Function.comp_apply, cons_succ, snoc_castAdd]
     convert snoc_castSucc (α := fun _ ↦ α) _ _ _
     simp [castSucc]
+
+@[simp]
+theorem Fin.snoc_snoc_snoc_comp_snoc_snoc_castAdd_three {α : Type*} {n : ℕ}
+    (xs : Fin n → α) (a u w : α) :
+    (snoc (snoc (snoc xs a) u) w) ∘ snoc (snoc (castAdd 3) (last _).castSucc) (last _) =
+      snoc (snoc xs u) w := by
+  grind [snoc_nat]
+
+@[simp]
+theorem Fin.snoc_snoc_snoc_snoc_comp_snoc_snoc_castAdd_four {α : Type*} {n : ℕ}
+    (xs : Fin n → α) (a b u w : α) :
+    (snoc (snoc (snoc (snoc xs a) b) u) w) ∘ snoc (snoc (castAdd 4) (last _).castSucc) (last _) =
+      snoc (snoc xs u) w := by
+  grind [snoc_nat]
+
+@[simp]
+theorem Fin.snoc_snoc_snoc_comp_snoc_snoc_castAdd_three' (xs : Fin n → α) (a u w : α) :
+    (snoc (snoc (snoc xs a) w) u) ∘ snoc (snoc (castAdd 3) (last _)) (last _).castSucc =
+      snoc (snoc xs u) w := by
+  grind [snoc_nat]
+
+theorem Fin.snoc_snoc_eq_append (xs : Fin n → α) (u w : α) :
+    snoc (snoc xs u) w = append xs ![u, w] := by
+  simp only [succ_eq_add_one, Nat.reduceAdd, snoc_eq_append, append_assoc, cast_refl,
+    Function.comp_id]
+  congr
+  exact List.ofFn_inj.mp rfl
 
 
 -- @[simp]

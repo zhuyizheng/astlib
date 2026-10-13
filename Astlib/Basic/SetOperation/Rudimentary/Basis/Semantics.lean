@@ -110,19 +110,7 @@ scoped[FirstOrder.Language] notation:max
 theorem realize_substBoundRudBasis (r : L.RudimentaryBasisTerm n) (rs : Fin n → L.RudimentaryBasisTerm m)
     (xs : Fin m → M) :
     (r.substBoundRudBasis rs)〘xs〙 = r〘fun i ↦ (rs i)〘xs〙〙 := by
-  induction r generalizing m with
-  | var => simp [substBoundRudBasis]
-  | const => simp [substBoundRudBasis]
-  | unorderedPair => simp [substBoundRudBasis, *]
-  | sdiff => simp [substBoundRudBasis, *]
-  | sprod => simp [substBoundRudBasis, *]
-  | switch => simp [substBoundRudBasis, *]
-  | rotate => simp [substBoundRudBasis, *]
-  | sUnion => simp [substBoundRudBasis, *]
-  | dom => simp [substBoundRudBasis, *]
-  | invMemGraph => simp [substBoundRudBasis, *]
-  | sliceSet => simp [substBoundRudBasis, *]
-  | interRel => simp [substBoundRudBasis, *]
+  induction r generalizing m <;> simp [substBoundRudBasis, *]
 
 section RudBasisClosed
 
@@ -202,8 +190,7 @@ theorem mem_realize_union_iff :
 @[simp]
 theorem mem_realize_inter_iff :
     z ∈ (r₁ ∩ r₂)〘xs〙 ↔ z ∈ r₁〘xs〙 ∧ z ∈ r₂〘xs〙 := by
-  simp only [Inter.inter, mem_realize_sdiff_iff, not_and, not_not, and_congr_right_iff,
-    Classical.imp_iff_right_iff]
+  simp only [Inter.inter, mem_realize_sdiff_iff]
   tauto
 
 @[simp]
@@ -331,20 +318,16 @@ omit [Extensional M] [RudBasisClosed M] in
 theorem isOrderedPair_of_isTuple {z : M} (hz : IsTuple z (l + 2)) :
     IsOrderedPair z := by
   obtain ⟨ys, rfl⟩ := hz
-  use tuple (ys ∘ castSucc), ys (last _)
-  rw [tuple]
+  exact ⟨_, _, tuple_succ ys⟩
 
 omit [Extensional M] [RudBasisClosed M] in
 @[simp]
 theorem isTuple_two_iff_isOrderedPair (z : M) : IsTuple z 2 ↔ IsOrderedPair z := by
   simp only [IsTuple, tuple, Nat.reduceAdd, isValue, Function.comp_apply, castSucc_zero, reduceLast,
     IsOrderedPair]
-  constructor
-  · rintro ⟨ys, rfl⟩
-    use ys 0, ys 1
-  · rintro ⟨x, y, rfl⟩
-    use ![x, y]
-    simp
+  refine ⟨fun ⟨ys, h⟩ ↦ ⟨ys 0, ys 1, h⟩, ?_⟩
+  rintro ⟨x, y, rfl⟩
+  exact ⟨![x, y], by simp⟩
 
 @[simp]
 theorem isTuple_unorderedPair_iff (z w : M) (hl : l ≠ 0) :
@@ -357,8 +340,7 @@ theorem isTuple_unorderedPair_iff (z w : M) (hl : l ≠ 0) :
     convert hys.left
     grind [init]
   · rintro ⟨ys, rfl⟩
-    use snoc ys w
-    simp [tuple_snoc, hl]
+    exact ⟨snoc ys w, by simp [tuple_snoc, hl]⟩
 
 
 omit [Extensional M] [RudBasisClosed M] in
@@ -384,17 +366,15 @@ theorem _root_.FirstOrder.Language.MemStructure.exists_slice (x y : M) :
     simp only [ne_eq, mem_sUnion₀_iff, mem_inter_iff, mem_sprod₀_iff, mem_singleton_iff,
       exists_eq_left, ↓existsAndEq, and_true, mem_orderedPair_iff, z']
     intro v hvy₁
-    constructor
-    · grind
-    · intro hvy₂
-      use unorderedPair y v
-      simp only [mem_unorderedPair_iff, or_true, and_true]
-      use v
-      simp only [hvy₂, true_and, or_true, and_true]
-      use unorderedPair y v
-      simp only [mem_unorderedPair_iff, or_true, and_true]
-      use !(y, v)
-      simp [hvy₂]
+    refine ⟨by grind, fun hvy₂ ↦ ?_⟩
+    use unorderedPair y v
+    simp only [mem_unorderedPair_iff, or_true, and_true]
+    use v
+    simp only [hvy₂, true_and, or_true, and_true]
+    use unorderedPair y v
+    simp only [mem_unorderedPair_iff, or_true, and_true]
+    use !(y, v)
+    simp [hvy₂]
   by_cases hy : !(y, y) ∈ x
   · use ((RudimentaryBasisTerm.var 0) ∪ (RudimentaryBasisTerm.var 1))〘![z', {y}]〙
     simp only [Nat.succ_eq_add_one, Nat.reduceAdd, isValue, mem_realize_union_iff, realize,
@@ -409,10 +389,8 @@ theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_ran_iff :
   simp only [ran, ran₀, isValue, realize_substBoundRudBasis, realize, Matrix.cons_val_fin_one,
     mem_sUnion₀_iff, mem_sliceSet₀_iff, mem_dom₀_iff]
   constructor
-  · rintro ⟨u, ⟨v, ⟨z', hz'⟩, hv₂⟩, hu⟩
-    use v
-    rw [← hv₂]
-    exact hu
+  · rintro ⟨u, ⟨v, -, hv₂⟩, hu⟩
+    exact ⟨v, (hv₂ z).mp hu⟩
   · rintro ⟨w, hwz⟩
     obtain ⟨u, hu⟩ := MemStructure.exists_slice (r〘xs〙 : M) w
     grind
@@ -431,8 +409,7 @@ noncomputable def tupleVal (z : M) (i : Fin l) : M :=
 theorem tupleVal_orderedPair_last (z w : M) (hl : l ≠ 0) :
     tupleVal !(z, w) (last l) = w := by
   simp only [tupleVal, isValue, RudimentaryBasisTerm.tupleVal, snoc_last]
-  have : (RudimentaryBasisTerm.var 0)〘![!(z, w)]〙 = !(z, w) := by simp
-  rw [realize_right _ _ this]
+  exact realize_right _ _ (z := z) (by simp)
 
 @[simp]
 theorem tupleVal_orderedPair_castSucc (z w : M) (hl : l ≠ 0) (i : Fin l) :
@@ -448,9 +425,7 @@ theorem tupleVal_orderedPair_castSucc (z w : M) (hl : l ≠ 0) (i : Fin l) :
 theorem tupleVal_orderedPair_eq_snoc_tupleval (z w : M) (hl : l ≠ 0) :
     tupleVal (l := l + 1) !(z, w) = snoc (tupleVal z) w := by
   ext i
-  cases i using lastCases with
-  | last => simp [hl]
-  | cast i => simp [hl]
+  cases i using lastCases <;> simp [hl]
 
 @[simp]
 theorem tupleVal_orderedPair_comp_castSucc (z w : M) (hl : l ≠ 0) :
@@ -473,15 +448,12 @@ theorem tupleVal_orderedPair_succ_castSucc (z w : M) (i : Fin l) :
 theorem tupleVal_orderedPair_comp_snoc_castAdd_two_last (z w : M) :
     tupleVal !(z, w) ∘ snoc (castAdd 2) (last (l + 1)) = snoc (tupleVal z ∘ castSucc) w := by
   funext i
-  cases i using lastCases with
-  | last => simp
-  | cast i => simp [castAdd, castLE_add_two_eq_castSucc_castSucc]
+  cases i using lastCases <;> simp [castAdd, castLE_add_two_eq_castSucc_castSucc]
 
 @[simp]
 theorem tupleVal_orderedPair_castAdd_one_last (z w : M) :
     tupleVal !(z, w) (castAdd 1 (last (l + 1))) = tupleVal z (last (l + 1)) := by
-  have : castAdd 1 (last (l + 1)) = (last (l + 1)).castSucc := by simp [castSucc]
-  rw [this]
+  rw [show castAdd 1 (last (l + 1)) = (last (l + 1)).castSucc by simp [castSucc] ]
   simp
 
 @[simp]
@@ -521,8 +493,7 @@ theorem tupleVal_tuple (xs : Fin l → M) :
 @[simp]
 theorem tupleVal_one (z : M) :
     tupleVal z = fun _ : Fin 1 ↦ z := by
-  have := tupleVal_tuple (fun _ : Fin 1 ↦ z)
-  simpa [tuple_one] using this
+  simpa [tuple_one] using tupleVal_tuple (fun _ : Fin 1 ↦ z)
 
 @[simp]
 theorem tupleVal_orderedPair_two_zero (z w : M) :
@@ -543,8 +514,8 @@ theorem tupleVal_orderedPair_comp_one (z w : M) :
 
 theorem eq_tuple_tupleVal {z : M} (hz : IsTuple z l) :
     z = tuple (fun i : Fin l ↦ tupleVal z i) := by
-  obtain ⟨ys, hys⟩ := hz
-  simp [hys]
+  obtain ⟨ys, rfl⟩ := hz
+  simp
 
 @[simp]
 theorem mem_realize_sProd_iff (z : M) (rs : Fin (l + 1) → L.RudimentaryBasisTerm n) :
@@ -559,15 +530,10 @@ theorem mem_realize_sProd_iff (z : M) (rs : Fin (l + 1) → L.RudimentaryBasisTe
       simp only [ne_eq, Nat.add_eq_zero_iff, one_ne_zero, and_false, not_false_eq_true,
         isTuple_unorderedPair_iff, hys, true_and]
       intro i
-      cases i using lastCases with
-      | last => simp [hv]
-      | cast i => simp [hys]
+      cases i using lastCases <;> simp [hv, hys]
     · rintro ⟨⟨ys, rfl⟩, hz⟩
       simp only [tupleVal_tuple] at hz
-      use tuple (ys ∘ castSucc)
-      constructor
-      · simp [hz]
-      · exact ⟨ys (last _), by simp [hz], by simp [tuple]⟩
+      exact ⟨tuple (ys ∘ castSucc), by simp [hz], ys (last _), by simp [hz], by simp [tuple]⟩
 
 @[simp]
 theorem orderedPair_mem_realize_sProd_iff (rs : Fin (l + 2) → L.RudimentaryBasisTerm n) (x y : M) :
@@ -594,9 +560,8 @@ theorem mem_realize_rotateSProd_iff (rs : Fin l → L.RudimentaryBasisTerm n)
     · rintro ⟨u, v, w, hw, huv, rfl⟩
       simp [hw, huv, Fin.castAdd, castLE_add_two_eq_castSucc_castSucc]
     · rintro ⟨hz₁, hz₂, hz₃⟩
-      use tupleVal z (last (l + 1)).castSucc, tupleVal z (last (l + 2)),
-        tuple (fun i : Fin (l + 1) ↦ tupleVal z (i.castAdd 2))
-      simp only [isTuple_tuple, tupleVal_tuple, hz₂, implies_true, and_self, hz₃, true_and]
+      refine ⟨tupleVal z (last (l + 1)).castSucc, tupleVal z (last (l + 2)),
+        tuple (fun i : Fin (l + 1) ↦ tupleVal z (i.castAdd 2)), by simp [hz₂], hz₃, ?_⟩
       rw [eq_tuple_tupleVal hz₁, tuple_succ, tuple_succ]
       simp [castAdd, castLE_add_two_eq_castSucc_castSucc, tuple_congr]
 
@@ -622,12 +587,9 @@ theorem mem_realize_iterSwitch_iff (rs : Fin l → L.RudimentaryBasisTerm n)
   | zero =>
     simp only [iterSwitch, zero_add, isTuple_two_iff_isOrderedPair, Nat.reduceAdd,
       IsEmpty.forall_iff, isValue, reduceLast, true_and]
-    constructor
-    · intro hz
-      refine ⟨h z hz, ?_⟩
-      convert hz
-      obtain ⟨x, y, rfl⟩ := h z hz
-      simp
+    refine ⟨fun hz ↦ ?_, ?_⟩
+    · obtain ⟨x, y, rfl⟩ := h z hz
+      simp [IsOrderedPair, hz]
     · rintro ⟨⟨x, y, rfl⟩, hz⟩
       simpa using hz
   | succ l ih =>
@@ -636,14 +598,9 @@ theorem mem_realize_iterSwitch_iff (rs : Fin l → L.RudimentaryBasisTerm n)
       tupleVal_orderedPair_succ_castSucc, tupleVal_orderedPair_zero, tupleVal_orderedPair_last]
     constructor
     · rintro ⟨u, v, w, hw₁, ⟨⟨hu₁, hu₂, hu₃⟩, rfl⟩⟩
-      refine ⟨?_, ?_, ?_⟩
-      · simp [hu₁]
-      · intro i
-        simp only [tupleVal_orderedPair_succ_castSucc]
-        cases i using lastCases with
-        | last => simp [hw₁]
-        | cast i => simp [hu₂]
-      · simp [hu₃]
+      refine ⟨by simp [hu₁], fun i ↦ ?_, by simp [hu₃]⟩
+      simp only [tupleVal_orderedPair_succ_castSucc]
+      cases i using lastCases <;> simp [hw₁, hu₂]
     · rintro ⟨hz₁, hz₂, hz₃⟩
       use tuple (fun i : Fin (l + 1) ↦ tupleVal z (i.castAdd 2)),
         tupleVal z (last (l + 2)), tupleVal z (last (l + 1)).castSucc
@@ -663,8 +620,7 @@ theorem mem_realize_iterSwitch_iff (rs : Fin l → L.RudimentaryBasisTerm n)
 theorem mem_realize_lastMemFin_iff (rs : Fin l → L.RudimentaryBasisTerm n) (i : Fin l) (z : M) :
     z ∈ (lastMemFin i rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ j, tupleVal z j.castSucc ∈ (rs j)〘xs〙) ∧ tupleVal z (last l) ∈ tupleVal z i.castSucc := by
-  simp only [lastMemFin]
-  rw [mem_realize_iterSwitch_iff]
+  rw [lastMemFin, mem_realize_iterSwitch_iff]
   swap
   · intro x hx
     rw [mem_realize_rotateSProd_iff] at hx
@@ -678,25 +634,19 @@ theorem mem_realize_lastMemFin_iff (rs : Fin l → L.RudimentaryBasisTerm n) (i 
     have : tuple bs = tuple ((append as (bs ∘ succ)) ∘ Fin.cast (n := l + 1) (by omega)) := by
       nth_rw 1 [← Fin.cons_self_tail bs]
       rw [has₁, tuple_cons_tuple (by omega), tuple_cast, tuple_congr]
-      intro _
-      rfl
+      exact fun _ ↦ rfl
     simp only [this, isTuple_tuple, tupleVal_tuple, Function.comp_apply, cast_castSucc, Nat.add_eq,
       cast_last, append_last, succ_last, Nat.succ_eq_add_one, true_and]
-    refine ⟨?_, ?_⟩
-    · intro j
-      by_cases hj : j.val < i.val + 1
+    refine ⟨fun j ↦ ?_, ?_⟩
+    · by_cases hj : j.val < i.val + 1
       · simp only [append_nat, val_castSucc, val_cast, hj, ↓reduceDIte]
         by_cases hj₁ : j = i
         · simp only [hj₁]
           convert hbs₃ using 3
           simp
-        · convert hbs₂ ⟨j.val, by omega⟩ using 3
-          · simp
-          · simp
+        · convert hbs₂ ⟨j.val, by omega⟩ using 3 <;> simp
       · simp only [append_nat, val_castSucc, val_cast, hj, ↓reduceDIte, Function.comp_apply,
         succ_mk]
-        have := hbs₁ ⟨j.val - (i.val + 1), by omega⟩
-        simp at this
         convert hbs₁ ⟨j.val - (i.val + 1), by omega⟩
         · grind
         · simp
@@ -710,13 +660,8 @@ theorem mem_realize_lastMemFin_iff (rs : Fin l → L.RudimentaryBasisTerm n) (i 
         ← tuple_cast ys (m := (i.val + 1 + (l - (i.val + 1) + 1))) (by omega),
         tuple_congr]
       intro j
-      cases j using addCases with
-      | left j =>
-        simp only [Function.comp_apply, append_left]
+      cases j using addCases <;> simp only [Function.comp_apply, append_left, append_right] <;>
         congr 1
-      | right j =>
-        simp only [Function.comp_apply, append_right]
-        congr
     simp only [this, isTuple_tuple, tupleVal_tuple, cons_succ, val_castSucc, cons_zero,
       Function.comp_apply, castLE_castSucc, cons_last, val_last, Order.add_one_le_iff, is_lt,
       add_tsub_cancel_of_le, true_and]
@@ -746,10 +691,8 @@ theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin
     | _ => z ∈ (lastMemRud t rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ i, tupleVal z i.castSucc ∈ (rs i)〘xs〙) ∧ tupleVal z (last l) ∈ t〘tupleVal z ∘ castSucc〙 :=
   match t with
-  | .var i  => by
-    simp [lastMemRud, mem_realize_lastMemFin_iff]
-  | .const c => by
-    simp [lastMemRud, mem_realize_lastMemConst_iff]
+  | .var i => by simp [lastMemRud, mem_realize_lastMemFin_iff]
+  | .const c => by simp [lastMemRud, mem_realize_lastMemConst_iff]
   | .unorderedPair t₁ t₂ => by
     simp only [lastMemRud, mem_realize_union_iff, mem_realize_lastEqRud_iff t₁,
       mem_realize_lastEqRud_iff t₂, RudimentaryTerm.realize_unorderedPair,
@@ -773,9 +716,7 @@ theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin
         ↓reduceIte, castSucc_eq_zero_iff, and_true, RudimentaryTerm.realize_substBoundBound,
         tupleVal_orderedPair_comp_one, RudimentaryTerm.realize_basic, tupleVal_orderedPair_zero]
       simp only [RudimentaryTerm.castSucc, RudimentaryTerm.castAdd, Nat.reduceAdd,
-        RudimentaryTerm.realize_castLE, castLE_succ_castSucc]
-      have (ys : Fin 0 → M) : ys = default := by exact List.ofFn_inj.mp rfl
-      simp_rw [this]
+        RudimentaryTerm.realize_castLE, Unique.eq_default]
       grind
     | l + 1 => by
       simp only [lastMemRud, realize, mem_dom₀_iff, mem_realize_inter_iff,
@@ -789,39 +730,14 @@ theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin
         forall_iff_castSucc (n := l + 2), RudimentaryTerm.realize_substBoundBound,
         tupleVal_orderedPair_comp_snoc_castAdd_two_last, RudimentaryTerm.realize_basic]
       simp only [RudimentaryTerm.castSucc, RudimentaryTerm.castAdd, RudimentaryTerm.realize_castLE,
-        castLE_succ_castSucc]
-      by_cases hz₁ : IsTuple z (l + 2)
-      swap
-      · grind
-      simp only [hz₁, true_and]
-      by_cases hz₂ : (∀ (i : Fin (l + 1)), tupleVal z i.castSucc ∈ (rs i)〘xs〙)
-      swap
-      · grind
-      simp only [hz₂, implies_true, and_true, true_and]
-      rw [exists_congr]
-      intro y
-      simp only [tupleVal_orderedPair_castAdd_one_last]
-      by_cases hz₃ : tupleVal z (last (l + 1)) ∈ rf〘snoc (tupleVal z ∘ castSucc) y〙
-      swap
-      · simp [hz₃]
-      simp only [hz₃, and_true]
-      constructor
-      · tauto
-      intro hy
-      have hy₁ : ∃ w, IsTuple w (l + 1) ∧ (∀ (i : Fin (l + 1)), tupleVal w i ∈ ((rs i)〘xs〙 : M)) ∧ y ∈ ri〘tupleVal w〙 := by
-        use tuple (tupleVal (l := l + 2) z ∘ castSucc)
-        simp [hz₂, hy]
-      have hy₂ : ∃ w,
-        IsTuple w (l + 2) ∧
-          ((∃ w_1,
-                IsTuple w_1 (l + 1) ∧
-                  (∀ (i : Fin (l + 1)), tupleVal w_1 i ∈ ((rs i)〘xs〙 : M)) ∧
-                  tupleVal w (last (l + 1)) ∈ (ri〘tupleVal w_1〙 : M)) ∧
-              ∀ (i : Fin (l + 1)), tupleVal w i.castSucc ∈ (rs i)〘xs〙) ∧
-            tupleVal z (last (l + 1)) ∈ rf〘tupleVal w〙 := by
-        use tuple (snoc (tupleVal (l := l + 2) z ∘ castSucc) y)
-        simp [hy₁, hz₂, hz₃]
-      simp [hy, hy₁, hy₂]
+        castLE_succ_castSucc, tupleVal_orderedPair_castAdd_one_last]
+      refine ⟨by grind, ?_⟩
+      rintro ⟨hz₁, hz₂, y, hy, hz₃⟩
+      have hy₁ : ∃ w, IsTuple w (l + 1) ∧ (∀ i, tupleVal w i ∈ ((rs i)〘xs〙 : M)) ∧
+          y ∈ ri〘tupleVal w〙 :=
+        ⟨tuple (tupleVal (l := l + 2) z ∘ castSucc), by simp [hz₂, hy]⟩
+      refine ⟨y, ⟨hz₁, ⟨?h, hz₂⟩, hy⟩, hz₁, ⟨hy₁, ?h, hz₂⟩, hz₃⟩
+      exact ⟨tuple (snoc (tupleVal (l := l + 2) z ∘ castSucc) y), by simp [hy₁, hz₂, hz₃]⟩
   | .char R r => match l with
     | 0 => by
       simp only [lastMemRud, realize, realize_singleton, realize_sdiff_self, mem_dom₀_iff,
@@ -829,9 +745,7 @@ theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin
         mem_realize_image_iff r, isTuple_zero_iff, IsEmpty.forall_iff, true_and, exists_eq_left,
         mem_realize_lastEqRud_iff r, zero_add, isTuple_one, Nat.reduceAdd, tupleVal_one, last_zero,
         isValue, orderedPair_eq_orderedPair_iff, exists_eq_right_right', exists_and_right,
-        ↓existsAndEq, RudimentaryTerm.realize_char]
-      have (ys : Fin 0 → M) : ys = default := by exact List.ofFn_inj.mp rfl
-      simp_rw [this]
+        ↓existsAndEq, RudimentaryTerm.realize_char, Unique.eq_default]
       grind
     | l + 1 => by
       simp only [lastMemRud, realize, realize_singleton, realize_sdiff_self, mem_sprod₀_iff,
@@ -839,44 +753,22 @@ theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin
         one_ne_zero, and_false, not_false_eq_true, isTuple_unorderedPair_iff,
         forall_iff_castSucc (n := l + 1), snoc_last, tupleVal_orderedPair_last, mem_interRel₀_iff,
         snoc_castSucc, tupleVal_orderedPair_castSucc, mem_singleton_iff, exists_eq_left,
-        RudimentaryTerm.realize_char, mem_realize_lastEqRud_iff r]
-      by_cases hz₁ : IsTuple z (l + 1 + 1)
-      swap
-      · simp only [hz₁, false_and, iff_false, not_exists, not_and, forall_exists_index, and_imp]
-        intro y w hy _ _ _ _
-        contrapose! hz₁
-        simp [hz₁, hy]
-      simp only [ne_eq, Nat.add_eq_zero_iff, one_ne_zero, and_false, not_false_eq_true,
-        tupleVal_orderedPair_comp_castSucc, ↓existsAndEq, and_true, hz₁, true_and]
-      by_cases hz₂ : (∀ (i : Fin (l + 1)), tupleVal z i.castSucc ∈ (rs i)〘xs〙)
-      swap
-      · simp only [hz₂, false_and, iff_false, not_exists, not_and, and_imp]
-        intro y hy₁ hy₂ hy₃ hy₄ hy₅ hy₆
-        contrapose! hz₂
-        simp [hz₂, hy₆]
-      simp only [hz₂, implies_true, true_and]
-      by_cases hz₃ : RelMap R ![r〘tupleVal z ∘ castSucc〙]
-      swap
-      · simp only [hz₃, ↓reduceIte, notin_empty, iff_false, not_exists,
-        not_and, and_imp]
-        intro y hy₁ hy₂ hy₃ hy₄ hy₅ hy₆
-        contrapose! hz₃
-        simp [hz₃, hy₃]
-      simp only [hz₃, ↓reduceIte, mem_unorderedPair_iff, or_self]
+        RudimentaryTerm.realize_char, mem_realize_lastEqRud_iff r,
+        tupleVal_orderedPair_comp_castSucc, ↓existsAndEq, and_true]
       constructor
-      · rintro ⟨y, hy, rfl⟩
-        simp
-      intro hz
-      obtain ⟨ys, rfl⟩ := hz₁
-      simp only [tupleVal_tuple] at hz₂ hz₃ hz
-      use tuple (ys ∘ castSucc)
-      simp only [isTuple_tuple, tupleVal_tuple, mem_realize_image_iff r, hz₃, and_true,
-        Function.comp_apply, hz₂, implies_true, true_and, and_self]
-      constructor
-      · use tuple (ys ∘ castSucc)
-        simp [hz₂]
+      · rintro ⟨u, ⟨⟨hu, ⟨-, hR⟩, hu₂⟩, -⟩, rfl⟩
+        simp [hu, hu₂, hR]
+      rintro ⟨⟨ys, rfl⟩, hz₂, hz₃⟩
+      split_ifs at hz₃ with hR
+      swap
+      · simp at hz₃
+      simp only [tupleVal_tuple, mem_unorderedPair_iff, or_self] at hz₂ hR hz₃
+      refine ⟨tuple (ys ∘ castSucc), ?_, ?_⟩
+      · simp only [isTuple_tuple, tupleVal_tuple, mem_realize_image_iff r, hR, and_true,
+          Function.comp_apply, hz₂, implies_true, true_and, and_self]
+        exact ⟨tuple (ys ∘ castSucc), by simp [hz₂]⟩
       · rw [tuple_succ]
-        simp [hz]
+        simp [hz₃]
 termination_by (t.depth, 0)
 decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def, RudimentaryTerm.castSucc, RudimentaryTerm.castAdd,
   RudimentaryTerm.castLE]
@@ -888,11 +780,8 @@ theorem exists_iUnion {l} (ri : L.RudimentaryTerm l)
   | 0 => by
     use (lastMemRud (ri.iUnion rf) (fun i ↦ .var i))〘fun i ↦ {xs i}〙
     simp only [IsIUnion, mem_realize_lastMemRud_iff_aux (ri.iUnion rf), zero_add, isTuple_one,
-      realize, Nat.reduceAdd, mem_singleton_iff, IsEmpty.forall_iff, last_zero, isValue,
-      tupleVal_one, true_and]
-    intro z
-    have (ys : Fin 0 → M) : ys = default := by exact List.ofFn_inj.mp rfl
-    simp_rw [this]
+      Nat.reduceAdd, IsEmpty.forall_iff, last_zero, isValue, tupleVal_one, true_and,
+      Unique.eq_default, implies_true]
   | l + 1 => by
     obtain ⟨a, ha⟩ := exists_slice ((lastMemRud (ri.iUnion rf) (fun i ↦ .var i))〘fun i ↦ {xs i}〙 : M) (tuple xs)
     use a
@@ -907,18 +796,13 @@ theorem mem_realize_lastMemRud_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l �
   match t with
   | .iUnion ri rf => by
     convert mem_realize_lastMemRud_iff_aux (.iUnion ri rf) rs xs z
-    rw [mem_realize_iUnion_iff₀]
+    rw [RudimentaryTerm.mem_realize_iUnion_iff₀]
     exact exists_iUnion ri rf _
-  | .var i  => by
-    exact mem_realize_lastMemRud_iff_aux (.var i) rs xs z
-  | .const c  => by
-    exact mem_realize_lastMemRud_iff_aux (.const c) rs xs z
-  | .unorderedPair t₁ t₂  => by
-    exact mem_realize_lastMemRud_iff_aux (.unorderedPair t₁ t₂) rs xs z
-  | .sdiff t₁ t₂  => by
-    exact mem_realize_lastMemRud_iff_aux (.sdiff t₁ t₂) rs xs z
-  | .char R r => by
-    exact mem_realize_lastMemRud_iff_aux (.char R r) rs xs z
+  | .var i => mem_realize_lastMemRud_iff_aux (.var i) rs xs z
+  | .const c => mem_realize_lastMemRud_iff_aux (.const c) rs xs z
+  | .unorderedPair t₁ t₂ => mem_realize_lastMemRud_iff_aux (.unorderedPair t₁ t₂) rs xs z
+  | .sdiff t₁ t₂ => mem_realize_lastMemRud_iff_aux (.sdiff t₁ t₂) rs xs z
+  | .char R r => mem_realize_lastMemRud_iff_aux (.char R r) rs xs z
 termination_by (t.depth, 2)
 decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def]
 
@@ -946,9 +830,7 @@ theorem mem_realize_image_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.
     simp only [image, realize_singleton, mem_singleton_iff, IsEmpty.forall_iff, true_and]
     rw [MemStructure.ext_iff]
     simp only [mem_realize_lastMemRud_iff t, zero_add, isTuple_one, Nat.reduceAdd,
-      IsEmpty.forall_iff, last_zero, isValue, tupleVal_one, true_and]
-    have (ys : Fin 0 → M) : ys = default := by exact List.ofFn_inj.mp rfl
-    simp_rw [this]
+      IsEmpty.forall_iff, last_zero, isValue, tupleVal_one, true_and, Unique.eq_default]
     rw [← MemStructure.ext_iff]
     refine ⟨fun hz ↦ ⟨∅, by simp, hz⟩, by grind⟩
   | l + 1 => by
@@ -964,16 +846,14 @@ theorem mem_realize_lastEqRud_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l �
     (xs : Fin n → M) (z : M) :
     z ∈ (lastEqRud t rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ i, tupleVal z i.castSucc ∈ (rs i)〘xs〙) ∧ tupleVal z (last l) = t〘tupleVal z ∘ castSucc〙 := by
-  simp only [lastEqRud]
-  rw [mem_realize_eqGraph_iff (ᵣlast l) (t.castSucc)]
+  rw [lastEqRud, mem_realize_eqGraph_iff ᵣ-1 (t.castSucc)]
   simp only [forall_iff_castSucc, snoc_last, snoc_castSucc, RudimentaryTerm.realize_basic,
     and_congr_right_iff]
   rw [mem_realize_image_iff t rs]
   simp only [RudimentaryTerm.castSucc, RudimentaryTerm.castAdd, RudimentaryTerm.realize_castLE,
     castLE_succ_castSucc, and_congr_left_iff, and_iff_right_iff_imp]
-  intro hz₁ hz₂ hz₃
-  use tuple (tupleVal z ∘ castSucc) (l := l)
-  simp [hz₂, hz₃]
+  exact fun hz₁ hz₂ hz₃ ↦
+    ⟨tuple (tupleVal z ∘ castSucc) (l := l), by simp [hz₂, hz₃]⟩
 termination_by (t.depth, 5)
 decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def, RudimentaryTerm.castSucc,
   RudimentaryTerm.castAdd, RudimentaryTerm.castLE]
@@ -984,13 +864,11 @@ theorem mem_realize_memGraph_iff {l n} (t₁ t₂ : L.RudimentaryTerm l) (rs : F
       (∀ i, tupleVal z i ∈ (rs i)〘xs〙) ∧ t₁〘tupleVal z〙 ∈ t₂〘tupleVal z〙 :=
   match l with
   | 0 => by
-    have (ys : Fin 0 → M) : ys = default := by exact List.ofFn_inj.mp rfl
     simp only [memGraph, realize, realize_singleton, realize_sdiff_self, mem_dom₀_iff,
       mem_sprod₀_iff, mem_singleton_iff, mem_realize_inter_iff, mem_realize_lastMemRud_iff t₂,
       zero_add, isTuple_one, Nat.reduceAdd, IsEmpty.forall_iff, last_zero, isValue, tupleVal_one,
       true_and, mem_realize_lastEqRud_iff t₁, orderedPair_eq_orderedPair_iff,
-      exists_eq_right_right', isTuple_zero_iff]
-    simp_rw [this]
+      exists_eq_right_right', isTuple_zero_iff, Unique.eq_default]
     grind
   | l + 1 => by
     simp only [memGraph, realize, mem_dom₀_iff, mem_realize_inter_iff,

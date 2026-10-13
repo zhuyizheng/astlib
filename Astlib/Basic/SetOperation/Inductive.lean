@@ -47,6 +47,7 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isInductive
 theorem minInductive_of_hasInductive_aux [h : HasInductive M] :
     ∃ a : M, IsInductive a ∧ ∀ x, IsInductive x → a ⊆ x := by
   obtain ⟨b, hb⟩ := h.hasInductive
+  sorry
 
 
 theorem minInductive_of_hasInductive [h : HasInductive M] :

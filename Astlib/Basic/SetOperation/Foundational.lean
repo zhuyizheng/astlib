@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
 import Astlib.Basic.SetOperation.Insert
+import Astlib.Basic.SetOperation.Multiclass.Defs
 /-!
 file docstring
 -/
@@ -49,6 +50,19 @@ theorem notMem_of_mem_memMin [RudClosed M] [Foundational M] {x y : M} (hy : y �
 @[simp, grind .]
 theorem notMem_self [RudClosed M] [Foundational M] : x ∉ x := by
   have := memMin_mem (x := ({x} : M)) (by simp)
+  grind
+
+-- @[simp, grind .]
+-- theorem not_mem_mem [Extensional M] [RudClosed M] [Foundational M] : ¬(x ∈ y ∧ y ∈ x) := by
+--   have := memMin_mem (x := ({x, y} : M)) (by simp)
+--   grind
+
+theorem notMem_of_mem [Extensional M] [RudClosed M] [Foundational M] {x y : M} (h : x ∈ y) : y ∉ x := by
+  have := memMin_mem (x := ({x, y} : M)) (by simp)
+  grind
+
+theorem notMem_of_mem_of_mem [Extensional M] [RudClosed M] [Foundational M] {x y z : M} (h : x ∈ y) (h' : y ∈ z) : z ∉ x := by
+  obtain ⟨h₁, h₂⟩ := isMemMin_memMin (x := ({x, y, z} : M)) (by simp)
   grind
 
 @[simp, grind .]

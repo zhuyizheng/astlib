@@ -131,17 +131,15 @@ theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_dom (r : L.Rudimentar
 @[grind =]
 theorem mem_dom_iff (R x : M) :
     x ∈ dom R ↔ ∃ y, x [R] y := by
-  suffices (∃ z ∈ R, x = (ᵣ1).left〘snoc (fun i ↦ R) z〙 ∧ IsOrderedPair z) ↔
+  suffices (∃ z ∈ R, x = left z ∧ IsOrderedPair z) ↔
       ∃ y, !(x, y) ∈ R by
     simpa [dom, RudimentaryTerm.dom, snoc_nat]
   constructor
-  · intro ⟨z, hz₁, hz₂, ⟨x', y', hx'y'⟩⟩
-    have := realize_left (r := (ᵣ1 : L.RudimentaryTerm 2))
-      (xs := snoc (fun i ↦ R) z) (x := x') (y := y') (by simp [snoc_nat, hx'y'])
-    rw [this] at hz₂
-    grind
+  · rintro ⟨z, hz₁, hz₂, ⟨x', y', rfl⟩⟩
+    simp only [left_orderedPair] at hz₂
+    exact ⟨y', by rwa [hz₂]⟩
   · intro ⟨y, hy⟩
-    exact ⟨!(x, y), hy, realize_left (y := y) (by simp [snoc_nat]) |>.symm, ⟨x, y, rfl⟩⟩
+    exact ⟨!(x, y), hy, by simp [IsOrderedPair]⟩
 
 @[simp, grind .]
 theorem dom_mono {R S : M} (h : R ⊆ S) :
@@ -195,16 +193,15 @@ theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_ran (r : L.Rudimentar
 @[grind =]
 theorem mem_ran_iff (R y : M) :
     y ∈ ran R ↔ ∃ x, x [R] y := by
-  suffices (∃ z ∈ R, y = (ᵣ1).right〘snoc (fun i ↦ R) z〙 ∧ IsOrderedPair z) ↔ ∃ x, !(x, y) ∈ R by
+  suffices (∃ z ∈ R, y = right z ∧ IsOrderedPair z) ↔
+      ∃ x, !(x, y) ∈ R by
     simpa [ran, RudimentaryTerm.ran, snoc_nat]
   constructor
-  · intro ⟨z, hz₁, hz₂, ⟨x', y', hx'y'⟩⟩
-    have := realize_right (r := (ᵣ1 : L.RudimentaryTerm 2))
-      (xs := snoc (fun i ↦ R) z) (x := x') (y := y') (by simp [snoc_nat, hx'y'])
-    rw [this] at hz₂
-    grind
+  · rintro ⟨z, hz₁, hz₂, ⟨x', y', rfl⟩⟩
+    simp only [right_orderedPair] at hz₂
+    exact ⟨x', by rwa [hz₂]⟩
   · intro ⟨x, hx⟩
-    exact ⟨!(x, y), hx, realize_right (x := x) (by simp [snoc_nat]) |>.symm, ⟨x, y, rfl⟩⟩
+    exact ⟨!(x, y), hx, by simp [IsOrderedPair]⟩
 
 @[simp, grind .]
 theorem ran_mono {R S : M} (h : R ⊆ S) :
@@ -287,52 +284,17 @@ variable [RudClosed M]
 theorem mem_comp_iff
     (R S z : M) :
     z ∈ R !∘ S ↔ ∃ a b c : M, z = !(a, c) ∧ (a [S] b) ∧ (b [R] c) := by
-  suffices (∃ z_1 ∈ R,
-    ∃ z_2 ∈ S,
-      z =
-          !(((ᵣ3).left〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙 : M),
-            (ᵣ2).right〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙) ∧
-        (IsOrderedPair z_2 ∧ IsOrderedPair z_1) ∧
-          (ᵣ3).right〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙 =
-            (ᵣ2).left〘snoc (snoc (fun i ↦ (![ᵣ0, ᵣ1] i)〘R, S〙₂) z_1) z_2〙) ↔
-  ∃ a b c, z = !(a, c) ∧ !(a, b) ∈ S ∧ !(b, c) ∈ R by
+  suffices (∃ z_1 ∈ R, ∃ z_2 ∈ S, z = !(left z_2, right z_1) ∧ (IsOrderedPair z_2 ∧ IsOrderedPair z_1) ∧ right z_2 = left z_1) ↔
+      ∃ a b c, z = !(a, c) ∧ !(a, b) ∈ S ∧ !(b, c) ∈ R by
     simpa [comp, RudimentaryTerm.comp, snoc_nat]
   constructor
-  · rintro ⟨x, hx, y, hy, rfl, ⟨⟨a, b, hab⟩, ⟨b', c, hb'c⟩⟩, h₃⟩
+  · rintro ⟨x, hx, y, hy, rfl, ⟨⟨a, b, rfl⟩, ⟨b', c, rfl⟩⟩, h₃⟩
+    simp only [right_orderedPair, left_orderedPair] at h₃
+    subst h₃
     use a, b, c
-    subst x y
-    have hbb' : b = b' := by
-      convert h₃
-      · symm
-        convert realize_right _ (x := a) (y := b)
-        simp [snoc_nat]
-      · symm
-        convert realize_left _ (x := b') (y := c)
-        simp [snoc_nat]
-    subst hbb'
-    simp only [isValue, orderedPair_eq_orderedPair_iff]
-    refine ⟨⟨?_, ?_⟩, hy, hx⟩
-    · convert realize_left _ (x := a) (y := b)
-      simp [snoc_nat]
-    · convert realize_right _ (x := b) (y := c)
-      simp [snoc_nat]
-  · intro ⟨a, b, c, hac, hab, hbc⟩
-    subst hac
-    refine ⟨!(b, c), hbc, !(a, b), hab, ?_, ⟨⟨a, b, rfl⟩, ⟨b, c, rfl⟩⟩, ?_⟩
-    · simp only [Nat.succ_eq_add_one, Nat.reduceAdd, isValue, orderedPair_eq_orderedPair_iff]
-      constructor
-      · symm
-        convert realize_left _ (x := a) (y := b)
-        simp [snoc_nat]
-      · symm
-        convert realize_right _ (x := b) (y := c)
-        simp [snoc_nat]
-    · trans b
-      · convert realize_right _ (x := a) (y := b)
-        simp [snoc_nat]
-      · symm
-        convert realize_left _ (x := b) (y := c)
-        simp [snoc_nat]
+    simp [hy, hx]
+  · rintro ⟨a, b, c, rfl, hab, hbc⟩
+    exact ⟨!(b, c), hbc, !(a, b), hab, by simp, ⟨⟨a, b, rfl⟩, ⟨b, c, rfl⟩⟩, by simp⟩
 
 theorem comp_assoc (R S T : M) : (R !∘ S) !∘ T = R !∘ (S !∘ T) := by
   ext
@@ -478,29 +440,13 @@ variable [RudClosed M] [Extensional M]
 
 @[grind =]
 theorem mem_inv (R z : M) : z ∈ R⁻¹ ↔ ∃ a b : M, z = !(a, b) ∧ b [R] a := by
-  suffices (∃ z_1 ∈ R,
-    z = !(((ᵣ1).right〘snoc (fun i ↦ R) z_1〙 : M), (ᵣ1).left〘snoc (fun i ↦ R) z_1〙) ∧ IsOrderedPair z_1) ↔
-      ∃ a b, z = !(a, b) ∧ !(b, a) ∈ R by
+  suffices(∃ z_1 ∈ R, z = !(right z_1, left z_1) ∧ IsOrderedPair z_1) ↔ ∃ a b, z = !(a, b) ∧ !(b, a) ∈ R by
     simpa [Inv.inv, snoc_nat]
   constructor
   · rintro ⟨w, hw, rfl, ⟨a, b, rfl⟩⟩
-    refine ⟨b, a, ?_, hw⟩
-    simp only [Nat.reduceAdd, isValue, orderedPair_eq_orderedPair_iff]
-    constructor
-    · convert realize_right _ (x := a) (y := b)
-      simp [snoc_nat]
-    · convert realize_left _ (x := a) (y := b)
-      simp [snoc_nat]
+    exact ⟨b, a, by simp, hw⟩
   · rintro ⟨a, b, rfl, hba⟩
-    refine ⟨!(b, a), hba, ?_, ⟨b, a, rfl⟩⟩
-    simp only [orderedPair_eq_orderedPair_iff]
-    constructor
-    · symm
-      convert realize_right _ (x := b) (y := a)
-      simp [snoc_nat]
-    · symm
-      convert realize_left _ (x := b) (y := a)
-      simp [snoc_nat]
+    refine ⟨!(b, a), hba, by simp, ⟨b, a, rfl⟩⟩
 
 @[simp, grind .]
 theorem isRelation_inv (R : M) : IsRelation (R⁻¹) := by

@@ -44,47 +44,19 @@ theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isFunction
   pick_goal 2
   · simp [hr]
   suffices IsRelation (r〘xs〙 : M) →
-      ((∀ a ∈ r〘xs〙,
-        ∀ a_2 ∈ r〘xs〙,
-        ((ᵣ1).left〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M) =
-            ((ᵣ2).left〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M)→
-          ((ᵣ1).right〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M) =
-            ((ᵣ2).right〘snoc (snoc (fun i ↦ r〘xs〙) a) a_2〙 : M)) ↔
-        ∀ ⦃x y₁ y₂ : ↑M⦄, !(x, y₁) ∈ r〘xs〙 → !(x, y₂) ∈ r〘xs〙 → y₁ = y₂) by
+      ((∀ a ∈ r〘xs〙, ∀ a_2 ∈ r〘xs〙, left a = left a_2 → right a = right a_2) ↔
+      ∀ ⦃x y₁ y₂ : M⦄, !(x, y₁) ∈ r〘xs〙 → !(x, y₂) ∈ r〘xs〙 → y₁ = y₂) by
     simpa [isFunction, IsFunction, snoc_nat, hr]
   intro hr
   constructor
   · intro h x y₁ y₂ hxy₁ hxy₂
-    convert h !(x, y₁) hxy₁ !(x, y₂) hxy₂ ?_
-    · symm
-      convert realize_right _ (x := x) (y := y₁)
-      simp [snoc_nat]
-    · symm
-      convert realize_right _ (x := x) (y := y₂)
-      simp [snoc_nat]
-    · trans x
-      · convert realize_left _ (x := x) (y := y₁)
-        simp [snoc_nat]
-      · symm
-        convert realize_left _ (x := x) (y := y₂)
-        simp [snoc_nat]
+    convert h !(x, y₁) hxy₁ !(x, y₂) hxy₂ (by simp) <;> simp
   · intro h z₁ hz₁ z₂ hz₂ hz₁₂
     obtain ⟨x, y₁, rfl⟩ := hr hz₁
     obtain ⟨x', y₂, rfl⟩ := hr hz₂
-    have hxx' : x = x' := by
-      convert hz₁₂
-      · symm
-        convert realize_left _ (x := x) (y := y₁)
-        simp [snoc_nat]
-      · symm
-        convert realize_left _ (x := x') (y := y₂)
-        simp [snoc_nat]
-    subst hxx'
-    convert h hz₁ hz₂
-    · convert realize_right _ (x := x) (y := y₁)
-      simp [snoc_nat]
-    · convert realize_right _ (x := x) (y := y₂)
-      simp [snoc_nat]
+    simp only [left_orderedPair] at hz₁₂
+    subst hz₁₂
+    convert h hz₁ hz₂ <;> simp
 
 @[simp, grind .]
 theorem IsFunction.isRelation {f : M} (hf : IsFunction f) : IsRelation f := hf.left
@@ -126,9 +98,22 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.val
     ((ᵣ2).isOrderedPair ⊓ (&0 =₀ &1).substBoundRud ![(ᵣ2).left, ᵣ1]))
     |>.substBoundRud ![r, s]
 
+infix:88 " ﹫ " => FirstOrder.Language.RudimentaryTerm.val
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_val [L.ExtraConstantsUnaryRelationsOnly]
+    (r s : L.RudimentaryTerm n) (hr : r.IsCharFree) (hs : s.IsCharFree) :
+    (r ﹫ s).IsCharFree  := by
+  simp only [RudimentaryTerm.val, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, Function.comp_apply]
+  apply isCharFree_substBoundRud
+  · simp only [isValue, isCharFree_iUnion, isCharFree_var, Nat.reduceAdd, isCharFree_right,
+    true_and]
+    apply isCharFree_ifTrue <;> simp
+  · simp [hr, hs]
+
 variable [L.ExtraConstantsUnaryRelationsOnly]
 
-noncomputable def val (f a : M) := ((ᵣ0).val (ᵣ1)) 〘f, a〙₂
+noncomputable def val (f a : M) := ((ᵣ0) ﹫ (ᵣ1)) 〘f, a〙₂
 
 infix:88 " ﹫ " => FirstOrder.Language.MemStructure.val
 
@@ -151,37 +136,20 @@ theorem IsFunction.rel_iff_val_eq
     Function.comp_apply, RudimentaryTerm.realize_substBoundRud]
   ext z
   simp only [isValue, mem_realize_iUnion_iff, realize_basic, Matrix.cons_val_zero, Nat.reduceAdd,
-    mem_realize_ifTrue_iff, toBoundedFormula_inf, BoundedFormula.realize'_inf, isCharFree_var,
-    realize_isOrderedPair, DeltaZeroBoundedFormula.isRelFree_eq, forall_fin_two, isCharFree_left,
-    Matrix.cons_val_one, Matrix.cons_val_fin_one, and_self,
+    mem_realize_ifTrue_iff, realize_right, snoc_nat, coe_ofNat_eq_mod, Nat.mod_succ,
+    lt_self_iff_false, ↓reduceDIte, toBoundedFormula_inf, BoundedFormula.realize'_inf,
+    isCharFree_var, realize_isOrderedPair, DeltaZeroBoundedFormula.isRelFree_eq, forall_fin_two,
+    isCharFree_left, Matrix.cons_val_one, Matrix.cons_val_fin_one, and_self,
     DeltaZeroBoundedFormula.realize_substBoundRud, toBoundedFormula,
-    BoundedFormula.realize'_bdEqual, Term.realize'_var']
+    BoundedFormula.realize'_bdEqual, Term.realize'_var', realize_left, Nat.one_mod,
+    Order.lt_two_iff, Std.le_refl, mk_one]
   constructor
-  · intro ⟨w, hw₁, hw₂, ⟨x', y', hx'y'⟩, hw₃⟩
+  · rintro ⟨w, hw₁, hw₂, ⟨x', y', rfl⟩, hw₃⟩
+    simp only [right_orderedPair, left_orderedPair] at hw₂ hw₃
     convert hw₂
-    symm
-    convert realize_right _ (x := x) (y := y₀)
-    simp only [isValue, snoc_nat, Nat.reduceAdd, coe_ofNat_eq_mod, Nat.mod_succ, lt_self_iff_false,
-      ↓reduceDIte, realize_basic] at hx'y' ⊢
-    subst hx'y'
-    suffices x' = x by grind
-    convert hw₃
-    · symm
-      convert realize_left _ (x := x') (y := y')
-      simp [snoc_nat]
-    · simp [snoc_nat]
+    grind
   · intro hz
-    use !(x, y₀), hy₀
-    simp only [isValue, IsOrderedPair, snoc_nat, coe_ofNat_eq_mod, Nat.mod_succ, lt_self_iff_false,
-      ↓reduceDIte, orderedPair_eq_orderedPair_iff, exists_and_left, ↓existsAndEq, and_true,
-      exists_eq', Nat.one_mod, Order.lt_two_iff, Std.le_refl, mk_one, Matrix.cons_val_one,
-      Matrix.cons_val_fin_one, realize_basic, true_and]
-    constructor
-    · convert hz
-      convert realize_right _ (x := x) (y := y₀)
-      simp [snoc_nat]
-    · convert realize_left _ (x := x) (y := y₀)
-      simp [snoc_nat]
+    exact ⟨!(x, y₀), hy₀, by simp [hz], by simp [IsOrderedPair], by simp⟩
 
 @[simp, grind! .]
 theorem IsFunction.val_eq_of_rel
@@ -651,10 +619,23 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.restrict
 
 infix:88 " ↾ " => FirstOrder.Language.RudimentaryTerm.restrict
 
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_restrict
+    (r s : L.RudimentaryTerm n) (hr : r.IsCharFree) (hs : s.IsCharFree) :
+    (r ↾ s).IsCharFree  := by
+  simp only [restrict]
+  apply isCharFree_inter
+  · exact hr
+  · apply isCharFree_sprod
+    · exact hs
+    · apply isCharFree_ran
+      exact hr
+
 noncomputable def restrict (f a : M) := ((ᵣ0).restrict (ᵣ1)) 〘f, a〙₂
 -- noncomputable def restrict (f a : M) := (∃'∈ &0 (&2).eqLeft &1) 〘a, ∈ f〙₀
 
 infix:88 " ↾ " => FirstOrder.Language.MemStructure.restrict
+
 
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_restrict

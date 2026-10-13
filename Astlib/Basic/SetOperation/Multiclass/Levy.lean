@@ -130,6 +130,14 @@ theorem IsDeltaZero.slice {A : Multiclass M (n + l)}
   exact ⟨l + m, φ.castAssoc, by infer_instance, append us vs,
     by simp [hus, hvs], by funext; simp⟩
 
+instance (A : Multiclass M (n + m)) [hA : A.DeltaZero Set.univ] (us : Fin m → M) :
+  A.slice us |>.DeltaZero Set.univ := ⟨hA.isDeltaZero.slice (by simp)⟩
+
+instance (A : Multiclass M (n + 1)) [hA : A.DeltaZero Set.univ] (c : M) :
+  A.slice₀ c |>.DeltaZero Set.univ := by
+  unfold slice₀
+  infer_instance
+
 theorem IsDeltaZero.remap {A : Multiclass M n}
     (hA : A.IsDeltaZero P) (f : Fin n → Fin n') :
     (A.remap f).IsDeltaZero P := by
@@ -447,6 +455,14 @@ theorem IsSigma.slice {A : Multiclass M (n + l)}
   refine ⟨l + m, φ.castAssoc, by infer_instance, append us vs,
     by simp [hus, hvs], by funext; simp⟩
 
+instance {A : Multiclass M (n + l)} [hA : A.Pi k Set.univ] {us : Fin l → M} :
+  (A.slice us).Pi k Set.univ :=
+  ⟨hA.isPi.slice (by simp)⟩
+
+instance {A : Multiclass M (n + l)} [hA : A.Sigma k Set.univ] {us : Fin l → M} :
+  (A.slice us).Sigma k Set.univ :=
+  ⟨hA.isSigma.slice (by simp)⟩
+
 theorem IsPi.remap {A : Multiclass M n}
     (hA : A.IsPi k P) (f : Fin n → Fin n') :
     (A.remap f).IsPi k P := by
@@ -557,6 +573,10 @@ theorem IsDefinable.slice {A : Multiclass M (n + l)}
     (A.slice us).IsDefinable P := by
   obtain ⟨m, φ, vs, hvs, rfl⟩ := hA
   refine ⟨l + m, φ.castAssoc, append us vs, by simp [hus, hvs], by funext; simp⟩
+
+instance {A : Multiclass M (n + l)} [hA : A.Definable Set.univ] {us : Fin l → M} :
+  (A.slice us).Definable Set.univ :=
+  ⟨hA.isDefinable.slice (by simp)⟩
 
 theorem IsDefinable.remap {n' : ℕ} {A : Multiclass M n}
     (hA : A.IsDefinable P) (f : Fin n → Fin n') :
@@ -820,6 +840,26 @@ instance [Nonempty M] {A : Class M}
     (A.subst G).Pi (k + 1) P := by
   rw [subst_eq_subst_toMulticlass]
   infer_instance
+
+instance (a : M) : (Mem a).DeltaZero Set.univ := by
+  simp only [Class.Mem, Multiclass.slice₀, isValue]
+  infer_instance
+
+instance (a : M) : (Eq a).DeltaZero Set.univ := by
+  simp only [Class.Eq, Multiclass.slice₀, isValue]
+  infer_instance
+
+instance (a : M) : (Subset a).DeltaZero Set.univ := by
+  simp only [Class.Subset, Multiclass.slice₀, isValue]
+  infer_instance
+
+instance (R : L.Relations 1) : (Class.Rel R (M := M)).DeltaZero Set.univ where
+  isDeltaZero := by
+    refine ⟨0, R.boundedFormula₁ &0, by infer_instance, elim0, by simp, ?_⟩
+    funext xs
+    simp only [Multiclass.slice, multiclass, Nat.add_zero, isValue, Function.comp_apply,
+      append_elim0, cast_refl, Function.comp_id, realize'_rel₁, Term.realize'_var', eq_iff_iff]
+    simp
 
 end Class
 

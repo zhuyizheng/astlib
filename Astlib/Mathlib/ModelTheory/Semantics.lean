@@ -210,6 +210,35 @@ theorem realize'_ex (θ : L.BoundedFormula' (l + 1)) :
     θ.ex 〘xs〙 ↔ ∃ y : M, θ 〘snoc xs y〙 := by
   simp [Realize']
 
+@[simp]
+theorem realize'_alls (θ : L.BoundedFormula' m) (xs : Fin 0 → M) :
+    θ.alls 〘xs〙 ↔ ∀ ys : Fin m → M, θ 〘ys〙 := by
+  induction m with
+  | zero =>
+    simp only [alls, forall_fin_zero_pi, ← eq_iff_iff]
+    congr
+    exact List.ofFn_inj.mp rfl
+  | succ n ih =>
+    simp only [alls, ih]
+    exact ⟨fun h xs => Fin.snoc_init_self xs ▸ h _ _, fun h xs x => h (Fin.snoc xs x)⟩
+
+@[simp]
+theorem realize'_exs (θ : L.BoundedFormula' m) (xs : Fin 0 → M) :
+    θ.exs 〘xs〙 ↔ ∃ ys : Fin m → M, θ 〘ys〙 := by
+  induction m with
+  | zero =>
+    simp only [exs, exists_fin_zero_pi, ← eq_iff_iff]
+    congr
+    exact List.ofFn_inj.mp rfl
+  | succ n ih =>
+    simp only [exs, ih, realize'_ex]
+    constructor
+    · rintro ⟨xs, x, h⟩
+      exact ⟨_, h⟩
+    · rintro ⟨xs, h⟩
+      rw [← Fin.snoc_init_self xs] at h
+      exact ⟨_, _, h⟩
+
 
 -- theorem realize_imp_ex'_all' [Inhabited M] :
 --     let φ := (θ.liftAt n (l + m)).cast (Nat.add_assoc _ _ _) ⟹

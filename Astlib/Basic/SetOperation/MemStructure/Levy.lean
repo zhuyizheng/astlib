@@ -155,8 +155,18 @@ theorem toBoundedFormula_sup (φ ψ : L.DeltaZeroBoundedFormula n) :
   rfl
 
 @[simp]
+theorem toBoundedFormula_sup' (φ ψ : L.DeltaZeroBoundedFormula n) :
+    (φ.sup ψ).toBoundedFormula = φ.toBoundedFormula ⊔ ψ.toBoundedFormula :=
+  rfl
+
+@[simp]
 theorem toBoundedFormula_inf (φ ψ : L.DeltaZeroBoundedFormula n) :
     (φ ⊓ ψ).toBoundedFormula = φ.toBoundedFormula ⊓ ψ.toBoundedFormula :=
+  rfl
+
+@[simp]
+theorem toBoundedFormula_inf' (φ ψ : L.DeltaZeroBoundedFormula n) :
+    (φ.inf ψ).toBoundedFormula = φ.toBoundedFormula ⊓ ψ.toBoundedFormula :=
   rfl
 
 @[simp]

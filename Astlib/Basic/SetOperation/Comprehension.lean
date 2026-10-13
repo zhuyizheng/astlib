@@ -538,7 +538,7 @@ instance (A : Class M) [hA : A.DeltaZero Set.univ] : HasComprehension x A where
       DeltaZeroBoundedFormula.mem_realize_comprehensionRudimentaryTerm_iff, snoc_last,
       DeltaZeroBoundedFormula.coe_cast, BoundedFormula.cast, init_snoc,
       BoundedFormula.realize'_substBoundBound, and_congr_right_iff]
-    simp [Class.iff_toMulticlass, hvs, append_left_eq_cons]
+    simp [Class.toMulticlass_eq_iff.mp hvs, append_left_eq_cons]
 
 @[simp]
 theorem comprehension_top (x : M) :

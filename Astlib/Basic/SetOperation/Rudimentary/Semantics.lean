@@ -237,14 +237,19 @@ variable {n : ℕ} (x y z a : M)
 variable [PairClosed M] [SDiffClosed M]
 
 @[simp, grind =]
-theorem mem_unorderedPair_iff : x ∈ unorderedPair y z ↔ x = y ∨ x = z := by
-  simp only [unorderedPair, PairClosed.pairClosed, ↓reduceDIte]
+theorem mem_unorderedPair_iff : x ∈ MemStructure.unorderedPair y z ↔ x = y ∨ x = z := by
+  simp only [MemStructure.unorderedPair, PairClosed.pairClosed, ↓reduceDIte]
   rw [Classical.choose_spec (PairClosed.pairClosed y z)]
 
 @[simp, grind =]
 theorem mem_sdiff_iff : x ∈ y \ z ↔ x ∈ y ∧ x ∉ z := by
-  simp only [SDiff.sdiff, sdiff, SDiffClosed.sdiffClosed, ↓reduceDIte]
+  simp only [SDiff.sdiff, MemStructure.sdiff, SDiffClosed.sdiffClosed, ↓reduceDIte]
   rw [Classical.choose_spec (SDiffClosed.sdiffClosed y z)]
+
+end MemStructure
+
+
+namespace RudimentaryTerm
 
 -- @[simp]
 theorem mem_realize_iUnion_iff₀
@@ -253,7 +258,7 @@ theorem mem_realize_iUnion_iff₀
     (h : ∃ a, IsIUnion (M := M) a ri〘xs〙 fun y ↦ rf〘snoc xs y〙) :
     x ∈ (ri.iUnion rf)〘xs〙 ↔
       ∃ z ∈ ri〘xs〙, x ∈ rf〘snoc xs z〙 := by
-  simp only [iUnion, h, ↓reduceDIte, realize_iUnion]
+  simp only [MemStructure.iUnion, h, ↓reduceDIte, realize_iUnion]
   rw [Classical.choose_spec h]
 
 @[simp]
@@ -265,8 +270,7 @@ theorem mem_realize_iUnion_iff [RudClosed M]
   rw [mem_realize_iUnion_iff₀]
   exact RudClosed.iUnionClosed _ _ _
 
-end MemStructure
-
+end RudimentaryTerm
 namespace RudimentaryTerm
 
 variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
@@ -458,7 +462,7 @@ variable {n m : ℕ} [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudCl
 @[simp]
 theorem realize_substBoundRud {φ : L.DeltaZeroBoundedFormula n}
     (hφ : φ.IsRelFree)
-    (rs : Fin n → L.RudimentaryTerm m)
+    {rs : Fin n → L.RudimentaryTerm m}
     (hrs : ∀ i, (rs i).IsCharFree)
     (xs : Fin m → M) :
     (φ.substBoundRud rs).toBoundedFormula 〘xs〙 ↔

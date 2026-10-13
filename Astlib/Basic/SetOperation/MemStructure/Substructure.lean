@@ -8,6 +8,7 @@ import Mathlib.ModelTheory.Substructures
 import Astlib.Mathlib.ModelTheory.Semantics
 import Astlib.Basic.SetOperation.MemStructure.Defs
 import Astlib.Basic.SetOperation.Multiclass.Defs
+import Astlib.Basic.SetOperation.Multiclass.Levy
 import Astlib.Mathlib.Fin.Basic
 import Astlib.Mathlib.Sum.Basic
 /-!
@@ -20,16 +21,20 @@ namespace FirstOrder
 
 namespace Language
 
-variable {m n : ℕ} {L : Language} {M : Type*} [L.MemStructure M]
+variable {m n : ℕ} {L : Language.{u, v}} {M : Type max u v} [L.MemStructure M]
   -- (t : L.Term' n) (φ : L.BoundedFormula' (n + 1))
   -- {xs : Fin n → M}
 
 namespace MemStructure
 
 @[coe]
-def toClass (a : M) : Class M := {x | x ∈ a}
+def toClass (a : M) : Class M := Class.Mem a
 
 instance : Coe M (Class M) := ⟨toClass⟩
+
+instance (a : M) : (toClass a).DeltaZero Set.univ := by
+  simp only [toClass]
+  infer_instance
 
 theorem toClass_subset {a b : M} (hab : a ⊆ b) : (a : Class M) ⊆ (b : Class M) := by
   norm_cast
