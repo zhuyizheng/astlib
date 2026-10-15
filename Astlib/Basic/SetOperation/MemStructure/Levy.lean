@@ -115,14 +115,18 @@ def depth (φ : L.DeltaZeroBoundedFormula n) : ℕ := match φ with
   | allMem _ ψ => ψ.depth + 1
   | rel _ _ => 0
 
-/-- `φ` does not have any unary relation symbol -/
-def IsRelFree (φ : L.DeltaZeroBoundedFormula n) : Prop := match φ with
+/-- Whether `φ` does not have any unary relation symbol -/
+def isRelFree (φ : L.DeltaZeroBoundedFormula n) : Prop := match φ with
   | falsum => True
   | equal _ _ => True
   | mem _ _ => True
-  | imp φ₁ φ₂ => φ₁.IsRelFree ∧ φ₂.IsRelFree
-  | allMem _ ψ => ψ.IsRelFree
+  | imp φ₁ φ₂ => φ₁.isRelFree ∧ φ₂.isRelFree
+  | allMem _ ψ => ψ.isRelFree
   | rel _ _ => False
+
+/-- `φ` does not have any unary relation symbol -/
+class RelFree (φ : L.DeltaZeroBoundedFormula n) : Prop where
+  relFree : φ.isRelFree
 
 /-- Turn a `Δ₀` formula into a bounded formula -/
 @[coe, simp]
@@ -243,6 +247,27 @@ theorem coe_cast
     (φ.cast h) = (φ : L.BoundedFormula' n).cast h :=
   φ.coe_substBoundBound (Fin.cast h)
 
+/-- Reassociating the variables -/
+def castAssoc' {n p q : ℕ} (φ : L.DeltaZeroBoundedFormula (n + (p + q))) :
+    L.DeltaZeroBoundedFormula (n + p + q) :=
+  φ.cast (add_assoc n p q).symm
+
+@[simp, norm_cast]
+theorem coe_castAssoc' {n p q : ℕ} (φ : L.DeltaZeroBoundedFormula (n + (p + q))) :
+    (φ.castAssoc' : L.BoundedFormula' (n + p + q)) = (φ : L.BoundedFormula' _).castAssoc' :=
+  φ.coe_cast _
+
+/-- Swapping the last two blocks of variables -/
+def switchBoundRight {n p q : ℕ} (φ : L.DeltaZeroBoundedFormula (n + (p + q))) :
+    L.DeltaZeroBoundedFormula (n + (q + p)) :=
+  φ.substBoundBound (append (castAdd (q + p)) (natAdd n ∘ ((append (natAdd q) (castAdd p)))))
+
+@[simp, norm_cast]
+theorem coe_switchBoundRight {n p q : ℕ} (φ : L.DeltaZeroBoundedFormula (n + (p + q))) :
+    (φ.switchBoundRight : L.BoundedFormula' (n + (q + p))) =
+      (φ : L.BoundedFormula' _).switchBoundRight :=
+  φ.coe_substBoundBound _
+
 @[simp]
 theorem depth_falsum :
     (falsum : L.DeltaZeroBoundedFormula n).depth = 0 := by
@@ -339,101 +364,131 @@ theorem depth_cast
     (φ.cast h).depth = φ.depth :=
   depth_substBound _ _
 
-@[simp]
-theorem isRelFree_falsum :
-    (falsum : L.DeltaZeroBoundedFormula n).IsRelFree := by
-  simp [IsRelFree]
+theorem relFree_iff_isRelFree (φ : L.DeltaZeroBoundedFormula n) :
+    φ.RelFree ↔ φ.isRelFree :=
+  ⟨fun h ↦ h.relFree, fun h ↦ ⟨h⟩⟩
+
+instance : (falsum : L.DeltaZeroBoundedFormula n).RelFree := ⟨trivial⟩
+
+instance : (⊥ : L.DeltaZeroBoundedFormula n).RelFree := ⟨trivial⟩
+
+instance (t₁ t₂ : L.Term' n) : (t₁ =₀ t₂).RelFree := ⟨trivial⟩
+
+instance (t₁ t₂ : L.Term' n) : (t₁ ∈₀ t₂).RelFree := ⟨trivial⟩
 
 @[simp]
-theorem isRelFree_bot :
-    (⊥ : L.DeltaZeroBoundedFormula n).IsRelFree := by
-  simp [IsRelFree]
-
-@[simp]
-theorem isRelFree_eq (t₁ t₂ : L.Term' n) :
-    (t₁ =₀ t₂).IsRelFree := by
-  simp [IsRelFree]
-
-@[simp]
-theorem isRelFree_mem (t₁ t₂ : L.Term' n) :
-    (t₁ ∈₀ t₂).IsRelFree := by
-  simp [IsRelFree]
-
-@[simp]
-theorem not_isRelFree_rel (R : L.Relations 1) (t : L.Term' n) :
-    ¬(rel R t).IsRelFree := by
-  simp [IsRelFree]
+theorem not_relFree_rel (R : L.Relations 1) (t : L.Term' n) :
+    ¬(rel R t).RelFree := by
+  simp [relFree_iff_isRelFree, isRelFree]
 
 variable (φ φ₁ φ₂ : L.DeltaZeroBoundedFormula n)
 
-@[simp]
-theorem isRelFree_imp :
-    (φ₁ ⟹ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
-  simp [IsRelFree]
+theorem relFree_imp_iff :
+    (φ₁ ⟹ φ₂).RelFree ↔ φ₁.RelFree ∧ φ₂.RelFree := by
+  simp [relFree_iff_isRelFree, isRelFree]
 
-@[simp]
-theorem isRelFree_not :
-    (∼φ).IsRelFree ↔ φ.IsRelFree := by
-  simp [IsRelFree, not]
+instance [φ₁.RelFree] [φ₂.RelFree] : (φ₁ ⟹ φ₂).RelFree :=
+  (relFree_imp_iff _ _).mpr ⟨inferInstance, inferInstance⟩
 
-@[simp]
-theorem isRelFree_sup :
-    (φ₁ ⊔ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
-  simp only [IsRelFree, max, sup, not]
-  grind
+/-- If `φ₁ ⟹ φ₂` is relation-free, then so is `φ₁` -/
+theorem RelFree.of_imp_left [h : (φ₁ ⟹ φ₂).RelFree] : φ₁.RelFree :=
+  ((relFree_imp_iff _ _).mp h).left
 
-@[simp]
-theorem isRelFree_inf :
-    (φ₁ ⊓ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
-  simp [IsRelFree, min, inf, not]
+/-- If `φ₁ ⟹ φ₂` is relation-free, then so is `φ₂` -/
+theorem RelFree.of_imp_right [h : (φ₁ ⟹ φ₂).RelFree] : φ₂.RelFree :=
+  ((relFree_imp_iff _ _).mp h).right
 
-@[simp]
-theorem isRelFree_iff :
-    (φ₁ ⇔ φ₂).IsRelFree ↔ φ₁.IsRelFree ∧ φ₂.IsRelFree := by
-  simp only [IsRelFree, iff, inf, not]
-  tauto
+instance [φ.RelFree] : (∼φ).RelFree := by
+  unfold not; infer_instance
 
-@[simp]
-theorem isRelFree_top :
-    (⊤ : L.DeltaZeroBoundedFormula n).IsRelFree := by
-  simp [Top.top]
+instance [φ₁.RelFree] [φ₂.RelFree] : (φ₁ ⊔ φ₂).RelFree := by
+  show (sup φ₁ φ₂).RelFree
+  unfold sup; infer_instance
 
-@[simp]
-theorem isRelFree_allMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) :
-    (∀₀∈t ψ).IsRelFree ↔ ψ.IsRelFree := by
-  simp [IsRelFree]
+instance [φ₁.RelFree] [φ₂.RelFree] : (φ₁ ⊓ φ₂).RelFree := by
+  show (inf φ₁ φ₂).RelFree
+  unfold inf; infer_instance
 
-@[simp]
-theorem isRelFree_exMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) :
-    (∃₀∈t ψ).IsRelFree ↔ ψ.IsRelFree := by
-  simp [exMem]
+instance [φ₁.RelFree] [φ₂.RelFree] : (φ₁ ⇔ φ₂).RelFree := by
+  unfold iff inf; infer_instance
+
+instance : (⊤ : L.DeltaZeroBoundedFormula n).RelFree := by
+  show (∼(falsum : L.DeltaZeroBoundedFormula n)).RelFree
+  infer_instance
+
+theorem relFree_allMem_iff (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) :
+    (∀₀∈t ψ).RelFree ↔ ψ.RelFree := by
+  simp [relFree_iff_isRelFree, isRelFree]
+
+instance (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) [ψ.RelFree] :
+  (∀₀∈t ψ).RelFree :=
+  (relFree_allMem_iff _ _).mpr inferInstance
+
+/-- If `∀₀∈ t ψ` is relation-free, then so is `ψ` -/
+theorem RelFree.of_allMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1))
+    [h : (∀₀∈ t ψ).RelFree] : ψ.RelFree :=
+  (relFree_allMem_iff _ _).mp h
+
+/-- Induction on a relation-free formula, which has no `rel` case -/
+@[elab_as_elim] def relFreeCases
+    {motive : ∀ {n}, ∀ {φ : L.DeltaZeroBoundedFormula n}, φ.RelFree → Sort _}
+    (falsum : ∀ {n}, ∀ h : (falsum : L.DeltaZeroBoundedFormula n).RelFree, motive h)
+    (equal : ∀ {n}, ∀ t₁ t₂ : L.Term' n, ∀ h : (t₁ =₀ t₂).RelFree, motive h)
+    (mem : ∀ {n}, ∀ t₁ t₂ : L.Term' n, ∀ h : (t₁ ∈₀ t₂).RelFree, motive h)
+    (imp : ∀ {n}, ∀ φ₁ φ₂ : L.DeltaZeroBoundedFormula n, ∀ h₁ : φ₁.RelFree, ∀ h₂ : φ₂.RelFree,
+      ∀ h : (φ₁ ⟹ φ₂).RelFree, motive h₁ → motive h₂ → motive h)
+    (allMem : ∀ {n}, ∀ t : L.Term' n, ∀ ψ : L.DeltaZeroBoundedFormula (n + 1), ∀ hψ : ψ.RelFree,
+      ∀ h : (∀₀∈ t ψ).RelFree, motive hψ → motive h)
+    {n} {φ : L.DeltaZeroBoundedFormula n} (h : φ.RelFree) :
+    motive h := by
+  cases φ with
+  | falsum => exact falsum h
+  | equal => exact equal _ _ h
+  | mem => exact mem _ _ h
+  | imp φ₁ φ₂ =>
+    have h₁ := RelFree.of_imp_left φ₁ φ₂
+    have h₂ := RelFree.of_imp_right φ₁ φ₂
+    exact imp _ _ h₁ h₂ h (relFreeCases falsum equal mem imp allMem h₁)
+      (relFreeCases falsum equal mem imp allMem h₂)
+  | allMem t ψ =>
+    have hψ := RelFree.of_allMem t ψ
+    exact allMem _ _ hψ h (relFreeCases falsum equal mem imp allMem hψ)
+  | rel R t => simp at h
+
+instance (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) [ψ.RelFree] :
+  (∃₀∈t ψ).RelFree := by
+  unfold exMem; infer_instance
 
 @[simp]
 theorem isRelFree_substBound
     {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
     (ts : Fin n → L.Term' m) :
-    (φ.substBound ts).IsRelFree ↔ φ.IsRelFree := by
+    (φ.substBound ts).isRelFree ↔ φ.isRelFree := by
   induction φ generalizing m with
-  | falsum => simp [IsRelFree]
-  | equal t₁ t₂ => simp [substBound, IsRelFree]
-  | mem t₁ t₂ => simp [substBound, IsRelFree]
-  | imp φ₁ φ₂ ih₁ ih₂ => simp [substBound, IsRelFree, ih₁, ih₂]
-  | allMem t ψ ih => simp [substBound, IsRelFree, Term.substBoundBound, ih]
-  | rel R ts => simp [substBound, IsRelFree]
+  | falsum => simp [substBound, isRelFree]
+  | equal t₁ t₂ => simp [substBound, isRelFree]
+  | mem t₁ t₂ => simp [substBound, isRelFree]
+  | imp φ₁ φ₂ ih₁ ih₂ => simp [substBound, isRelFree, ih₁, ih₂]
+  | allMem t ψ ih => simp [substBound, isRelFree, ih]
+  | rel R ts => simp [substBound, isRelFree]
 
-@[simp]
-theorem isRelFree_substBoundBound
+theorem relFree_substBound_iff
     {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
-    (f : Fin n → Fin m) :
-    (φ.substBoundBound f).IsRelFree ↔ φ.IsRelFree :=
-  isRelFree_substBound _ _
+    (ts : Fin n → L.Term' m) :
+    (φ.substBound ts).RelFree ↔ φ.RelFree := by
+  simp [relFree_iff_isRelFree]
 
-@[simp]
-theorem isRelFree_cast
-    {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n)
-    (h : n = m) :
-    (φ.cast h).IsRelFree ↔ φ.IsRelFree :=
-  isRelFree_substBound _ _
+instance {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n) [φ.RelFree] (ts : Fin n → L.Term' m) :
+  (φ.substBound ts).RelFree :=
+  (relFree_substBound_iff _ _).mpr inferInstance
+
+instance {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n) [φ.RelFree] (f : Fin n → Fin m) :
+  (φ.substBoundBound f).RelFree := by
+  unfold substBoundBound; infer_instance
+
+instance {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n) [φ.RelFree] (h : n = m) :
+  (φ.cast h).RelFree := by
+  unfold cast; infer_instance
 
 
 -- @[simp]
@@ -754,14 +809,14 @@ instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⊔ ψ).DeltaZero :=
   ⟨hφ.isDeltaZero.not.imp hψ.isDeltaZero⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n} [hf : ∀ i, (f i).DeltaZero] :
-    (iSup f).DeltaZero :=
+  (iSup f).DeltaZero :=
   ⟨isDeltaZero_iSup (fun i ↦ (hf i).isDeltaZero)⟩
 
 instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⊓ ψ).DeltaZero :=
   ⟨hφ.isDeltaZero.imp hψ.isDeltaZero.not |>.not⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n} [hf : ∀ i, (f i).DeltaZero] :
-    (iInf f).DeltaZero :=
+  (iInf f).DeltaZero :=
   ⟨isDeltaZero_iInf (fun i ↦ (hf i).isDeltaZero)⟩
 
 instance [hφ : φ.DeltaZero] [hψ : ψ.DeltaZero] : (φ ⇔ ψ).DeltaZero :=
@@ -830,7 +885,7 @@ instance {φ : L.BoundedFormula' (p + n)} {ψ : L.BoundedFormula' (q + n)} [hφ 
   [hψ : ψ.DeltaZero] : (φ.splitImp' ψ).DeltaZero := by rw [splitImp']; infer_instance
 
 instance {φ : L.BoundedFormula' n} [h : φ.Pi k] :
-    (φ.substBound ts).Pi k := ⟨h.isPi.substBound ts⟩
+  (φ.substBound ts).Pi k := ⟨h.isPi.substBound ts⟩
 
 instance {φ : L.BoundedFormula' n} [h : φ.Pi k] :
   (φ.substBoundBound f).Pi k := ⟨h.isPi.substBound _⟩
@@ -859,7 +914,7 @@ instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.Pi k] :
 --   [hψ : ψ.Pi k] : (φ.splitImp' ψ).Pi k := by rw [splitImp']; infer_instance
 
 instance {φ : L.BoundedFormula' n} [h : φ.Sigma k] :
-    (φ.substBound ts).Sigma k := ⟨h.isSigma.substBound ts⟩
+  (φ.substBound ts).Sigma k := ⟨h.isSigma.substBound ts⟩
 
 instance {φ : L.BoundedFormula' n} [h : φ.Sigma k] :
   (φ.substBoundBound f).Sigma k := ⟨h.isSigma.substBound _⟩
@@ -1371,20 +1426,20 @@ instance {φ ψ : L.BoundedFormula' n}
   (φ ⊓ ψ).LogicalSigma k T := ⟨hφ.isLogicalSigma.inf hψ.isLogicalSigma⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-    [hf : ∀ i, (f i).LogicalPi k T] :
-    (iSup f).LogicalPi k T := ⟨isLogicalPi_iSup (fun i ↦ (hf i).isLogicalPi)⟩
+  [hf : ∀ i, (f i).LogicalPi k T] :
+  (iSup f).LogicalPi k T := ⟨isLogicalPi_iSup (fun i ↦ (hf i).isLogicalPi)⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-    [hf : ∀ i, (f i).LogicalPi k T] :
-    (iInf f).LogicalPi k T := ⟨isLogicalPi_iInf (fun i ↦ (hf i).isLogicalPi)⟩
+  [hf : ∀ i, (f i).LogicalPi k T] :
+  (iInf f).LogicalPi k T := ⟨isLogicalPi_iInf (fun i ↦ (hf i).isLogicalPi)⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-    [hf : ∀ i, (f i).LogicalSigma k T] :
-    (iSup f).LogicalSigma k T := ⟨isLogicalSigma_iSup (fun i ↦ (hf i).isLogicalSigma)⟩
+  [hf : ∀ i, (f i).LogicalSigma k T] :
+  (iSup f).LogicalSigma k T := ⟨isLogicalSigma_iSup (fun i ↦ (hf i).isLogicalSigma)⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-    [hf : ∀ i, (f i).LogicalSigma k T] :
-    (iInf f).LogicalSigma k T := ⟨isLogicalSigma_iInf (fun i ↦ (hf i).isLogicalSigma)⟩
+  [hf : ∀ i, (f i).LogicalSigma k T] :
+  (iInf f).LogicalSigma k T := ⟨isLogicalSigma_iInf (fun i ↦ (hf i).isLogicalSigma)⟩
 
 -- instance {φ ψ : L.BoundedFormula' n}
 --   [hφ : φ.LogicalDelta k T] [hψ : ψ.LogicalDelta k T] :

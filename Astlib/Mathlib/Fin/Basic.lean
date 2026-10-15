@@ -325,6 +325,38 @@ theorem Fin.snoc_snoc_eq_append (xs : Fin n → α) (u w : α) :
   exact List.ofFn_inj.mp rfl
 
 
+/-- Peeling one `castSucc` off `castAdd`. Together with `snoc_castSucc` and `snoc_last`, this
+evaluates iterated `snoc`s at indices of the form `castAdd k i`. -/
+theorem Fin.castAdd_add_one {k : ℕ} (i : Fin n) : castAdd (k + 1) i = (castAdd k i).castSucc := rfl
+
+@[simp]
+theorem Matrix.comp_vecCons {α β : Type*} {n : ℕ} (f : α → β) (a : α) (u : Fin n → α) :
+    f ∘ Matrix.vecCons a u = Matrix.vecCons (f a) (f ∘ u) :=
+  comp_cons f a u
+
+/-- Swapping the last two entries -/
+theorem Fin.snoc_snoc_comp_snoc_snoc_castAdd_two (xs : Fin n → α) (a b : α) :
+    snoc (snoc xs a) b ∘ snoc (snoc (castAdd 2) (last (n + 1))) (last n).castSucc =
+      snoc (snoc xs b) a := by
+  simp only [castAdd, comp_snoc, snoc_snoc_comp_castLE, snoc_last, snoc_castSucc]
+
+/-- Moving the last variable in front of the last `m + 1` variables -/
+theorem Fin.append_snoc_comp_snoc_append_castAdd_natAdd {n m : ℕ} (xs : Fin n → α) (y : α)
+    (zs : Fin m → α) :
+    append (snoc xs y) zs ∘ snoc (append (fun i ↦ castAdd m i.castSucc) (natAdd (n + 1)))
+      (castAdd m (last n)) = snoc (append xs zs) y := by
+  funext i
+  cases i using lastCases with
+  | last => simp [append_left]
+  | cast i =>
+    simp only [Function.comp_apply, snoc_castSucc]
+    refine addCases (fun j ↦ ?_) (fun j ↦ ?_) i <;> simp [append_left, append_right]
+
+theorem Fin.snoc_snoc_snoc_comp_snoc_castAdd_three_castSucc (xs : Fin n → α) (a b c : α) :
+    snoc (snoc (snoc xs a) b) c ∘ snoc (castAdd 3) (last (n + 1)).castSucc = snoc xs b := by
+  grind [snoc_nat]
+
+
 -- @[simp]
 -- theorem Fin.snoc_append_snoc_gap_add_one (vs : Fin m → α) (xs₀ : Fin n → α) (x a : α) :
 --     (snoc (append vs (snoc xs₀ x)) a ∘ gap (m + (n + 1)) 1 (m + n)) = append vs (snoc xs₀ a) := by

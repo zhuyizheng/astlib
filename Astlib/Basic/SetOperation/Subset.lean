@@ -29,7 +29,7 @@ theorem subset_iff (x y : M) : x ⊆ y ↔ ∀ z : M, (z ∈ x → z ∈ y) := �
 @[grind .]
 theorem subset_refl (x : M) : x ⊆ x := fun _ h ↦ h
 
-instance instReflSubset : Std.Refl (α := M) Subset := ⟨subset_refl⟩
+instance : Std.Refl (α := M) Subset := ⟨subset_refl⟩
 
 lemma subset_of_eq {x y : M} (h : x = y) : x ⊆ y := by grind
 
@@ -61,9 +61,9 @@ def Term.subset₀ {L : Language} [L.HasMem] (t₁ t₂ : L.Term' n) : L.DeltaZe
 @[inherit_doc] scoped[FirstOrder.Language]
 infix:88 " ⊆₀ " => FirstOrder.Language.Term.subset₀
 
-@[simp]
-theorem Term.isRelFree_subset₀ {L : Language} [L.HasMem] (t₁ t₂ : L.Term' n) : (t₁ ⊆₀ t₂).IsRelFree := by
-  simp [subset₀]
+instance {L : Language} [L.HasMem] (t₁ t₂ : L.Term' n) :
+  (t₁ ⊆₀ t₂).RelFree := by
+  unfold Term.subset₀; infer_instance
 
 /-- `t₁ ⊆ t₂` as a formula -/
 def Term.subset {L : Language} [L.HasMem] (t₁ t₂ : L.Term' n) := (t₁ ⊆₀ t₂).toBoundedFormula

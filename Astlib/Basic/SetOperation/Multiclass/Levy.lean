@@ -361,7 +361,7 @@ theorem isPi_iSup {As : Fin l → Multiclass M n} (hAs : ∀ i, (As i).IsPi k P)
   grind [Multiclass.iSup, isPi_foldr_sup]
 
 instance {As : Fin l → Multiclass M n} [hAs : ∀ i, (As i).Pi k P] :
-    (iSup As).Pi k P :=
+  (iSup As).Pi k P :=
   ⟨isPi_iSup fun i ↦ (hAs i).isPi⟩
 
 @[simp]
@@ -381,7 +381,7 @@ theorem isPi_iInf {As : Fin l → Multiclass M n} (hAs : ∀ i, (As i).IsPi k P)
   grind [Multiclass.iInf, isPi_foldr_inf]
 
 instance {As : Fin l → Multiclass M n} [hAs : ∀ i, (As i).Pi k P] :
-    (iInf As).Pi k P :=
+  (iInf As).Pi k P :=
   ⟨isPi_iInf fun i ↦ (hAs i).isPi⟩
 
 @[simp]
@@ -401,7 +401,7 @@ theorem isSigma_iSup {As : Fin l → Multiclass M n} (hAs : ∀ i, (As i).IsSigm
   grind [Multiclass.iSup, isSigma_foldr_sup]
 
 instance {As : Fin l → Multiclass M n} [hAs : ∀ i, (As i).Sigma k P] :
-    (iSup As).Sigma k P :=
+  (iSup As).Sigma k P :=
   ⟨isSigma_iSup fun i ↦ (hAs i).isSigma⟩
 
 @[simp]
@@ -421,7 +421,7 @@ theorem isSigma_iInf {As : Fin l → Multiclass M n} (hAs : ∀ i, (As i).IsSigm
   grind [Multiclass.iInf, isSigma_foldr_inf]
 
 instance {As : Fin l → Multiclass M n} [hAs : ∀ i, (As i).Sigma k P] :
-    (iInf As).Sigma k P :=
+  (iInf As).Sigma k P :=
   ⟨isSigma_iInf fun i ↦ (hAs i).isSigma⟩
 
 
@@ -714,7 +714,7 @@ theorem isDeltaZero_proj (i : Fin n) :
     (MulticlassFunction.toMulticlass (proj (M := M) i)).IsDeltaZero P :=
   Multiclass.isDeltaZero_eq i.castSucc (last n)
 
-instance DeltaZero_proj (i : Fin n) : DeltaZero (proj (M := M) i) P where
+instance (i : Fin n) : DeltaZero (proj (M := M) i) P where
   isDeltaZero := isDeltaZero_proj i
 
 class abbrev Pi (F : MulticlassFunction M n) (k : ℕ) (P : Set M) : Prop :=
@@ -724,23 +724,23 @@ class abbrev Sigma (F : MulticlassFunction M n) (k : ℕ) (P : Set M) : Prop :=
   (F : Multiclass M (n + 1)).Sigma k P
 
 instance [Nonempty M] {F : MulticlassFunction M n} [F.Sigma (k + 1) P] :
-    F.Pi (k + 1) P := by
+  F.Pi (k + 1) P := by
   refine { toPi:= ?_}
   rw [eq_remap_imp_eq]
   infer_instance
 
 instance [Nonempty M] {F : MulticlassFunction M l}
-    [F.Sigma (k + 1) P]
-    {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-    (F.comp Gs).Sigma (k + 1) P := by
+  [F.Sigma (k + 1) P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
+  (F.comp Gs).Sigma (k + 1) P := by
   refine { toSigma := ?_}
   rw [comp_eq_ex']
   infer_instance
 
 instance [Nonempty M] {F : MulticlassFunction M l}
-    [F.Pi (k + 1) P]
-    {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-    (F.comp Gs).Pi (k + 1) P := by
+  [F.Pi (k + 1) P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
+  (F.comp Gs).Pi (k + 1) P := by
   refine { toPi := ?_}
   rw [comp_eq_all']
   infer_instance
@@ -766,14 +766,23 @@ theorem isDeltaZero_id :
     (ClassFunction.toMulticlass id).IsDeltaZero P :=
   Multiclass.isDeltaZero_eq 0 1
 
-instance DeltaZero_id : DeltaZero (id : ClassFunction M) P where
+instance : DeltaZero (id : ClassFunction M) P where
   isDeltaZero := isDeltaZero_id
 
 class Pi (F : ClassFunction M) (k : ℕ) (P : Set M) : Prop extends
-  PiMulticlassFunction : (F : MulticlassFunction M 1).Pi k P
+  piMulticlassFunction : (F : MulticlassFunction M 1).Pi k P
 
 class Sigma (F : ClassFunction M) (k : ℕ) (P : Set M) : Prop extends
-  SigmaMulticlassFunction : (F : MulticlassFunction M 1).Sigma k P
+  sigmaMulticlassFunction : (F : MulticlassFunction M 1).Sigma k P
+
+theorem Sigma.of_iff {F : Multiclass M 2} [hF : F.Sigma k P] {G : ClassFunction M}
+    (h : ∀ u w, F ![u, w] ↔ G u = w) : G.Sigma k P where
+  sigmaMulticlassFunction := by
+    have : ((G : MulticlassFunction M 1) : Multiclass M 2).Sigma k P := by
+      rw [cast_cast, show (G : Multiclass M 2) = F from funext fun xs ↦ by
+        rw [show xs = ![xs 0, xs 1] by ext i; fin_cases i <;> rfl, toMulticlass_vec_iff, h] ]
+      infer_instance
+    infer_instance
 
 instance (φ : L.BoundedFormula' n) [φ.Pi k] : φ.multiclass.Pi k P :=
   ⟨⟨0, φ, by infer_instance, elim0, by simp, by simp⟩⟩
@@ -782,13 +791,13 @@ instance (φ : L.BoundedFormula' n) [φ.Sigma k] : φ.multiclass.Sigma k P :=
   ⟨⟨0, φ, by infer_instance, elim0, by simp, by simp⟩⟩
 
 instance [Nonempty M] {F : ClassFunction M} [hF : F.Sigma (k + 1) P] :
-    F.Pi (k + 1) P :=
-    { PiMulticlassFunction := by infer_instance }
+  F.Pi (k + 1) P :=
+    { piMulticlassFunction := by infer_instance }
 
 instance [Nonempty M] {F : ClassFunction M} [hF : F.Sigma (k + 1) P]
-    {G : ClassFunction M} [hG : G.Sigma (k + 1) P] :
-    (F.comp G).Sigma (k + 1) P := by
-  refine { SigmaMulticlassFunction := ?_}
+  {G : ClassFunction M} [hG : G.Sigma (k + 1) P] :
+  (F.comp G).Sigma (k + 1) P := by
+  refine { sigmaMulticlassFunction := ?_}
   push_cast
   infer_instance
 
@@ -801,21 +810,41 @@ instance [Nonempty M] (F : ClassFunction M) [hF : F.Sigma (k + 1) P] :
 class Definable (F : ClassFunction M) (P : Set M) : Prop extends
   DefinableMulticlassFunction : (F : MulticlassFunction M 1).Definable P
 
+instance {F : ClassFunction M} [F.DeltaZero P] : (F : Multiclass M 2).DeltaZero P := by
+  rw [← cast_cast]
+  infer_instance
+
+instance {F : ClassFunction M} [F.Pi k P] : (F : Multiclass M 2).Pi k P := by
+  rw [← cast_cast]
+  infer_instance
+
+instance {F : ClassFunction M} [F.Sigma k P] : (F : Multiclass M 2).Sigma k P := by
+  rw [← cast_cast]
+  infer_instance
+
+instance {F : ClassFunction M} [F.Delta k P] : (F : Multiclass M 2).Delta k P := by
+  rw [← cast_cast]
+  infer_instance
+
+instance {F : ClassFunction M} [F.Definable P] : (F : Multiclass M 2).Definable P := by
+  rw [← cast_cast]
+  infer_instance
+
 end ClassFunction
 
 namespace Multiclass
 
 instance [Nonempty M] {A : Multiclass M l}
-    [A.Sigma (k + 1) P]
-    {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-    (A.subst Gs).Sigma (k + 1) P := by
+  [A.Sigma (k + 1) P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
+  (A.subst Gs).Sigma (k + 1) P := by
   rw [subst_eq_ex']
   infer_instance
 
 instance [Nonempty M] {A : Multiclass M l}
-    [A.Pi (k + 1) P]
-    {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-    (A.subst Gs).Pi (k + 1) P := by
+  [A.Pi (k + 1) P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
+  (A.subst Gs).Pi (k + 1) P := by
   rw [subst_eq_all']
   infer_instance
 
@@ -828,16 +857,16 @@ instance {G : MulticlassFunction M n} [G.Sigma k P] : ∀ i, (![G] i).Sigma k P 
   infer_instance
 
 instance [Nonempty M] {A : Class M}
-    [A.Sigma (k + 1) P]
-    {G : MulticlassFunction M n} [G.Sigma (k + 1) P] :
-    (A.subst G).Sigma (k + 1) P := by
+  [A.Sigma (k + 1) P]
+  {G : MulticlassFunction M n} [G.Sigma (k + 1) P] :
+  (A.subst G).Sigma (k + 1) P := by
   rw [subst_eq_subst_toMulticlass]
   infer_instance
 
 instance [Nonempty M] {A : Class M}
-    [hF : A.Pi (k + 1) P]
-    {G : MulticlassFunction M n} [G.Sigma (k + 1) P] :
-    (A.subst G).Pi (k + 1) P := by
+  [hF : A.Pi (k + 1) P]
+  {G : MulticlassFunction M n} [G.Sigma (k + 1) P] :
+  (A.subst G).Pi (k + 1) P := by
   rw [subst_eq_subst_toMulticlass]
   infer_instance
 

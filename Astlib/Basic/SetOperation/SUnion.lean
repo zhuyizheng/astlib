@@ -16,17 +16,24 @@ variable {L : Language.{u, v}} {M : Type max u v}
 
 namespace FirstOrder.Language
 
+def RudimentaryTerm.sUnion₀ {L : FirstOrder.Language} [L.HasMem] : L.RudimentaryTerm 1 :=
+  (ᵣ0).iUnion (ᵣ1)
+
+@[simp]
 def RudimentaryTerm.sUnion {n} {L : FirstOrder.Language} [L.HasMem]
-  (r : L.RudimentaryTerm n) := ((ᵣ0).iUnion (ᵣ1)).substBoundRud ![r]
+  (r : L.RudimentaryTerm n) := sUnion₀.substBoundRud ![r]
   -- (r : L.RudimentaryTerm n) := iUnion r (ᵣ(last _))
 
 @[inherit_doc] prefix:110 "ᵣ⋃₀ " => FirstOrder.Language.RudimentaryTerm.sUnion
 
-@[simp]
-theorem RudimentaryTerm.isCharFree_sUnion {n} {L : FirstOrder.Language} [L.HasMem]
-    (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
-    (ᵣ⋃₀ r).IsCharFree := by
-  simp [sUnion, hr]
+instance {L : FirstOrder.Language} [L.HasMem] :
+  (sUnion₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold sUnion₀; infer_instance
+
+instance {n} {L : FirstOrder.Language} [L.HasMem]
+  (r : L.RudimentaryTerm n) [r.CharFree] :
+  (ᵣ⋃₀ r).CharFree := by
+  unfold sUnion; infer_instance
 
 
 namespace MemStructure
@@ -34,26 +41,27 @@ namespace MemStructure
 variable (x y a : M)
 
 /-- `⋃ x` in set theory, denoted by `⋃₀ x` in lean -/
-noncomputable def sUnion (x : M) := (ᵣ⋃₀ ᵣ0)〘x〙₁
+noncomputable def sUnion (x : M) := sUnion₀〘x〙₁
 
 @[inherit_doc] prefix:110 "⋃₀ " => sUnion
 
 omit [RudClosed M] in
--- @[simp]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_sUnion
-    (r : L.RudimentaryTerm n) (xs : Fin n → M) :
-    (ᵣ⋃₀ r)〘xs〙 = (⋃₀ r〘xs〙 : M) := by
-  simp [sUnion, RudimentaryTerm.sUnion]
-
-omit [RudClosed M] in
 @[grind =]
 theorem sUnion_eq : ⋃₀ x = iUnion x id := by
-  simp [sUnion, Nat.succ_eq_add_one, Nat.reduceAdd, RudimentaryTerm.sUnion, isValue]
+  simp [sUnion, sUnion₀, realize_iUnion]
   rfl
 
-@[grind =]
+omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_sUnion₀ (xs : Fin 1 → M) :
+    sUnion₀〘xs〙 = (⋃₀ xs 0 : M) := by
+  simp [sUnion_eq, sUnion₀, realize_iUnion]
+  rfl
+
+@[simp, grind =]
 theorem mem_sUnion_iff : x ∈ ⋃₀ a ↔ ∃ y ∈ a, x ∈ y := by
-  simp [sUnion, RudimentaryTerm.sUnion, snoc_nat]
+  rw [sUnion, sUnion₀, mem_realize_iUnion_iff]
+  simp
 
 theorem eq_sUnion_iff [Extensional M] : x = ⋃₀ a ↔
     (∀ z ∈ x, ∃ y ∈ a, z ∈ y) ∧ ∀ y ∈ a, ∀ z ∈ y, z ∈ x :=

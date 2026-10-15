@@ -44,6 +44,9 @@ noncomputable def rotate₀ (x y : M) :=
 
 def IsSUnion₀ (a x : M) := ∀ z, z ∈ a ↔ ∃ u ∈ x, z ∈ u
 
+/-- `a` is the double union `⋃₀ ⋃₀ x` -/
+def IsSUnion₀SUnion₀ (a x : M) := ∀ z, z ∈ a ↔ ∃ u ∈ x, ∃ y ∈ u, z ∈ y
+
 noncomputable instance : Decidable (∃ a : M, IsSUnion₀ a x) :=
   Classical.propDecidable _
 
@@ -102,12 +105,12 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryBasisTerm.realize
   | .sliceSet r₁ r₂ => fun xs ↦ sliceSet₀ (r₁.realize xs) (r₂.realize xs)
   | .interRel r R => fun xs ↦ interRel₀ (r.realize xs) R
 
-scoped[FirstOrder.Language] notation:max
+scoped[FirstOrder.Language] notation:max (name := rudimentaryBasisTermRealize)
   r "〘" xs "〙" => RudimentaryBasisTerm.realize r xs
 
 
 @[simp]
-theorem realize_substBoundRudBasis (r : L.RudimentaryBasisTerm n) (rs : Fin n → L.RudimentaryBasisTerm m)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_substBoundRudBasis (r : L.RudimentaryBasisTerm n) (rs : Fin n → L.RudimentaryBasisTerm m)
     (xs : Fin m → M) :
     (r.substBoundRudBasis rs)〘xs〙 = r〘fun i ↦ (rs i)〘xs〙〙 := by
   induction r generalizing m <;> simp [substBoundRudBasis, *]
@@ -128,14 +131,14 @@ class RudBasisClosed : Prop extends PairClosed M, SDiffClosed M where
 variable [RudBasisClosed M] (x y z a : M)
 
 @[simp]
-theorem mem_realize_sdiff_iff {n : ℕ} (r₁ r₂ : L.RudimentaryBasisTerm n) (xs : Fin n → M) :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_sdiff_iff {n : ℕ} (r₁ r₂ : L.RudimentaryBasisTerm n) (xs : Fin n → M) :
     z ∈ (r₁ \ r₂)〘xs〙 ↔ z ∈ r₁〘xs〙 ∧ z ∉ r₂〘xs〙 := by
   simp only [SDiff.sdiff, RudimentaryBasisTerm.realize]
   rw [← MemStructure.mem_sdiff_iff]
   rfl
 
 @[simp]
-theorem realize_sdiff_self [Extensional M] {n : ℕ} (r : L.RudimentaryBasisTerm n) (xs : Fin n → M) :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_sdiff_self [Extensional M] {n : ℕ} (r : L.RudimentaryBasisTerm n) (xs : Fin n → M) :
     (r \ r)〘xs〙 = ∅ := by
   ext
   simp
@@ -183,18 +186,18 @@ theorem mem_interRel₀_iff : z ∈ interRel₀ x R ↔ z ∈ x ∧ RelMap R ![z
 variable (r₁ r₂ : L.RudimentaryBasisTerm n) (xs : Fin n → M)
 
 @[simp]
-theorem mem_realize_union_iff :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_union_iff :
     z ∈ (r₁ ∪ r₂)〘xs〙 ↔ z ∈ r₁〘xs〙 ∨ z ∈ r₂〘xs〙 := by
   simp [Union.union]
 
 @[simp]
-theorem mem_realize_inter_iff :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_inter_iff :
     z ∈ (r₁ ∩ r₂)〘xs〙 ↔ z ∈ r₁〘xs〙 ∧ z ∈ r₂〘xs〙 := by
   simp only [Inter.inter, mem_realize_sdiff_iff]
   tauto
 
 @[simp]
-theorem mem_realize_symDiff_iff :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_symDiff_iff :
     z ∈ (r₁.symDiff r₂)〘xs〙 ↔ ¬(z ∈ r₁〘xs〙 ↔ z ∈ r₂〘xs〙) := by
   simp only [symDiff, mem_realize_union_iff, mem_realize_sdiff_iff]
   tauto
@@ -210,7 +213,7 @@ variable (r : L.RudimentaryBasisTerm n) (xs : Fin n → M)
 variable [L.ExtraConstantsUnaryRelationsOnly]
 
 @[simp]
-theorem Term.realize_substructure {n : ℕ} (t : L.Term' n)
+theorem _root_.FirstOrder.Language.Term.realize_substructure {n : ℕ} (t : L.Term' n)
     {N : Class M} {xs : Fin n → MemStructure.toSubstructure N} :
     t〘xs〙 = t〘fun i ↦ (xs i).val〙 := match t with
   | var (Sum.inr i) => by simp
@@ -347,15 +350,21 @@ omit [Extensional M] [RudBasisClosed M] in
 @[simp]
 theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_singleton :
     {r}〘xs〙 = {r〘xs〙} := by
-  simp [Singleton.singleton]
+  simp [Singleton.singleton, RudimentaryTerm.singleton₀]
 
 @[simp]
-theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_left (h : r〘xs〙 = !(z, w)) :
-    (r.left)〘xs〙 = z := by
-  simp only [left, left₀, isValue, realize_substBoundRudBasis, realize, Matrix.cons_val_fin_one,
-    realize_singleton]
-  ext u
-  simp [h]
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_left₀ (xs : Fin 1 → M) :
+    left₀〘xs〙 = left (xs 0) := by
+  obtain ⟨a, rfl⟩ : ∃ a, xs = ![a] := ⟨xs 0, by ext i; fin_cases i; rfl⟩
+  simp only [left₀, realize, realize_singleton, Matrix.cons_val_fin_one]
+  by_cases h : IsOrderedPair a
+  · obtain ⟨z, w, rfl⟩ := h
+    ext u
+    simp
+  · rw [left_of_not_isOrderedPair h]
+    ext u
+    simp only [mem_sUnion₀_iff, mem_dom₀_iff, mem_singleton_iff, notin_empty, iff_false]
+    grind [IsOrderedPair]
 
 
 @[simp]
@@ -384,32 +393,35 @@ theorem _root_.FirstOrder.Language.MemStructure.exists_slice (x y : M) :
     grind
 
 @[simp]
-theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_ran_iff :
-    z ∈ r.ran〘xs〙 ↔ ∃ w, !(w, z) ∈ r〘xs〙 := by
-  simp only [ran, ran₀, isValue, realize_substBoundRudBasis, realize, Matrix.cons_val_fin_one,
-    mem_sUnion₀_iff, mem_sliceSet₀_iff, mem_dom₀_iff]
-  constructor
-  · rintro ⟨u, ⟨v, -, hv₂⟩, hu⟩
-    exact ⟨v, (hv₂ z).mp hu⟩
-  · rintro ⟨w, hwz⟩
-    obtain ⟨u, hu⟩ := MemStructure.exists_slice (r〘xs〙 : M) w
-    grind
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_ran₀_iff (xs : Fin 1 → M) :
+    z ∈ ran₀〘xs〙 ↔ ∃ w, !(w, z) ∈ xs 0 := by
+  simp only [ran₀, isValue, realize, mem_sUnion₀_iff, mem_sliceSet₀_iff, mem_dom₀_iff]
+  refine ⟨by grind, fun ⟨w, hwz⟩ ↦ ?_⟩
+  obtain ⟨u, hu⟩ := MemStructure.exists_slice (xs 0) w
+  grind
 
 @[simp]
-theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_right (h : r〘xs〙 = !(z, w)) :
-    (r.right)〘xs〙 = w := by
-  ext
-  simp [right, h]
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.realize_right₀ (xs : Fin 1 → M) :
+    right₀〘xs〙 = MemStructure.right (xs 0) := by
+  obtain ⟨a, rfl⟩ : ∃ a, xs = ![a] := ⟨xs 0, by ext i; fin_cases i; rfl⟩
+  by_cases h : IsOrderedPair a
+  · obtain ⟨z, w, rfl⟩ := h
+    ext u
+    simp [right₀, realize]
+  · rw [Matrix.cons_val_fin_one, right_of_not_isOrderedPair h]
+    ext u
+    simp only [right₀, realize, ran, realize_substBoundRudBasis, mem_sUnion₀_iff,
+      mem_realize_ran₀_iff, Matrix.cons_val_fin_one, realize_singleton, mem_singleton_iff,
+      notin_empty, iff_false]
+    grind [IsOrderedPair]
 
 noncomputable def tupleVal (z : M) (i : Fin l) : M :=
   ((.var 0 : L.RudimentaryBasisTerm 1).tupleVal i)〘![z]〙
 
-
 @[simp]
 theorem tupleVal_orderedPair_last (z w : M) (hl : l ≠ 0) :
     tupleVal !(z, w) (last l) = w := by
-  simp only [tupleVal, isValue, RudimentaryBasisTerm.tupleVal, snoc_last]
-  exact realize_right _ _ (z := z) (by simp)
+  simp [tupleVal, RudimentaryBasisTerm.tupleVal]
 
 @[simp]
 theorem tupleVal_orderedPair_castSucc (z w : M) (hl : l ≠ 0) (i : Fin l) :
@@ -417,8 +429,8 @@ theorem tupleVal_orderedPair_castSucc (z w : M) (hl : l ≠ 0) (i : Fin l) :
   have : (RudimentaryBasisTerm.var 0)〘![!(z, w)]〙 = !(z, w) := by simp
   simp only [tupleVal, isValue, RudimentaryBasisTerm.tupleVal, snoc_castSucc]
   rw [tupleVal_eq_substBoundRudBasis]
-  simp only [isValue, realize_substBoundRudBasis, Matrix.cons_val_fin_one]
-  rw [realize_left _ _ this]
+  simp only [isValue, RudimentaryBasisTerm.left, realize_substBoundRudBasis,
+    Matrix.cons_val_fin_one, this, realize_left₀, left_orderedPair]
   congr
   funext i; fin_cases i; simp
 
@@ -484,11 +496,11 @@ theorem tupleVal_tuple (xs : Fin l → M) :
           !(tuple (xs ∘ castSucc), xs (last _)) := by
         simp [tuple_succ]
       cases i using lastCases with
-      | last => simp [RudimentaryBasisTerm.tupleVal, realize_right (h := this)]
+      | last => simp [RudimentaryBasisTerm.tupleVal, this]
       | cast i =>
         simp only [isValue, RudimentaryBasisTerm.tupleVal, snoc_castSucc]
-        rw [realize_tupleVal, realize_left (h := this)]
-        simp [ih]
+        rw [realize_tupleVal]
+        simp [this, ih]
 
 @[simp]
 theorem tupleVal_one (z : M) :
@@ -518,7 +530,7 @@ theorem eq_tuple_tupleVal {z : M} (hz : IsTuple z l) :
   simp
 
 @[simp]
-theorem mem_realize_sProd_iff (z : M) (rs : Fin (l + 1) → L.RudimentaryBasisTerm n) :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_sProd_iff (z : M) (rs : Fin (l + 1) → L.RudimentaryBasisTerm n) :
     z ∈ (sProd rs)〘xs〙 ↔ IsTuple z (l + 1) ∧ (∀ i, tupleVal z i ∈ (rs i)〘xs〙) := by
   induction l generalizing z with
   | zero =>
@@ -536,11 +548,11 @@ theorem mem_realize_sProd_iff (z : M) (rs : Fin (l + 1) → L.RudimentaryBasisTe
       exact ⟨tuple (ys ∘ castSucc), by simp [hz], ys (last _), by simp [hz], by simp [tuple]⟩
 
 @[simp]
-theorem orderedPair_mem_realize_sProd_iff (rs : Fin (l + 2) → L.RudimentaryBasisTerm n) (x y : M) :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.orderedPair_mem_realize_sProd_iff (rs : Fin (l + 2) → L.RudimentaryBasisTerm n) (x y : M) :
     !(x, y) ∈ (sProd rs)〘xs〙 ↔ x ∈ (sProd (rs ∘ castSucc))〘xs〙 ∧ y ∈ (rs (last _))〘xs〙 := by
   simp [sProd]
 
-theorem mem_realize_rotateSProd_iff (rs : Fin l → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_rotateSProd_iff (rs : Fin l → L.RudimentaryBasisTerm n)
     (z : M) (h : ∀ x ∈ r〘xs〙, IsOrderedPair x) :
     z ∈ (r.rotateSProd rs)〘xs〙 ↔ IsTuple z (l + 2) ∧
       (∀ i, tupleVal z (i.castAdd 2) ∈ (rs i)〘xs〙) ∧
@@ -566,11 +578,11 @@ theorem mem_realize_rotateSProd_iff (rs : Fin l → L.RudimentaryBasisTerm n)
       simp [castAdd, castLE_add_two_eq_castSucc_castSucc, tuple_congr]
 
 omit [Extensional M] in
-theorem isOrderedPair_of_realize_memGraph (hz : z ∈ r.invMemGraph〘xs〙) : IsOrderedPair z := by
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.isOrderedPair_of_realize_memGraph (hz : z ∈ r.invMemGraph〘xs〙) : IsOrderedPair z := by
   simp only [realize, mem_invMemGraph₀_iff, IsOrderedPair] at hz ⊢
   grind
 
-theorem mem_realize_rotateSProd_memGraph_iff (rs : Fin l → L.RudimentaryBasisTerm n) (z w : M) :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_rotateSProd_memGraph_iff (rs : Fin l → L.RudimentaryBasisTerm n) (z w : M) :
     !(z, w) ∈ (r.invMemGraph.rotateSProd rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ i, tupleVal z i.castSucc ∈ (rs i)〘xs〙) ∧ tupleVal z (last l) ∈ r〘xs〙 ∧
       w ∈ tupleVal z (last l) := by
@@ -578,7 +590,7 @@ theorem mem_realize_rotateSProd_memGraph_iff (rs : Fin l → L.RudimentaryBasisT
   · simp [castAdd, castLE_add_two_eq_castSucc_castSucc]
   · apply isOrderedPair_of_realize_memGraph
 
-theorem mem_realize_iterSwitch_iff (rs : Fin l → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_iterSwitch_iff (rs : Fin l → L.RudimentaryBasisTerm n)
     (z : M) (h : ∀ x ∈ r〘xs〙, IsOrderedPair x) :
     z ∈ (r.iterSwitch rs)〘xs〙 ↔ IsTuple z (l + 2) ∧
       (∀ i, tupleVal z i.castSucc.succ ∈ (rs i)〘xs〙) ∧
@@ -617,7 +629,7 @@ theorem mem_realize_iterSwitch_iff (rs : Fin l → L.RudimentaryBasisTerm n)
       · rw [eq_tuple_tupleVal hz₁, tuple_succ, tuple_succ]
         simp [castAdd, castLE_add_two_eq_castSucc_castSucc, tuple_congr]
 
-theorem mem_realize_lastMemFin_iff (rs : Fin l → L.RudimentaryBasisTerm n) (i : Fin l) (z : M) :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_lastMemFin_iff (rs : Fin l → L.RudimentaryBasisTerm n) (i : Fin l) (z : M) :
     z ∈ (lastMemFin i rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ j, tupleVal z j.castSucc ∈ (rs j)〘xs〙) ∧ tupleVal z (last l) ∈ tupleVal z i.castSucc := by
   rw [lastMemFin, mem_realize_iterSwitch_iff]
@@ -668,7 +680,7 @@ theorem mem_realize_lastMemFin_iff (rs : Fin l → L.RudimentaryBasisTerm n) (i 
     refine ⟨fun _ ↦ hys₁ _, fun _ ↦ hys₁ _, hys₁ _, ?_⟩
     convert hys₂ <;> grind
 
-theorem mem_realize_lastMemConst_iff (rs : Fin l → L.RudimentaryBasisTerm n) (c : L.Constants) (z : M) :
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_lastMemConst_iff (rs : Fin l → L.RudimentaryBasisTerm n) (c : L.Constants) (z : M) :
     z ∈ (lastMemConst c rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ i, tupleVal z i.castSucc ∈ (rs i)〘xs〙) ∧ tupleVal z (last l) ∈ (↑c : M) := by
   rcases l with rfl | l
@@ -682,7 +694,7 @@ theorem mem_realize_lastMemConst_iff (rs : Fin l → L.RudimentaryBasisTerm n) (
 variable [L.ExtraConstantsUnaryRelationsOnly]
 
 mutual
-theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
     (xs : Fin n → M) (z : M) :
     match t with
     | .iUnion ri rf => z ∈ (lastMemRud t rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
@@ -708,7 +720,7 @@ theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin
         reduceLast, realize, mem_dom₀_iff, mem_realize_inter_iff,
         mem_realize_lastMemRud_iff ri.castSucc, zero_add, isTuple_two_iff_isOrderedPair, ne_eq,
         one_ne_zero, not_false_eq_true, tupleVal_orderedPair_castSucc, tupleVal_one,
-        mem_realize_ran_iff, mem_realize_lastMemRud_iff rf, mem_realize_lastMemRud_iff ri,
+        ran, realize_substBoundRudBasis, Matrix.cons_val_zero, mem_realize_ran₀_iff, mem_realize_lastMemRud_iff rf, mem_realize_lastMemRud_iff ri,
         isTuple_one, IsEmpty.forall_iff, true_and, forall_const, tupleVal_orderedPair_comp_castSucc,
         tupleVal_orderedPair_two_one,
         mem_realize_memGraph_iff (ᵣ0) (rf.substBoundBound (fun _ ↦ 1)), snoc_nat, Order.lt_one_iff,
@@ -723,7 +735,7 @@ theorem mem_realize_lastMemRud_iff_aux {l n} (t : L.RudimentaryTerm l) (rs : Fin
         mem_realize_lastMemRud_iff ri.castSucc, ne_eq, Nat.add_eq_zero_iff, OfNat.ofNat_ne_zero,
         and_false, not_false_eq_true, isTuple_unorderedPair_iff, one_ne_zero, and_self,
         tupleVal_orderedPair_castSucc, forall_iff_castSucc (n := l + 1), snoc_last,
-        mem_realize_ran_iff, mem_realize_lastMemRud_iff rf, mem_realize_lastMemRud_iff ri,
+        ran, realize_substBoundRudBasis, Matrix.cons_val_zero, mem_realize_ran₀_iff, mem_realize_lastMemRud_iff rf, mem_realize_lastMemRud_iff ri,
         tupleVal_orderedPair_comp_castSucc, tupleVal_orderedPair_last, snoc_castSucc,
         mem_realize_memGraph_iff (ᵣcastAdd 1 (last (l + 1)))
             (rf.substBoundBound (snoc (castAdd 2) (last (l + 2)))),
@@ -789,7 +801,7 @@ theorem exists_iUnion {l} (ri : L.RudimentaryTerm l)
 termination_by (max ri.depth rf.depth + 1, 1)
 decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def]
 
-theorem mem_realize_lastMemRud_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_lastMemRud_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
     (xs : Fin n → M) (z : M) :
     z ∈ (lastMemRud t rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ i, tupleVal z i.castSucc ∈ (rs i)〘xs〙) ∧ tupleVal z (last l) ∈ t〘tupleVal z ∘ castSucc〙 :=
@@ -807,7 +819,7 @@ termination_by (t.depth, 2)
 decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def]
 
 /-- The set of `l + 1`-tuples in `sProd rs` where after unraveling, `t₁` is equal to `t₂`. -/
-theorem mem_realize_eqGraph_iff {l n} (t₁ t₂ : L.RudimentaryTerm (l + 1)) (rs : Fin (l + 1) → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_eqGraph_iff {l n} (t₁ t₂ : L.RudimentaryTerm (l + 1)) (rs : Fin (l + 1) → L.RudimentaryBasisTerm n)
     (xs : Fin n → M) (z : M) :
     z ∈ (eqGraph t₁ t₂ rs)〘xs〙 ↔ IsTuple z (l + 1) ∧ (∀ i, tupleVal z i ∈ (rs i)〘xs〙) ∧
       t₁〘tupleVal z〙 = t₂〘tupleVal z〙 := by
@@ -821,7 +833,7 @@ theorem mem_realize_eqGraph_iff {l n} (t₁ t₂ : L.RudimentaryTerm (l + 1)) (r
 termination_by (max t₁.depth t₂.depth, 3)
 decreasing_by all_goals (simp [Prod.lex_def, Nat.lt_or_ge])
 
-theorem mem_realize_image_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_image_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
     (xs : Fin n → M) (z : M) :
     z ∈ (image t rs)〘xs〙 ↔ ∃ w : M, IsTuple w l ∧ (∀ i, tupleVal w i ∈ (rs i)〘xs〙) ∧
       z = t〘tupleVal w〙 :=
@@ -842,7 +854,7 @@ theorem mem_realize_image_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.
     grind
 termination_by (t.depth, 4)
 
-theorem mem_realize_lastEqRud_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_lastEqRud_iff {l n} (t : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
     (xs : Fin n → M) (z : M) :
     z ∈ (lastEqRud t rs)〘xs〙 ↔ IsTuple z (l + 1) ∧
       (∀ i, tupleVal z i.castSucc ∈ (rs i)〘xs〙) ∧ tupleVal z (last l) = t〘tupleVal z ∘ castSucc〙 := by
@@ -858,7 +870,7 @@ termination_by (t.depth, 5)
 decreasing_by all_goals simp [RudimentaryTerm.depth, Prod.lex_def, RudimentaryTerm.castSucc,
   RudimentaryTerm.castAdd, RudimentaryTerm.castLE]
 
-theorem mem_realize_memGraph_iff {l n} (t₁ t₂ : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
+theorem _root_.FirstOrder.Language.RudimentaryBasisTerm.mem_realize_memGraph_iff {l n} (t₁ t₂ : L.RudimentaryTerm l) (rs : Fin l → L.RudimentaryBasisTerm n)
     (xs : Fin n → M) (z : M) :
     z ∈ (memGraph t₁ t₂ rs)〘xs〙 ↔ IsTuple z l ∧
       (∀ i, tupleVal z i ∈ (rs i)〘xs〙) ∧ t₁〘tupleVal z〙 ∈ t₂〘tupleVal z〙 :=

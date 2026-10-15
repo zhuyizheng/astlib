@@ -22,11 +22,9 @@ variable {n : ℕ}
 noncomputable def isTransitive (t : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
   ∀₀∈ &0 (&1 ⊆₀ &0) |>.substBoundRud ![t]
 
-@[simp]
-theorem isRelFree_isTransitive {t : L.RudimentaryTerm n} (ht : t.IsCharFree) :
-    (t.isTransitive).IsRelFree := by
-  simp only [isTransitive, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, Function.comp_apply]
-  apply isRelFree_substBoundRud <;> simp [ht]
+instance (t : L.RudimentaryTerm n) [t.CharFree] :
+  t.isTransitive.RelFree := by
+  unfold isTransitive; infer_instance
 
 end RudimentaryTerm
 
@@ -45,9 +43,9 @@ variable {n : ℕ}
 def Transitive : Class M := fun a ↦ ∀ x ∈ a, x ⊆ a
 
 @[simp]
-theorem realize_isTransisitive (t : L.RudimentaryTerm n) (ht : t.IsCharFree) (xs : Fin n → M) :
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isTransisitive (t : L.RudimentaryTerm n) [t.CharFree] (xs : Fin n → M) :
     t.isTransitive.toBoundedFormula 〘xs〙 ↔ Transitive (t〘xs〙 : M) := by
-  simp [isTransitive, Transitive, ht, snoc]
+  simp [isTransitive, Transitive, snoc]
 
 @[simp, grind .]
 theorem isTransitive_empty : Transitive (∅ : M) := by

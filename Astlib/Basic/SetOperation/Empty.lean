@@ -43,10 +43,10 @@ instance {L : FirstOrder.Language.{u, v}} [L.HasMem] [NeZero n] : Inhabited (L.R
 instance {L : FirstOrder.Language.{u, v}} [L.HasMem] [NeZero n] : EmptyCollection (L.RudimentaryTerm n) :=
   ⟨ᵣ0 \ ᵣ0⟩
 
-@[simp]
-theorem isCharFree_empty {L : Language} [L.HasMem] {n : ℕ} [NeZero n] :
-    (∅ : L.RudimentaryTerm n).IsCharFree := by
-  simp [EmptyCollection.emptyCollection]
+instance {L : Language} [L.HasMem] {n : ℕ} [NeZero n] :
+  (∅ : L.RudimentaryTerm n).CharFree := by
+  change (ᵣ0 \ ᵣ0 : L.RudimentaryTerm n).CharFree
+  infer_instance
 
 variable {n : ℕ} (xs : Fin n → M)
 

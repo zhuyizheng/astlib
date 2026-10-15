@@ -9,12 +9,30 @@ import Astlib.Basic.SetOperation.Union
 file docstring
 -/
 
-open FirstOrder.Language.BoundedFormula
+open FirstOrder Language BoundedFormula RudimentaryTerm
 
 namespace FirstOrder.Language
 
+def RudimentaryTerm.insert₀ {L : FirstOrder.Language} [L.HasMem] : L.RudimentaryTerm 2 :=
+  {ᵣ0} ∪ ᵣ1
+
 instance {n} {L : FirstOrder.Language} [L.HasMem] :
-  Insert (L.RudimentaryTerm n) (L.RudimentaryTerm n) := ⟨fun r₁ r₂ ↦ {r₁} ∪ r₂⟩
+  Insert (L.RudimentaryTerm n) (L.RudimentaryTerm n) :=
+  ⟨fun r₁ r₂ ↦ insert₀.substBoundRud ![r₁, r₂]⟩
+
+@[simp]
+theorem RudimentaryTerm.insert_def {L : FirstOrder.Language} [L.HasMem]
+    (r₁ r₂ : L.RudimentaryTerm n) :
+    insert r₁ r₂ = insert₀.substBoundRud ![r₁, r₂] := rfl
+
+instance {L : Language} [L.HasMem] :
+  (insert₀ : L.RudimentaryTerm 2).CharFree := by
+  unfold insert₀; infer_instance
+
+instance {L : Language} [L.HasMem]
+  (r₁ r₂ : L.RudimentaryTerm n) [r₁.CharFree] [r₂.CharFree] :
+  (insert r₁ r₂ : L.RudimentaryTerm n).CharFree := by
+  rw [insert_def]; infer_instance
 
 namespace MemStructure
 
@@ -22,12 +40,16 @@ variable {L : Language.{u, v}} {M : Type max u v}
   [L.MemStructure M] [Inhabited M]
   (x y z : M)
 
-noncomputable instance : Insert M M := ⟨fun x y ↦ ({ᵣ0} ∪ ᵣ1)〘x, y〙₂⟩
+noncomputable instance : Insert M M := ⟨fun x y ↦ insert₀〘x, y〙₂⟩
 
 @[grind =]
 theorem insert_eq : insert x y = {x} ∪ y := by
-  simp only [singleton, union_eq, sUnion_eq]
-  rfl
+  simp [insert, insert₀]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_insert₀ (xs : Fin 2 → M) :
+    RudimentaryTerm.insert₀〘xs〙 = insert (xs 0) (xs 1) := by
+  simp [insert_eq, insert₀]
 
 variable [RudClosed M]
 
@@ -70,9 +92,27 @@ theorem mem_succ_iff :
     z ∈ succ x ↔ z = x ∨ z ∈ x := by
   simp [succ]
 
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.succ₀
+    {L : Language} [L.HasMem] : L.RudimentaryTerm 1 := insert (ᵣ0) (ᵣ0)
+
+@[simp]
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.succ
     {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) :
-  L.RudimentaryTerm n := insert r r
+  L.RudimentaryTerm n := succ₀.substBoundRud ![r]
+
+instance {L : Language} [L.HasMem] :
+  (succ₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold succ₀; infer_instance
+
+instance {L : Language} [L.HasMem]
+  (r : L.RudimentaryTerm n) [r.CharFree] : r.succ.CharFree := by
+  unfold RudimentaryTerm.succ; infer_instance
+
+omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_succ₀ (xs : Fin 1 → M) :
+    succ₀〘xs〙 = succ (xs 0) := by
+  simp [succ₀, succ]
 
 -- source
 -- theorem Set.insert_subset {α : Type u_1} {s t : Set α} {a : α} (ha : a ∈ t) (hs : s ⊆ t) :

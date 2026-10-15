@@ -79,15 +79,18 @@ instance : Singleton (L.RudimentaryBasisTerm n) (L.RudimentaryBasisTerm n) :=
 
 def left₀ := ⋃₀ ({var 0} : L.RudimentaryBasisTerm 1).dom
 
+@[simp]
 def left (r : L.RudimentaryBasisTerm n) := left₀.substBoundRudBasis ![r]
 
 def ran₀ := ⋃₀ (var 0 : L.RudimentaryBasisTerm 1).sliceSet (var 0 : L.RudimentaryBasisTerm 1).dom
 
+@[simp]
 def ran (r : L.RudimentaryBasisTerm n) := ran₀.substBoundRudBasis ![r]
 
-def right₀ := ⋃₀ ⋃₀ ({var 0} : L.RudimentaryBasisTerm 1).sliceSet ({var 0} : L.RudimentaryBasisTerm 1).dom
---
-def right (r : L.RudimentaryBasisTerm n) := ⋃₀ ({r} : L.RudimentaryBasisTerm n).ran
+def right₀ := ⋃₀ ({var 0} : L.RudimentaryBasisTerm 1).ran
+
+@[simp]
+def right (r : L.RudimentaryBasisTerm n) := right₀.substBoundRudBasis ![r]
 
 def orderedPair (r₁ r₂ : L.RudimentaryBasisTerm n) :=
   (r₁.unorderedPair r₁).unorderedPair (r₁.unorderedPair r₂)
@@ -125,7 +128,7 @@ theorem tupleVal_eq_substBoundRudBasis (r : L.RudimentaryBasisTerm n) {l : ℕ} 
     · simp [tupleVal, substBoundRudBasis]
     · cases i using lastCases with
       | last =>
-        simp only [tupleVal, right, ran, ran₀, isValue, snoc_last]
+        simp only [tupleVal, right, isValue, snoc_last]
         rfl
       | cast i =>
         simp only [tupleVal, snoc_castSucc, isValue]

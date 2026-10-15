@@ -21,10 +21,9 @@ variable {n : ℕ}
 noncomputable def isOrdinal (t : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
   t.isTransitive ⊓ (∀₀∈ &0 ∀₀∈ &0 (&1 ∈₀ &2 ⊔ &1 =₀ &2 ⊔ &2 ∈₀ &1)).substBoundRud ![t]
 
-@[simp]
-theorem isRelFree_isOrdinal {t : L.RudimentaryTerm n} (ht : t.IsCharFree) :
-    (t.isOrdinal).IsRelFree := by
-  simp [isOrdinal, ht]
+instance (t : L.RudimentaryTerm n) [t.CharFree] :
+  t.isOrdinal.RelFree := by
+  unfold isOrdinal; infer_instance
 
 noncomputable def isZero (t : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
   (&0 =₀ &1).substBoundRud ![ᵣ0, ∅] |>.substBoundRud ![t]
@@ -37,6 +36,21 @@ noncomputable def isLimOrdinal (t : L.RudimentaryTerm n) : L.DeltaZeroBoundedFor
 
 noncomputable def isNonZeroLimOrdinal (t : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
   (ᵣ0).isLimOrdinal ⊓ ∼(ᵣ0).isZero |>.substBoundRud ![t]
+
+instance (t : L.RudimentaryTerm n) [t.CharFree] : t.isZero.RelFree := by
+  unfold isZero; infer_instance
+
+instance (t : L.RudimentaryTerm n) [t.CharFree] :
+  t.isSuccOrdinal.RelFree := by
+  unfold isSuccOrdinal; infer_instance
+
+instance (t : L.RudimentaryTerm n) [t.CharFree] :
+  t.isLimOrdinal.RelFree := by
+  unfold isLimOrdinal; infer_instance
+
+instance (t : L.RudimentaryTerm n) [t.CharFree] :
+  t.isNonZeroLimOrdinal.RelFree := by
+  unfold isNonZeroLimOrdinal; infer_instance
 
 
 
@@ -79,12 +93,10 @@ def LimOrdinal : Class M := fun a ↦ Ordinal a ∧ ¬SuccOrdinal a
 def NonZeroLimOrdinal : Class M := fun a ↦ LimOrdinal a ∧ a ≠ ∅
 
 @[simp]
-theorem realize_isOrdinal (t : L.RudimentaryTerm n) (ht : t.IsCharFree) (xs : Fin n → M) :
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isOrdinal (t : L.RudimentaryTerm n) [t.CharFree] (xs : Fin n → M) :
     t.isOrdinal.toBoundedFormula 〘xs〙 ↔ Ordinal (t〘xs〙 : M) := by
   simp only [isOrdinal, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, Function.comp_apply,
-    toBoundedFormula_inf, realize'_inf, ht, realize_isTransisitive,
-    DeltaZeroBoundedFormula.isRelFree_allMem, isRelFree_sup, DeltaZeroBoundedFormula.isRelFree_mem,
-    DeltaZeroBoundedFormula.isRelFree_eq, and_self, Matrix.cons_val_fin_one, implies_true,
+    toBoundedFormula_inf, realize'_inf, realize_isTransisitive, Matrix.cons_val_fin_one,
     DeltaZeroBoundedFormula.realize_substBoundRud, toBoundedFormula, toBoundedFormula_sup,
     BoundedFormula.realize_allMem, realize'_var', snoc_nat, coe_ofNat_eq_mod, Nat.zero_mod,
     Order.lt_one_iff, ↓reduceDIte, realize'_sup, realize'_mem, Nat.mod_succ, lt_self_iff_false,

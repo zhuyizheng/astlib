@@ -80,6 +80,11 @@ theorem realize'_substBoundBound {n m : ℕ} {t : L.Term' n} (f : Fin n → Fin 
     (t.substBoundBound f) 〘xs〙 = t〘xs ∘ f〙 := by
   simp [realize']
 
+theorem realize'_castAdd {n : ℕ} (t : L.Term' n) (k : ℕ) (xs : Fin (n + k) → M) :
+    (t.castAdd k) 〘xs〙 = t〘fun i ↦ xs (Fin.castAdd k i)〙 := by
+  simp only [castAdd, castLE, realize'_substBoundBound]
+  rfl
+
 end Term
 
 namespace BoundedFormula

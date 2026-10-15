@@ -14,9 +14,21 @@ open FirstOrder Language RudimentaryTerm BoundedFormula Fin
 
 namespace FirstOrder.Language
 
+def RudimentaryTerm.sprod₀ {L : FirstOrder.Language} [L.HasMem] : L.RudimentaryTerm 2 :=
+  (ᵣ0).iUnion ((ᵣ1).iUnion {ᵣ(ᵣ2, ᵣ3)})
+
 instance {n} {L : FirstOrder.Language} [L.HasMem] :
   SProd (L.RudimentaryTerm n) (L.RudimentaryTerm n) (L.RudimentaryTerm n) :=
-  ⟨fun r₁ r₂ ↦ ((ᵣ0).iUnion ((ᵣ1).iUnion {ᵣ(ᵣ2, ᵣ3)})).substBoundRud ![r₁, r₂]⟩
+  ⟨fun r₁ r₂ ↦ sprod₀.substBoundRud ![r₁, r₂]⟩
+
+@[simp]
+theorem RudimentaryTerm.sprod_def {L : FirstOrder.Language} [L.HasMem]
+    (r₁ r₂ : L.RudimentaryTerm n) :
+    r₁ ×ˢ r₂ = sprod₀.substBoundRud ![r₁, r₂] := rfl
+
+instance {L : Language} [L.HasMem] :
+  (sprod₀ : L.RudimentaryTerm 2).CharFree := by
+  unfold sprod₀; infer_instance
 
 namespace MemStructure
 
@@ -25,33 +37,34 @@ variable {L : Language.{u, v}} {M : Type max u v}
   (x y z x₁ x₂ y₁ y₂ u v : M)
 
 noncomputable def sprod (x y : M) : M :=
-  ((ᵣ0 : L.RudimentaryTerm 2) ×ˢ (ᵣ1 : L.RudimentaryTerm 2)) 〘x, y〙₂
+  sprod₀ 〘x, y〙₂
 
 noncomputable instance : SProd M M M :=
-  ⟨fun x y ↦ ((ᵣ0 : L.RudimentaryTerm 2) ×ˢ (ᵣ1 : L.RudimentaryTerm 2)) 〘x, y〙₂⟩
+  ⟨fun x y ↦ sprod₀ 〘x, y〙₂⟩
 
-@[simp]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_sprod
-    {L : Language} [L.HasMem] (r s : L.RudimentaryTerm n) (hr : r.IsCharFree) (hs : s.IsCharFree) :
-    (r ×ˢ s).IsCharFree := by
-  simp [SProd.sprod, hr, hs]
+instance {L : Language} [L.HasMem] (r s : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] :
+  (r ×ˢ s).CharFree := by
+  rw [sprod_def]; infer_instance
 
 theorem sprod_eq : x ×ˢ y = iUnion x (fun u ↦ iUnion y fun v ↦ {!(u, v)}) := by
-  simp only [SProd.sprod, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, realize_substBoundRud,
-    realize_iUnion, realize_basic, Matrix.cons_val_zero, realize_singleton, realize_orderedPair]
+  simp only [SProd.sprod, sprod₀, Nat.reduceAdd, isValue,
+    realize_substBoundRud, realize_iUnion, realize_basic, Matrix.cons_val_zero, singleton_def,
+    realize_singleton₀, realize_orderedPair]
   rfl
 
 @[simp, grind =]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_sprod (r₁ r₂ : L.RudimentaryTerm n) (xs : Fin n → M) : (r₁ ×ˢ r₂)〘xs〙 = r₁〘xs〙 ×ˢ r₂〘xs〙 := by
-  simp only [SProd.sprod, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, realize_substBoundRud]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_sprod₀ (xs : Fin 2 → M) :
+    RudimentaryTerm.sprod₀〘xs〙 = xs 0 ×ˢ xs 1 := by
+  simp only [SProd.sprod]
   congr
-  ext i; fin_cases i <;>simp
+  ext i; fin_cases i <;> rfl
 
 variable [RudClosed M]
 
 @[simp, grind =]
 theorem mem_sprod_iff : z ∈ x ×ˢ y ↔ ∃ u ∈ x, ∃ v ∈ y, z = !(u, v) := by
-  simp [SProd.sprod, snoc_nat]
+  simp only [SProd.sprod, sprod₀]
+  simp
 
 @[grind .]
 theorem isOrderedPair_of_mem_sprod (h : z ∈ x ×ˢ y) : IsOrderedPair z := by

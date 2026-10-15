@@ -14,13 +14,24 @@ open FirstOrder Language BoundedFormula RudimentaryTerm
 
 namespace FirstOrder.Language
 
-instance {n} {L : FirstOrder.Language} [L.HasMem] :
-  Inter (L.RudimentaryTerm n) := ⟨fun r₁ r₂ ↦ r₁ \ (r₁ \ r₂)⟩
+def RudimentaryTerm.inter₀ {L : FirstOrder.Language} [L.HasMem] : L.RudimentaryTerm 2 :=
+  ᵣ0 \ (ᵣ0 \ ᵣ1)
 
-theorem _root_.FirstOrder.Language.RudimentaryTerm.isCharFree_inter
-    {L : Language} [L.HasMem] (r s : L.RudimentaryTerm n) (hr : r.IsCharFree) (hs : s.IsCharFree) :
-    (r ∩ s).IsCharFree := by
-  simp [Inter.inter, hr, hs]
+instance {n} {L : FirstOrder.Language} [L.HasMem] :
+  Inter (L.RudimentaryTerm n) := ⟨fun r₁ r₂ ↦ inter₀.substBoundRud ![r₁, r₂]⟩
+
+@[simp]
+theorem RudimentaryTerm.inter_def {L : FirstOrder.Language} [L.HasMem]
+    (r₁ r₂ : L.RudimentaryTerm n) :
+    r₁ ∩ r₂ = inter₀.substBoundRud ![r₁, r₂] := rfl
+
+instance {L : Language} [L.HasMem] :
+  (inter₀ : L.RudimentaryTerm 2).CharFree := by
+  unfold inter₀; infer_instance
+
+instance {L : Language} [L.HasMem] (r s : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] :
+  (r ∩ s).CharFree := by
+  rw [inter_def]; infer_instance
 
 namespace MemStructure
 
@@ -38,13 +49,14 @@ variable {L : Language.{u, v}} {M : Type max u v}
 --   simp [Inter.inter]
 noncomputable instance : Inter M := ⟨fun x y ↦ x \ (x \ y)⟩
 
-@[simp, grind =]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inter (xs : Fin n → M) : (r₁ ∩ r₂)〘xs〙 = r₁〘xs〙 ∩ r₂〘xs〙 := by
-  simp [Inter.inter]
-
 @[grind =]
 theorem inter_eq : x ∩ y = x \ (x \ y) := by
   simp [Inter.inter]
+
+@[simp, grind =]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inter₀ (xs : Fin 2 → M) :
+    inter₀〘xs〙 = xs 0 ∩ xs 1 := by
+  simp [inter_eq, inter₀]
 
 variable [SDiffClosed M] [PairClosed M]
 

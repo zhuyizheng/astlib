@@ -107,201 +107,189 @@ open MemStructure
 
 -- variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
 
+/-- The rudimentary term that maps `x` to `1` is `x ≠ ∅`, `0` otherwise -/
+def isNonempty₀ {L : Language} [L.HasMem] : L.RudimentaryTerm 1 := (ᵣ0).iUnion {∅}
+
 /-- The rudimentary term that maps `xs` to `1` is `t〘xs〙 ≠ ∅`, `0` otherwise -/
-def isNonempty {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) := r.iUnion {∅}
+@[simp]
+def isNonempty {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) :=
+  isNonempty₀.substBoundRud ![r]
 
-def not {L : Language} [L.HasMem] [NeZero n] (r : L.RudimentaryTerm n) := {∅} \ r
+def not₀ {L : Language} [L.HasMem] : L.RudimentaryTerm 1 := {∅} \ ᵣ0
 
-def isEmpty {L : Language} [L.HasMem] [NeZero n] (r : L.RudimentaryTerm n) := r.isNonempty.not
+@[simp]
+def not {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) := not₀.substBoundRud ![r]
 
-def eqChar {L : Language} [L.HasMem] [NeZero n] (r₁ r₂ : L.RudimentaryTerm n) :=
-  ((r₁ \ r₂) ∪ (r₂ \ r₁)).isEmpty
+def isEmpty₀ {L : Language} [L.HasMem] : L.RudimentaryTerm 1 := (ᵣ0).isNonempty.not
+
+@[simp]
+def isEmpty {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) := isEmpty₀.substBoundRud ![r]
+
+def eqChar₀ {L : Language} [L.HasMem] : L.RudimentaryTerm 2 :=
+  ((ᵣ0 \ ᵣ1) ∪ (ᵣ1 \ ᵣ0)).isEmpty
+
+@[simp]
+def eqChar {L : Language} [L.HasMem] (r₁ r₂ : L.RudimentaryTerm n) :=
+  eqChar₀.substBoundRud ![r₁, r₂]
+
+/-- If `xs 1 ≠ ∅`, then takes value `xs 0`, else `∅` -/
+def ifNonempty₀ {L : Language} [L.HasMem] : L.RudimentaryTerm 2 := (ᵣ1).iUnion (ᵣ0)
 
 /-- If `r_truth〘xs〙 ≠ ∅`, then takes value `r〘xs〙`, else `∅` -/
+@[simp]
 def ifNonempty {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) (r_truth : L.RudimentaryTerm n) :=
-  r_truth.iUnion r.castSucc
+  ifNonempty₀.substBoundRud ![r, r_truth]
 
-@[simp]
-theorem isCharFree_isNonempty {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
-    (r : L.RudimentaryTerm n)
-    (hr : r.IsCharFree) :
-    r.isNonempty.IsCharFree := by
-  simp [isNonempty, hr]
+instance {L : Language} [L.HasMem] :
+  (isNonempty₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold isNonempty₀; infer_instance
 
-@[simp]
-theorem isCharFree_not [NeZero n] {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
-    (r : L.RudimentaryTerm n)
-    (hr : r.IsCharFree) :
-    r.not.IsCharFree := by
-  simp [not, hr]
+instance {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) [r.CharFree] :
+  r.isNonempty.CharFree := by
+  unfold isNonempty; infer_instance
 
-@[simp]
-theorem isCharFree_isEmpty [NeZero n] {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
-    (r : L.RudimentaryTerm n)
-    (hr : r.IsCharFree) :
-    r.isEmpty.IsCharFree := by
-  simp [isEmpty, hr]
+instance {L : Language} [L.HasMem] :
+  (not₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold not₀; infer_instance
 
-@[simp]
-theorem isCharFree_eqChar [NeZero n] {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
-    (r₁ r₂ : L.RudimentaryTerm n)
-    (hr₁ : r₁.IsCharFree) (hr₂ : r₂.IsCharFree) :
-    (r₁.eqChar r₂).IsCharFree := by
-  grind [eqChar, isCharFree_isEmpty, isCharFree_union, isCharFree_sdiff']
+instance {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) [r.CharFree] :
+  r.not.CharFree := by
+  unfold not; infer_instance
 
-@[simp]
-theorem isCharFree_ifNonempty {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
-    (r : L.RudimentaryTerm n) (r_truth : L.RudimentaryTerm n)
-    (hr : r.IsCharFree) (hr_truth : r_truth.IsCharFree) :
-    (r.ifNonempty r_truth).IsCharFree := by
-  simp [ifNonempty, hr, hr_truth]
+instance {L : Language} [L.HasMem] :
+  (isEmpty₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold isEmpty₀; infer_instance
 
-variable [RudClosed M] [Extensional M] (r r₁ r₂ : L.RudimentaryTerm n)
+instance {L : Language} [L.HasMem] (r : L.RudimentaryTerm n) [r.CharFree] :
+  r.isEmpty.CharFree := by
+  unfold isEmpty; infer_instance
+
+instance {L : Language} [L.HasMem] :
+  (eqChar₀ : L.RudimentaryTerm 2).CharFree := by
+  unfold eqChar₀; infer_instance
+
+instance {L : Language} [L.HasMem] (r₁ r₂ : L.RudimentaryTerm n)
+  [r₁.CharFree] [r₂.CharFree] : (r₁.eqChar r₂).CharFree := by
+  unfold eqChar; infer_instance
+
+instance {L : Language} [L.HasMem] :
+  (ifNonempty₀ : L.RudimentaryTerm 2).CharFree := by
+  unfold ifNonempty₀; infer_instance
+
+instance {L : Language} [L.HasMem] (r₁ r₂ : L.RudimentaryTerm n)
+  [r₁.CharFree] [r₂.CharFree] : (r₁.ifNonempty r₂).CharFree := by
+  unfold ifNonempty; infer_instance
+
+variable [RudClosed M] [Extensional M] {xs : Fin 1 → M} {ys : Fin 2 → M}
 
 -- @[simp, grind =]
-theorem realize_isNonempty_of_ne_empty {t : L.RudimentaryTerm n} {xs : Fin n → M}
-    (h : t〘xs〙 ≠ ∅) :
-    (t.isNonempty)〘xs〙 = {∅} := by
+theorem realize_isNonempty₀_of_ne_empty (h : xs 0 ≠ ∅) :
+    isNonempty₀〘xs〙 = {∅} := by
   rw [ne_empty_iff] at h
   ext z
-  simp [isNonempty, h]
+  simp [isNonempty₀, h]
 
 -- @[simp, grind =]
-theorem realize_isNonempty_of_empty {t : L.RudimentaryTerm n} {xs : Fin n → M}
-    (h : t〘xs〙 = ∅) :
-    (t.isNonempty)〘xs〙 = ∅ := by
+theorem realize_isNonempty₀_of_empty (h : xs 0 = ∅) :
+    isNonempty₀〘xs〙 = ∅ := by
   rw [empty_iff] at h
   ext z
-  simp [isNonempty, singleton, h]
+  simp [isNonempty₀, h]
 
 @[simp, grind .]
-theorem isZeroOrOne_realize_isNonempty [NeZero n]
-    {t : L.RudimentaryTerm n}
-    {xs : Fin n → M} :
-    IsZeroOrOne (t.isNonempty〘xs〙 : M) := by
-  grind [IsZeroOrOne, realize_isNonempty_of_ne_empty, realize_isNonempty_of_empty]
+theorem isZeroOrOne_realize_isNonempty₀ :
+    IsZeroOrOne (isNonempty₀〘xs〙 : M) := by
+  grind [IsZeroOrOne, realize_isNonempty₀_of_ne_empty, realize_isNonempty₀_of_empty]
 
 @[simp, grind =]
-theorem realize_isNonempty_empty_iff [NeZero n]
-    {t : L.RudimentaryTerm n}
-    {xs : Fin n → M} :
-    (t.isNonempty)〘xs〙 = ∅ ↔ t〘xs〙 = ∅ := by
-  grind [realize_isNonempty_of_ne_empty, realize_isNonempty_of_empty]
+theorem realize_isNonempty₀_empty_iff :
+    isNonempty₀〘xs〙 = ∅ ↔ xs 0 = ∅ := by
+  grind [realize_isNonempty₀_of_ne_empty, realize_isNonempty₀_of_empty]
 
 @[simp, grind =]
-theorem realize_not_of_singleton_empty [NeZero n]
-    {t : L.RudimentaryTerm n} {xs : Fin n → M}
-    (h : t〘xs〙 = {∅}) :
-    (t.not)〘xs〙 = ∅ := by
-  simp [not, h, singleton]
+theorem realize_not₀_of_singleton_empty (h : xs 0 = {∅}) :
+    not₀〘xs〙 = ∅ := by
+  simp [not₀, h]
 
 @[simp, grind =]
-theorem realize_not_of_empty [NeZero n]
-    {t : L.RudimentaryTerm n} {xs : Fin n → M}
-    (h : t〘xs〙 = ∅) :
-    (t.not)〘xs〙 = {∅} := by
-  simp [not, h, singleton]
+theorem realize_not₀_of_empty (h : xs 0 = ∅) :
+    not₀〘xs〙 = {∅} := by
+  simp [not₀, h]
 
 @[simp, grind .]
-theorem isZeroOrOne_realize_not [NeZero n]
-    (t : L.RudimentaryTerm n)
-    (xs : Fin n → M) :
-    IsZeroOrOne (t.not〘xs〙 : M) := by
+theorem isZeroOrOne_realize_not₀ :
+    IsZeroOrOne (not₀〘xs〙 : M) := by
   rw [isZeroOrOne_iff_subset_singleton_empty]
-  simp only [not, realize_sdiff, realize_singleton, realize_empty]
+  simp only [not₀, realize_sdiff, singleton_def, realize_substBoundRud, realize_singleton₀,
+    Matrix.cons_val_zero, realize_empty]
   grind
 
 -- @[simp, grind =]
-theorem realize_isEmpty_of_ne_empty [NeZero n] {t : L.RudimentaryTerm n}
-    {xs : Fin n → M}
-    (h : t〘xs〙 ≠ ∅) :
-    (t.isEmpty)〘xs〙 = ∅ := by
-  simp [isEmpty, h]
+theorem realize_isEmpty₀_of_ne_empty (h : xs 0 ≠ ∅) :
+    isEmpty₀〘xs〙 = ∅ := by
+  simp [isEmpty₀, realize_isNonempty₀_of_ne_empty, h]
 
 -- @[simp, grind =]
-theorem realize_isEmpty_of_empty [NeZero n] {t : L.RudimentaryTerm n}
-    {xs : Fin n → M}
-    (h : t〘xs〙 = ∅) :
-    (t.isEmpty)〘xs〙 = {∅} := by
-  simp [isEmpty, h]
+theorem realize_isEmpty₀_of_empty (h : xs 0 = ∅) :
+    isEmpty₀〘xs〙 = {∅} := by
+  simp [isEmpty₀, realize_isNonempty₀_of_empty, h]
 
 @[simp, grind .]
-theorem isZeroOrOne_realize_isEmpty [NeZero n]
-    (t : L.RudimentaryTerm n)
-    (xs : Fin n → M) :
-    IsZeroOrOne (t.isEmpty〘xs〙 : M) :=
-  isZeroOrOne_realize_not _ _
+theorem isZeroOrOne_realize_isEmpty₀ :
+    IsZeroOrOne (isEmpty₀〘xs〙 : M) := by
+  simp [isEmpty₀]
 
 @[simp, grind =]
-theorem realize_isEmpty_empty_iff [NeZero n]
-    {t : L.RudimentaryTerm n}
-    {xs : Fin n → M} :
-    (t.isEmpty)〘xs〙 = ∅ ↔ t〘xs〙 ≠ ∅ := by
-  grind [realize_isEmpty_of_ne_empty, realize_isEmpty_of_empty]
+theorem realize_isEmpty₀_empty_iff :
+    isEmpty₀〘xs〙 = ∅ ↔ xs 0 ≠ ∅ := by
+  grind [realize_isEmpty₀_of_ne_empty, realize_isEmpty₀_of_empty]
 
 -- @[simp, grind =]
-theorem realize_eqChar_of_eq [NeZero n] {t₁ t₂ : L.RudimentaryTerm n}
-    {xs : Fin n → M}
-    (h : t₁〘xs〙 = t₂〘xs〙) :
-    (t₁.eqChar t₂)〘xs〙 = {∅} := by
-  simp [eqChar, h]
+theorem realize_eqChar₀_of_eq (h : ys 0 = ys 1) :
+    eqChar₀〘ys〙 = {∅} := by
+  simp [eqChar₀, h, realize_isEmpty₀_of_empty]
 
-theorem realize_eqChar_of_ne [NeZero n] {t₁ t₂ : L.RudimentaryTerm n}
-    {xs : Fin n → M}
-    (h : t₁〘xs〙 ≠ t₂〘xs〙) :
-    (t₁.eqChar t₂)〘xs〙 = ∅ := by
-  simp only [eqChar, realize_isEmpty_empty_iff, realize_union, realize_sdiff]
+theorem realize_eqChar₀_of_ne (h : ys 0 ≠ ys 1) :
+    eqChar₀〘ys〙 = ∅ := by
+  simp only [eqChar₀]
+  simp
   grind
 
 @[simp, grind .]
-theorem isZeroOrOne_realize_eqChar [NeZero n]
-    (t₁ t₂ : L.RudimentaryTerm n)
-    (xs : Fin n → M) :
-    IsZeroOrOne ((t₁.eqChar t₂)〘xs〙 : M) :=
-  isZeroOrOne_realize_not _ _
+theorem isZeroOrOne_realize_eqChar₀ :
+    IsZeroOrOne (eqChar₀〘ys〙 : M) := by
+  simp [eqChar₀]
 
 @[simp, grind =]
-theorem realize_eqChar_empty_iff [NeZero n]
-    (t₁ t₂ : L.RudimentaryTerm n)
-    (xs : Fin n → M) :
-    (t₁.eqChar t₂)〘xs〙 = ∅ ↔ t₁〘xs〙 ≠ t₂〘xs〙 := by
-  grind [realize_eqChar_of_eq, realize_eqChar_of_ne]
+theorem realize_eqChar₀_empty_iff :
+    eqChar₀〘ys〙 = ∅ ↔ ys 0 ≠ ys 1 := by
+  grind [realize_eqChar₀_of_eq, realize_eqChar₀_of_ne]
 
 @[simp]
-theorem realize_ifNonempty_of_empty (r : L.RudimentaryTerm n)
-    {r_truth : L.RudimentaryTerm n}
-    {xs : Fin n → M} (h : r_truth〘xs〙 = ∅) :
-    (r.ifNonempty r_truth)〘xs〙 = ∅ := by
-  simp only [ifNonempty]
+theorem realize_ifNonempty₀_of_empty (h : ys 1 = ∅) :
+    ifNonempty₀〘ys〙 = ∅ := by
   ext z
-  simp only [mem_realize_iUnion_iff]
+  simp only [ifNonempty₀, mem_realize_iUnion_iff]
   grind [ne_empty_iff]
 
 @[simp]
-theorem realize_ifNonempty_of_ne_empty (r : L.RudimentaryTerm n)
-    {r_truth : L.RudimentaryTerm n}
-    {xs : Fin n → M} (h : r_truth〘xs〙 ≠ ∅) :
-    (r.ifNonempty r_truth)〘xs〙 = r〘xs〙 := by
+theorem realize_ifNonempty₀_of_ne_empty (h : ys 1 ≠ ∅) :
+    ifNonempty₀〘ys〙 = ys 0 := by
   rw [ne_empty_iff] at h
-  simp only [ifNonempty]
   ext z
-  simp only [mem_realize_iUnion_iff, realize_castSucc]
+  simp only [ifNonempty₀, mem_realize_iUnion_iff, realize_basic]
+  simp only [Fin.snoc, Fin.val_zero]
   grind
 
 @[simp]
-theorem realize_ifNonempty_subset {r : L.RudimentaryTerm n}
-    {r_truth : L.RudimentaryTerm n}
-    {xs : Fin n → M} :
-    (r.ifNonempty r_truth)〘xs〙 ⊆ r〘xs〙 := by
-  by_cases r_truth〘xs〙 = ∅ <;> grind [realize_ifNonempty_of_empty, realize_ifNonempty_of_ne_empty]
+theorem realize_ifNonempty₀_subset :
+    ifNonempty₀〘ys〙 ⊆ ys 0 := by
+  by_cases ys 1 = ∅ <;> grind [realize_ifNonempty₀_of_empty, realize_ifNonempty₀_of_ne_empty]
 
 @[simp]
-theorem mem_realize_ifNonempty_iff (r : L.RudimentaryTerm n)
-    (r_truth : L.RudimentaryTerm n)
-    (xs : Fin n → M)
-    (z : M) :
-    z ∈ (r.ifNonempty r_truth)〘xs〙 ↔ z ∈ r〘xs〙 ∧ r_truth〘xs〙 ≠ ∅ := by
-  grind [realize_ifNonempty_of_empty, realize_ifNonempty_of_ne_empty, realize_ifNonempty_subset]
+theorem mem_realize_ifNonempty₀_iff (z : M) :
+    z ∈ ifNonempty₀〘ys〙 ↔ z ∈ ys 0 ∧ ys 1 ≠ ∅ := by
+  grind [realize_ifNonempty₀_of_empty, realize_ifNonempty₀_of_ne_empty, realize_ifNonempty₀_subset]
 
 end RudimentaryTerm
 
@@ -326,22 +314,18 @@ noncomputable def charRudimentaryTerm {L : Language} [L.HasMem] [L.ExtraConstant
   | allMem t ψ => (t.toRudimentaryTerm.iUnion ψ.charRudimentaryTerm.not).not
   | rel R t => .char R t.toRudimentaryTerm
 
-@[simp]
-theorem isCharFree_charRudimentaryTerm {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ} [NeZero n]
-    (φ : L.DeltaZeroBoundedFormula n)
-    (hφ : φ.IsRelFree) :
-    φ.charRudimentaryTerm.IsCharFree := match φ with
-  | falsum => by simp [charRudimentaryTerm]
-  | equal t₁ t₂ => by simp [charRudimentaryTerm]
-  | mem t₁ t₂ => by simp [charRudimentaryTerm]
-  | imp φ₁ φ₂ => by
-    simp only [isRelFree_imp] at hφ
-    simp [charRudimentaryTerm, isCharFree_charRudimentaryTerm φ₁ hφ.left,
-      isCharFree_charRudimentaryTerm φ₂ hφ.right]
-  | allMem t ψ => by
-    simp only [isRelFree_allMem] at hφ
-    simp [charRudimentaryTerm, isCharFree_charRudimentaryTerm ψ hφ]
-  | rel R t => by simp at hφ
+instance {L : Language} [L.HasMem]
+  [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ} [hn : NeZero n]
+  (φ : L.DeltaZeroBoundedFormula n) [hφ : φ.RelFree] :
+  φ.charRudimentaryTerm.CharFree := by
+  induction hφ using relFreeCases generalizing hn with
+  | falsum => simp only [charRudimentaryTerm]; infer_instance
+  | equal t₁ t₂ => simp only [charRudimentaryTerm]; infer_instance
+  | mem t₁ t₂ => simp only [charRudimentaryTerm]; infer_instance
+  | imp φ₁ φ₂ _ _ _ ih₁ ih₂ =>
+    simp only [charRudimentaryTerm]; infer_instance
+  | allMem t ψ _ _ ih =>
+    simp only [charRudimentaryTerm]; infer_instance
 
 mutual
   theorem realize_charRudimentaryTerm_of_realize {n : ℕ} [NeZero n]
@@ -362,7 +346,7 @@ mutual
       simp
     | imp φ₁ φ₂ => by
       simp only [toBoundedFormula, BoundedFormula.realize'_imp] at h
-      simp only [charRudimentaryTerm, RudimentaryTerm.realize_union]
+      simp only [charRudimentaryTerm]
       by_cases h₁ : φ₁.toBoundedFormula〘xs〙
       · simp [realize_charRudimentaryTerm_of_realize (h h₁),
           realize_charRudimentaryTerm_of_realize h₁]
@@ -373,14 +357,13 @@ mutual
           realize_charRudimentaryTerm_of_not_realize h₂]
     | allMem t ψ => by
       simp only [toBoundedFormula, BoundedFormula.realize_allMem] at h
-      simp only [charRudimentaryTerm]
-      apply RudimentaryTerm.realize_not_of_empty
-      simp only [empty_iff, mem_realize_iUnion_iff, Term.realize_toRudimentaryTerm, not_exists,
+      simp only [charRudimentaryTerm, RudimentaryTerm.not, RudimentaryTerm.realize_substBoundRud]
+      apply realize_not₀_of_empty
+      simp only [Matrix.cons_val_zero, empty_iff, mem_realize_iUnion_iff, Term.realize_toRudimentaryTerm, not_exists,
         not_and]
       intro y z hz
       specialize h z hz
-      have := realize_charRudimentaryTerm_of_realize h
-      grind
+      simp [realize_charRudimentaryTerm_of_realize h]
     | rel R t => by
       simp only [toBoundedFormula, BoundedFormula.realize'_rel₁] at h
       simp [charRudimentaryTerm, h, singleton_eq]
@@ -396,26 +379,26 @@ mutual
       simp only [charRudimentaryTerm, empty_iff, mem_realize_iUnion_iff,
         Term.realize_toRudimentaryTerm, not_exists, not_and]
       intro z v hv
-      suffices ((Term.toRudimentaryTerm t₁).castSucc.eqChar (ᵣlast n))〘snoc xs v〙 = ∅ by
-        simp [this]
-      simp only [RudimentaryTerm.realize_eqChar_empty_iff, RudimentaryTerm.realize_castSucc,
+      suffices (t₁.toRudimentaryTerm.castSucc.eqChar (ᵣlast n))〘snoc xs v〙 = ∅ by
+        rw [this]; simp
+      simp only [eqChar, RudimentaryTerm.realize_substBoundRud, realize_eqChar₀_empty_iff, Matrix.cons_val_zero,
+        Matrix.cons_val_one, RudimentaryTerm.realize_castSucc,
         Term.realize_toRudimentaryTerm, RudimentaryTerm.realize_basic, snoc_last, ne_eq]
       grind
     | imp φ₁ φ₂ => by
       simp only [toBoundedFormula, BoundedFormula.realize'_imp, Classical.not_imp] at h
-      simp only [charRudimentaryTerm, RudimentaryTerm.realize_union, union_empty_iff]
-      simp [realize_charRudimentaryTerm_of_realize h.left,
+      simp [charRudimentaryTerm, realize_charRudimentaryTerm_of_realize h.left,
           realize_charRudimentaryTerm_of_not_realize h.right]
     | allMem t ψ => by
       simp only [toBoundedFormula, BoundedFormula.realize_allMem, not_forall,
         exists_prop] at h
-      simp only [charRudimentaryTerm]
-      apply RudimentaryTerm.realize_not_of_singleton_empty
-      simp only [← all_mem_iff_eq_iff_singleton, mem_realize_iUnion_iff, Term.realize_toRudimentaryTerm]
+      simp only [charRudimentaryTerm, RudimentaryTerm.not, RudimentaryTerm.realize_substBoundRud]
+      apply realize_not₀_of_singleton_empty
+      simp only [Matrix.cons_val_zero, ← all_mem_iff_eq_iff_singleton, mem_realize_iUnion_iff, Term.realize_toRudimentaryTerm]
       obtain ⟨y, hy₁, hy₂⟩ := h
       have := realize_charRudimentaryTerm_of_not_realize hy₂
       exact fun z ↦ ⟨fun ⟨v, hv₁, hv₂⟩ ↦ IsZeroOrOne.empty_of_mem (by simp) hv₂,
-        fun hz ↦ by grind⟩
+        fun hz ↦ ⟨y, hy₁, by simp [this, hz]⟩⟩
     | rel R t => by
       simp only [toBoundedFormula, BoundedFormula.realize'_rel₁] at h
       simp [charRudimentaryTerm, h]
@@ -446,12 +429,11 @@ noncomputable def ifTrue {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelatio
   r.ifNonempty φ.charRudimentaryTerm
 
 
-@[simp]
-theorem isCharFree_ifTrue {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] [NeZero n]
-    (r : L.RudimentaryTerm n) (φ : L.DeltaZeroBoundedFormula n)
-    (hr : r.IsCharFree) (hφ : φ.IsRelFree) :
-    (r.ifTrue φ).IsCharFree := by
-  simp [ifTrue, hr, hφ]
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] [NeZero n]
+  (r : L.RudimentaryTerm n) (φ : L.DeltaZeroBoundedFormula n)
+  [r.CharFree] [φ.RelFree] :
+  (r.ifTrue φ).CharFree := by
+  unfold ifTrue; infer_instance
 
 variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
 
@@ -460,8 +442,8 @@ theorem realize_ifTrue_of_false [NeZero n] (r : L.RudimentaryTerm n)
     {φ : L.DeltaZeroBoundedFormula n}
     {xs : Fin n → M} (h : ¬φ.toBoundedFormula〘xs〙) :
     (r.ifTrue φ)〘xs〙 = ∅ := by
-  simp only [ifTrue]
-  convert realize_ifNonempty_of_empty _ _ (M := M)
+  simp only [ifTrue, ifNonempty, realize_substBoundRud]
+  apply realize_ifNonempty₀_of_empty
   simp [h]
 
 @[simp]
@@ -469,8 +451,8 @@ theorem realize_ifTrue_of_true [NeZero n] (r : L.RudimentaryTerm n)
     {φ : L.DeltaZeroBoundedFormula n}
     {xs : Fin n → M} (h : φ.toBoundedFormula〘xs〙) :
     (r.ifTrue φ)〘xs〙 = r〘xs〙 := by
-  simp only [ifTrue]
-  convert realize_ifNonempty_of_ne_empty _ _ (M := M)
+  simp only [ifTrue, ifNonempty, realize_substBoundRud]
+  apply realize_ifNonempty₀_of_ne_empty
   simp [h]
 
 @[simp]
@@ -478,7 +460,8 @@ theorem realize_ifTrue_subset [NeZero n] (r : L.RudimentaryTerm n)
     {φ : L.DeltaZeroBoundedFormula n}
     {xs : Fin n → M} :
     (r.ifTrue φ)〘xs〙 ⊆ r〘xs〙 := by
-  simp [ifTrue]
+  simp only [ifTrue, ifNonempty, realize_substBoundRud]
+  exact realize_ifNonempty₀_subset
 
 @[simp]
 theorem mem_realize_ifTrue_iff [NeZero n] (r : L.RudimentaryTerm n)
@@ -499,6 +482,12 @@ noncomputable def comprehensionRudimentaryTerm {L : Language} [L.HasMem]
   (ᵣ-1).iUnion <| ({ᵣ-1} : L.RudimentaryTerm (n + 2)).ifTrue <|
     (φ.substBoundBound (cons (last _) (castAdd 2)))
   -- φ.charRudimentaryTerm.iUnion {ᵣ0}
+
+instance {L : Language} [L.HasMem]
+  [L.ExtraConstantsUnaryRelationsOnly]
+  (φ : L.DeltaZeroBoundedFormula (n + 1)) [φ.RelFree] :
+  φ.comprehensionRudimentaryTerm.CharFree := by
+  unfold comprehensionRudimentaryTerm; infer_instance
 
 variable [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M]
 

@@ -23,11 +23,10 @@ def orderedPair {L : FirstOrder.Language.{u, v}} [L.HasMem]
 @[inherit_doc] scoped[FirstOrder] notation:max "ᵣ(" x ", " y ")" =>
   FirstOrder.Language.RudimentaryTerm.orderedPair x y
 
-@[simp]
-theorem RudimentaryTerm.isCharFree_orderedPair {n} {L : FirstOrder.Language} [L.HasMem]
-    (r₁ r₂ : L.RudimentaryTerm n) (hr₁ : r₁.IsCharFree) (hr₂ : r₂.IsCharFree) :
-    ᵣ(r₁, r₂).IsCharFree := by
-  simp [orderedPair, hr₁, hr₂]
+instance {n} {L : FirstOrder.Language} [L.HasMem]
+  (r₁ r₂ : L.RudimentaryTerm n) [r₁.CharFree] [r₂.CharFree] :
+  ᵣ(r₁, r₂).CharFree := by
+  unfold orderedPair; infer_instance
 
 end RudimentaryTerm
 
@@ -56,7 +55,7 @@ theorem unorderedPair_ne_empty [Extensional M] (x y : M) :
   simp [ne_empty_iff]
 
 variable (M) in
-instance instCommutativeUnodrederPair [Extensional M] :
+instance [Extensional M] :
   Std.Commutative (α := M) unorderedPair where
   comm := fun x y ↦ unorderedPair_comm x y
 
@@ -108,6 +107,44 @@ theorem eq_orderedPair_iff [Extensional M] (x y z : M) :
 theorem orderedPair_eq_orderedPair_iff [Extensional M] (x₁ y₁ x₂ y₂ : M) :
     !(x₁, y₁) = !(x₂, y₂) ↔ x₁ = x₂ ∧ y₁ = y₂ := by
   grind [orderedPair]
+
+section LeftRight
+
+variable [Extensional M]
+
+noncomputable instance (a : M) : Decidable (∃ x y, a = !(x, y)) := by exact Classical.propDecidable _
+
+/-- The left component of `a` if `a` is an ordered pair, `∅` otherwise -/
+noncomputable def left (a : M) : M := dite (∃ x y, a = !(x, y)) Classical.choose fun _ ↦ ∅
+
+@[simp]
+theorem left_of_not_isOrderedPair {a : M} (ha : ¬IsOrderedPair a) :
+    left a = ∅ := by
+  have : ¬∃ x y, a = !(x, y) := by grind
+  simp [left, this]
+
+@[simp]
+theorem left_orderedPair {a b : M} :
+    left !(a, b) = a := by
+  simp [left]
+
+noncomputable instance (a : M) : Decidable (∃ y x, a = !(x, y)) := by exact Classical.propDecidable _
+
+/-- The right component of `a` if `a` is an ordered pair, `∅` otherwise -/
+noncomputable def right (a : M) : M := dite (∃ y x, a = !(x, y)) Classical.choose fun _ ↦ ∅
+
+@[simp]
+theorem right_of_not_isOrderedPair {a : M} (ha : ¬IsOrderedPair a) :
+    right a = ∅ := by
+  have : ¬∃ y x, a = !(x, y) := by grind
+  simp [right, this]
+
+@[simp]
+theorem right_orderedPair {a b : M} :
+    right !(a, b) = b := by
+  simp [right]
+
+end LeftRight
 
 end MemStructure
 

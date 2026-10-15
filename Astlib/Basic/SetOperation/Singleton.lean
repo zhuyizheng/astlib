@@ -19,18 +19,16 @@ variable {L : Language.{u, v}} {M : Type max u v}
   (x y : M)
 
 variable (M) in
-noncomputable instance : Singleton M M := ⟨fun x ↦ {ᵣ0}〘x〙₁⟩
+noncomputable instance : Singleton M M := ⟨fun x ↦ RudimentaryTerm.singleton₀〘x〙₁⟩
 
 @[grind =]
 theorem singleton_eq : {x} = unorderedPair x x := by
-  simp only [Singleton.singleton, Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue]
-  rfl
+  simp [Singleton.singleton, RudimentaryTerm.singleton₀]
 
 @[simp]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_singleton
-    (r : L.RudimentaryTerm n) (xs : Fin n → M) :
-    {r}〘xs〙 = {r〘xs〙} := by
-  simp [singleton]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_singleton₀ (xs : Fin 1 → M) :
+    RudimentaryTerm.singleton₀〘xs〙 = {xs 0} := by
+  simp [singleton_eq, RudimentaryTerm.singleton₀]
 
 variable [PairClosed M] [SDiffClosed M]
 

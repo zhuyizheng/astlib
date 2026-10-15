@@ -8,18 +8,29 @@ import Astlib.Basic.SetOperation.Pair.Basic
 file docstring
 -/
 
-open FirstOrder.Language.BoundedFormula
+open FirstOrder Language BoundedFormula RudimentaryTerm
 
 namespace FirstOrder.Language
 
+def RudimentaryTerm.union₀ {L : FirstOrder.Language} [L.HasMem] : L.RudimentaryTerm 2 :=
+  ᵣ⋃₀ ᵣ{ᵣ0, ᵣ1}
+
 instance {L : FirstOrder.Language} [L.HasMem] :
-  Union (L.RudimentaryTerm n) := ⟨fun r₁ r₂ => ᵣ⋃₀ ᵣ{r₁, r₂}⟩
+  Union (L.RudimentaryTerm n) := ⟨fun r₁ r₂ => union₀.substBoundRud ![r₁, r₂]⟩
 
 @[simp]
-theorem isCharFree_union {L : Language} [L.HasMem]
-    (r₁ r₂ : L.RudimentaryTerm n) (hr₁ : r₁.IsCharFree) (hr₂ : r₂.IsCharFree) :
-    (r₁ ∪ r₂).IsCharFree := by
-  simp [Union.union, hr₁, hr₂]
+theorem RudimentaryTerm.union_def {L : FirstOrder.Language} [L.HasMem]
+    (r₁ r₂ : L.RudimentaryTerm n) :
+    r₁ ∪ r₂ = union₀.substBoundRud ![r₁, r₂] := rfl
+
+instance {L : Language} [L.HasMem] :
+  (union₀ : L.RudimentaryTerm 2).CharFree := by
+  unfold union₀; infer_instance
+
+instance {L : Language} [L.HasMem]
+  (r₁ r₂ : L.RudimentaryTerm n) [r₁.CharFree] [r₂.CharFree] :
+  (r₁ ∪ r₂).CharFree := by
+  rw [union_def]; infer_instance
 
 namespace MemStructure
 
@@ -28,18 +39,16 @@ variable {L : Language.{u, v}} {M : Type max u v}
   (x y z : M)
 
 variable (M) in
-noncomputable instance : Union M := ⟨fun x y ↦ (ᵣ0 ∪ ᵣ1)〘x, y〙₂⟩
-
-@[simp]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_union
-    (r₁ r₂ : L.RudimentaryTerm n) (xs : Fin n → M) :
-    (r₁ ∪ r₂)〘xs〙 = r₁〘xs〙 ∪ r₂〘xs〙 := by
-  simp [Union.union, RudimentaryTerm.realize_sUnion]
+noncomputable instance : Union M := ⟨fun x y ↦ RudimentaryTerm.union₀〘x, y〙₂⟩
 
 @[grind =]
 theorem union_eq : x ∪ y = sUnion (unorderedPair x y) := by
-  simp only [Union.union, Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, sUnion_eq]
-  rfl
+  simp [Union.union, union₀]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_union₀ (xs : Fin 2 → M) :
+    union₀〘xs〙 = xs 0 ∪ xs 1 := by
+  simp [union_eq, union₀]
 
 variable [RudClosed M]
 

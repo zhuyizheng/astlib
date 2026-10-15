@@ -58,77 +58,136 @@ def depth (r : L.RudimentaryTerm n) : ℕ := match r with
   | iUnion ri rf => (max ri.depth rf.depth) + 1
   | char _ r => r.depth + 1
 
-def charDepth (r : L.RudimentaryTerm n) : ℕ := match r with
-  | var _ => 0
-  | const _ => 0
-  | unorderedPair r₁ r₂ => max r₁.charDepth r₂.charDepth
-  | sdiff r₁ r₂ => max r₁.charDepth r₂.charDepth
-  | iUnion ri rf => max ri.charDepth rf.charDepth
-  | char _ r => r.charDepth + 1
+/-- Whether `r` does not contain any characteristic function of a unary relation -/
+def isCharFree (r : L.RudimentaryTerm n) : Prop := match r with
+  | var _ => True
+  | const _ => True
+  | unorderedPair r₁ r₂ => r₁.isCharFree ∧ r₂.isCharFree
+  | sdiff r₁ r₂ => r₁.isCharFree ∧ r₂.isCharFree
+  | iUnion ri rf => ri.isCharFree ∧ rf.isCharFree
+  | char _ _ => False
 
-def IsCharFree (r : L.RudimentaryTerm n) : Prop := r.charDepth = 0
+/-- `r` does not contain any characteristic function of a unary relation -/
+class CharFree (r : L.RudimentaryTerm n) : Prop where
+  charFree : r.isCharFree
 
-@[simp]
-theorem isCharFree_var (i : Fin n) : IsCharFree (ᵣi : L.RudimentaryTerm n) := by
-  simp [IsCharFree, charDepth]
+theorem charFree_iff_isCharFree (r : L.RudimentaryTerm n) : r.CharFree ↔ r.isCharFree :=
+  ⟨fun h ↦ h.charFree, fun h ↦ ⟨h⟩⟩
 
-@[simp]
-theorem isCharFree_const (c : L.Constants) : IsCharFree (const c : L.RudimentaryTerm n) := by
-  simp [IsCharFree, charDepth]
+instance (i : Fin n) : (ᵣi : L.RudimentaryTerm n).CharFree := ⟨trivial⟩
 
-@[simp]
-theorem isCharFree_unorderedPair (r₁ r₂ : L.RudimentaryTerm n) :
-    IsCharFree (unorderedPair r₁ r₂) ↔ IsCharFree r₁ ∧ IsCharFree r₂ := by
-  simp [IsCharFree, charDepth]
+instance (c : L.Constants) : (const c : L.RudimentaryTerm n).CharFree := ⟨trivial⟩
 
-@[simp]
-theorem isCharFree_sdiff (r₁ r₂ : L.RudimentaryTerm n) :
-    IsCharFree (sdiff r₁ r₂) ↔ IsCharFree r₁ ∧ IsCharFree r₂ := by
-  simp [IsCharFree, charDepth]
+theorem charFree_unorderedPair_iff (r₁ r₂ : L.RudimentaryTerm n) :
+    (unorderedPair r₁ r₂).CharFree ↔ r₁.CharFree ∧ r₂.CharFree := by
+  simp [charFree_iff_isCharFree, isCharFree]
 
-@[simp]
-theorem isCharFree_iUnion (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1)) :
-    IsCharFree (iUnion ri rf) ↔ IsCharFree ri ∧ IsCharFree rf := by
-  simp [IsCharFree, charDepth]
+instance (r₁ r₂ : L.RudimentaryTerm n) [r₁.CharFree] [r₂.CharFree] :
+  (unorderedPair r₁ r₂).CharFree :=
+  (charFree_unorderedPair_iff _ _).mpr ⟨inferInstance, inferInstance⟩
+
+theorem CharFree.of_unorderedPair_left (r₁ r₂ : L.RudimentaryTerm n)
+    [h : (unorderedPair r₁ r₂).CharFree] : r₁.CharFree :=
+  ((charFree_unorderedPair_iff _ _).mp h).left
+
+theorem CharFree.of_unorderedPair_right (r₁ r₂ : L.RudimentaryTerm n)
+    [h : (unorderedPair r₁ r₂).CharFree] : r₂.CharFree :=
+  ((charFree_unorderedPair_iff _ _).mp h).right
+
+theorem charFree_sdiff_iff (r₁ r₂ : L.RudimentaryTerm n) :
+    (sdiff r₁ r₂).CharFree ↔ r₁.CharFree ∧ r₂.CharFree := by
+  simp [charFree_iff_isCharFree, isCharFree]
+
+instance (r₁ r₂ : L.RudimentaryTerm n) [r₁.CharFree] [r₂.CharFree] :
+  (sdiff r₁ r₂).CharFree :=
+  (charFree_sdiff_iff _ _).mpr ⟨inferInstance, inferInstance⟩
+
+theorem CharFree.of_sdiff_left (r₁ r₂ : L.RudimentaryTerm n)
+    [h : (sdiff r₁ r₂).CharFree] : r₁.CharFree :=
+  ((charFree_sdiff_iff _ _).mp h).left
+
+theorem CharFree.of_sdiff_right (r₁ r₂ : L.RudimentaryTerm n)
+    [h : (sdiff r₁ r₂).CharFree] : r₂.CharFree :=
+  ((charFree_sdiff_iff _ _).mp h).right
+
+theorem charFree_iUnion_iff (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1)) :
+    (iUnion ri rf).CharFree ↔ ri.CharFree ∧ rf.CharFree := by
+  simp [charFree_iff_isCharFree, isCharFree]
+
+instance (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1)) [ri.CharFree] [rf.CharFree] :
+  (iUnion ri rf).CharFree :=
+  (charFree_iUnion_iff _ _).mpr ⟨inferInstance, inferInstance⟩
+
+theorem CharFree.of_iUnion_index (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1))
+    [h : (iUnion ri rf).CharFree] : ri.CharFree :=
+  ((charFree_iUnion_iff _ _).mp h).left
+
+theorem CharFree.of_iUnion_function (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1))
+    [h : (iUnion ri rf).CharFree] : rf.CharFree :=
+  ((charFree_iUnion_iff _ _).mp h).right
 
 @[simp, grind .]
-theorem not_isCharFree_char (R : L.Relations 1) (r : L.RudimentaryTerm n) :
-    ¬IsCharFree (char R r) := by
-  simp [IsCharFree, charDepth]
+theorem not_charFree_char (R : L.Relations 1) (r : L.RudimentaryTerm n) :
+    ¬(char R r).CharFree := by
+  simp [charFree_iff_isCharFree, isCharFree]
 
-@[elab_as_elim] def isCharFreeCases
-  {motive : ∀ {n}, ∀ {r : L.RudimentaryTerm n}, r.IsCharFree → Sort _}
-  (var : ∀ {n}, ∀ i : Fin n, ∀ h : (ᵣi : L.RudimentaryTerm n).IsCharFree, motive h)
-  (const : ∀ {n}, ∀ c : L.Constants, ∀ h : (const c : L.RudimentaryTerm n).IsCharFree, motive h)
-  (unorderedPair : ∀ {n}, ∀ r₁ r₂ : L.RudimentaryTerm n, ∀ hr₁ : r₁.IsCharFree, ∀ hr₂ : r₂.IsCharFree,
-    ∀ hr : (unorderedPair r₁ r₂).IsCharFree,
+instance {k : ℕ} (r : L.RudimentaryTerm n) (rs : Fin k → L.RudimentaryTerm n)
+  [r.CharFree] [∀ i, (rs i).CharFree] (i : Fin (k + 1)) :
+  (Matrix.vecCons r rs i).CharFree := by
+  cases i using Fin.cases
+  · rw [Matrix.cons_val_zero]; infer_instance
+  · rw [Matrix.cons_val_succ]; infer_instance
+
+instance {k l : ℕ} (f : L.RudimentaryTerm k → L.RudimentaryTerm n)
+  (rs : Fin l → L.RudimentaryTerm k) [h : ∀ i, (f (rs i)).CharFree] (i : Fin l) :
+  ((f ∘ rs) i).CharFree :=
+  h i
+
+instance (i : Fin 0) : (Matrix.vecEmpty i : L.RudimentaryTerm n).CharFree :=
+  i.elim0
+
+instance {k : ℕ} (rs : Fin k → L.RudimentaryTerm n) (r : L.RudimentaryTerm n)
+  [∀ i, (rs i).CharFree] [r.CharFree] (i : Fin (k + 1)) :
+  (snoc (α := fun _ ↦ L.RudimentaryTerm n) rs r i).CharFree := by
+  cases i using lastCases
+  · rw [snoc_last]; infer_instance
+  · rw [snoc_castSucc]; infer_instance
+
+@[elab_as_elim] def charFreeCases
+  {motive : ∀ {n}, ∀ {r : L.RudimentaryTerm n}, r.CharFree → Sort _}
+  (var : ∀ {n}, ∀ i : Fin n, ∀ h : (ᵣi : L.RudimentaryTerm n).CharFree, motive h)
+  (const : ∀ {n}, ∀ c : L.Constants, ∀ h : (const c : L.RudimentaryTerm n).CharFree, motive h)
+  (unorderedPair : ∀ {n}, ∀ r₁ r₂ : L.RudimentaryTerm n, ∀ hr₁ : r₁.CharFree, ∀ hr₂ : r₂.CharFree,
+    ∀ hr : (unorderedPair r₁ r₂).CharFree,
     motive hr₁ → motive hr₂ → motive hr)
-  (sdiff : ∀ {n}, ∀ r₁ r₂ : L.RudimentaryTerm n, ∀ hr₁ : r₁.IsCharFree, ∀ hr₂ : r₂.IsCharFree,
-    ∀ hr : (sdiff r₁ r₂).IsCharFree,
+  (sdiff : ∀ {n}, ∀ r₁ r₂ : L.RudimentaryTerm n, ∀ hr₁ : r₁.CharFree, ∀ hr₂ : r₂.CharFree,
+    ∀ hr : (sdiff r₁ r₂).CharFree,
     motive hr₁ → motive hr₂ → motive hr)
   (iUnion : ∀ {n}, ∀ ri : L.RudimentaryTerm n, ∀ rf : L.RudimentaryTerm (n + 1),
-    ∀ hri : ri.IsCharFree, ∀ hrf : rf.IsCharFree,
-    ∀ hr : (iUnion ri rf).IsCharFree,
+    ∀ hri : ri.CharFree, ∀ hrf : rf.CharFree,
+    ∀ hr : (iUnion ri rf).CharFree,
     motive hri → motive hrf → motive hr)
-  {n} {r : L.RudimentaryTerm n} (hr : r.IsCharFree) :
+  {n} {r : L.RudimentaryTerm n} (hr : r.CharFree) :
   motive hr := by
   cases r with
   | var i => exact var _ hr
   | const i => exact const _ hr
   | unorderedPair r₁ r₂ =>
-    rw [isCharFree_unorderedPair] at hr
-    exact unorderedPair _ _ hr.left hr.right _ (isCharFreeCases var const unorderedPair sdiff iUnion hr.left)
-      (isCharFreeCases var const unorderedPair sdiff iUnion hr.right)
+    have h₁ := CharFree.of_unorderedPair_left r₁ r₂
+    have h₂ := CharFree.of_unorderedPair_right r₁ r₂
+    exact unorderedPair _ _ h₁ h₂ _ (charFreeCases var const unorderedPair sdiff iUnion h₁)
+      (charFreeCases var const unorderedPair sdiff iUnion h₂)
   | sdiff r₁ r₂ =>
-    rw [isCharFree_sdiff] at hr
-    exact sdiff _ _ hr.left hr.right _ (isCharFreeCases var const unorderedPair sdiff iUnion hr.left)
-      (isCharFreeCases var const unorderedPair sdiff iUnion hr.right)
+    have h₁ := CharFree.of_sdiff_left r₁ r₂
+    have h₂ := CharFree.of_sdiff_right r₁ r₂
+    exact sdiff _ _ h₁ h₂ _ (charFreeCases var const unorderedPair sdiff iUnion h₁)
+      (charFreeCases var const unorderedPair sdiff iUnion h₂)
   | iUnion ri rf =>
-    rw [isCharFree_iUnion] at hr
-    exact iUnion _ _ hr.left hr.right _ (isCharFreeCases var const unorderedPair sdiff iUnion hr.left)
-      (isCharFreeCases var const unorderedPair sdiff iUnion hr.right)
-  | char R r =>
-    simp [IsCharFree, charDepth] at hr
+    have h₁ := CharFree.of_iUnion_index ri rf
+    have h₂ := CharFree.of_iUnion_function ri rf
+    exact iUnion _ _ h₁ h₂ _ (charFreeCases var const unorderedPair sdiff iUnion h₁)
+      (charFreeCases var const unorderedPair sdiff iUnion h₂)
+  | char R r => simp at hr
 
 def substBoundBound {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
     (f : Fin n → Fin m) :
@@ -155,16 +214,16 @@ theorem depth_substBoundBound {L : Language} [L.HasMem] {m n : ℕ} (r : L.Rudim
   | char R r ih => simp [depth, substBoundBound, ih]
 
 @[simp]
-theorem charDepth_substBoundBound {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
+theorem isCharFree_substBoundBound {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
     (f : Fin n → Fin m) :
-    (r.substBoundBound f).charDepth = r.charDepth := by
+    (r.substBoundBound f).isCharFree ↔ r.isCharFree := by
   induction r generalizing m with
-  | var _ => simp [charDepth, substBoundBound]
-  | unorderedPair r₁ r₂ ih₁ ih₂ => simp [charDepth, substBoundBound, ih₁, ih₂]
-  | sdiff r₁ r₂ ih₁ ih₂ => simp [charDepth, substBoundBound, ih₁, ih₂]
-  | iUnion ri rf ihi ihf => simp [charDepth, substBoundBound, ihi, ihf]
-  | const c => simp [charDepth, substBoundBound]
-  | char R r ih => simp [charDepth, substBoundBound, ih]
+  | var _ => simp [isCharFree, substBoundBound]
+  | unorderedPair r₁ r₂ ih₁ ih₂ => simp [isCharFree, substBoundBound, ih₁, ih₂]
+  | sdiff r₁ r₂ ih₁ ih₂ => simp [isCharFree, substBoundBound, ih₁, ih₂]
+  | iUnion ri rf ihi ihf => simp [isCharFree, substBoundBound, ihi, ihf]
+  | const c => simp [isCharFree, substBoundBound]
+  | char R r _ => simp [isCharFree, substBoundBound]
 
 def substBoundRud {L : Language} [L.HasMem] {n : ℕ} (r : L.RudimentaryTerm n)
     (rs : Fin n → L.RudimentaryTerm m) :
@@ -188,48 +247,33 @@ def castAdd {L : Language} [L.HasMem] {n : ℕ} (r : L.RudimentaryTerm n) (m : �
 def castSucc {L : Language} [L.HasMem] {n : ℕ} (r : L.RudimentaryTerm n) :
     L.RudimentaryTerm (n + 1) := r.castAdd 1
 
-@[simp]
-theorem isCharFree_substBoundBound {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
-    (f : Fin n → Fin m) :
-    (r.substBoundBound f).IsCharFree ↔ r.IsCharFree := by
-  simp [IsCharFree]
+theorem charFree_substBoundBound_iff {L : Language} [L.HasMem] {m n : ℕ}
+    (r : L.RudimentaryTerm n) (f : Fin n → Fin m) :
+    (r.substBoundBound f).CharFree ↔ r.CharFree := by
+  simp [charFree_iff_isCharFree]
 
-@[simp]
-theorem isCharFree_castLE {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
-    (h : n ≤ m) :
-    (r.castLE h).IsCharFree ↔ r.IsCharFree :=
-  isCharFree_substBoundBound _ _
+instance {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree]
+  (f : Fin n → Fin m) : (r.substBoundBound f).CharFree :=
+  (charFree_substBoundBound_iff _ _).mpr inferInstance
 
-@[simp]
-theorem isCharFree_castAdd {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n) :
-    (r.castAdd m).IsCharFree ↔ r.IsCharFree :=
-  isCharFree_substBoundBound _ _
+instance {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree]
+  (h : n ≤ m) : (r.castLE h).CharFree := by
+  unfold castLE; infer_instance
 
-@[simp]
-theorem isCharFree_castSucc {L : Language} [L.HasMem] {n : ℕ} (r : L.RudimentaryTerm n) :
-    (r.castSucc).IsCharFree ↔ r.IsCharFree :=
-  isCharFree_substBoundBound _ _
+instance {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree] :
+  (r.castAdd m).CharFree := by
+  unfold castAdd; infer_instance
 
-@[simp]
-theorem isCharFree_substBoundRud {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
-    (hr : r.IsCharFree)
-    (rs : Fin n → L.RudimentaryTerm m) (hrs : ∀ i, (rs i).IsCharFree) :
-    (r.substBoundRud rs).IsCharFree := by
-  induction r generalizing m with
-  | var => simp [substBoundRud, hrs]
-  | unorderedPair =>
-    simp only [isCharFree_unorderedPair] at hr
-    simp [substBoundRud, *]
-  | sdiff =>
-    simp only [isCharFree_sdiff] at hr
-    simp [substBoundRud, *]
-  | iUnion ri rf ihi ihf =>
-    simp only [isCharFree_iUnion] at hr
-    simp only [substBoundRud, isCharFree_iUnion, hr, hrs, implies_true, ihi, true_and]
-    apply ihf hr.right
-    intro i; cases i using lastCases <;> simp [hrs]
-  | const c => simp [substBoundRud]
-  | char R r => simp at hr
+instance {L : Language} [L.HasMem] {n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree] :
+  r.castSucc.CharFree := by
+  unfold castSucc; infer_instance
+
+instance {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
+  [hr : r.CharFree]
+  (rs : Fin n → L.RudimentaryTerm m) [hrs : ∀ i, (rs i).CharFree] :
+  (r.substBoundRud rs).CharFree := by
+  induction hr using charFreeCases generalizing m <;>
+    (simp only [substBoundRud]; infer_instance)
 
 def _root_.Fin.lowerAt (i : Fin (n + 1)) {k : Fin (n + 1)} (h : i ≠ k) : Fin n :=
   if hi : i.val < k.val then i.castPred (ne_last_of_lt hi)
@@ -338,122 +382,157 @@ noncomputable def substLowerAt {n : ℕ} {k : Fin (n + 1)}
 end
 
 mutual
-@[simp]
-theorem isRelFree_hasMem {n : ℕ} (r : L.RudimentaryTerm n) (hr : r.IsCharFree) (t : L.Term' n) :
-    (r.hasMem t).IsRelFree :=
-  match r with
-  | .var i => by simp [hasMem]
-  | .const c => by simp [hasMem]
-  | .unorderedPair r₁ r₂ => by
-    simp only [isCharFree_unorderedPair] at hr
-    simp [hasMem, hr, r₁.isRelFree_eq, r₂.isRelFree_eq]
-  | .sdiff r₁ r₂ => by
-    simp only [isCharFree_sdiff] at hr
-    simp [hasMem, hr, r₁.isRelFree_hasMem, r₂.isRelFree_hasMem]
-  | .iUnion ri rf => by
-    simp only [isCharFree_iUnion] at hr
-    simp [hasMem, hr, ri.isRelFree_exMem, rf.isRelFree_hasMem]
-  | .char _ _ => by simp at hr
+theorem relFree_hasMem {n : ℕ} (r : L.RudimentaryTerm n) [hr : r.CharFree] (t : L.Term' n) :
+    (r.hasMem t).RelFree :=
+  match r, hr with
+  | .var i, _ => by simp only [hasMem]; infer_instance
+  | .const c, _ => by simp only [hasMem]; infer_instance
+  | .unorderedPair r₁ r₂, hr => by
+    have := CharFree.of_unorderedPair_left r₁ r₂
+    have := CharFree.of_unorderedPair_right r₁ r₂
+    have := relFree_eq r₁ t
+    have := relFree_eq r₂ t
+    simp only [hasMem]; infer_instance
+  | .sdiff r₁ r₂, hr => by
+    have := CharFree.of_sdiff_left r₁ r₂
+    have := CharFree.of_sdiff_right r₁ r₂
+    have := relFree_hasMem r₁ t
+    have := relFree_hasMem r₂ t
+    simp only [hasMem]; infer_instance
+  | .iUnion ri rf, hr => by
+    have := CharFree.of_iUnion_index ri rf
+    have := CharFree.of_iUnion_function ri rf
+    have := relFree_hasMem rf t.castSucc
+    have := relFree_exMem ri (rf.hasMem t.castSucc)
+    simp only [hasMem]; infer_instance
+  | .char _ _, hr => by simp at hr
   termination_by (r.depth, 1, 0)
   decreasing_by all_goals simp [depth, Prod.lex_def]
 
-@[simp]
-theorem isRelFree_eq {n : ℕ} (r : L.RudimentaryTerm n) (hr : r.IsCharFree) (t : L.Term' n) :
-    (r.eq t).IsRelFree :=
-  match r with
-  | .var i => by simp [eq]
-  | .const c => by simp [eq]
-  | .unorderedPair r₁ r₂ => by
-    simp only [isCharFree_unorderedPair] at hr
-    simp [eq, hr, r₁.isRelFree_mem, r₂.isRelFree_mem, r₁.castSucc.isRelFree_eq, r₂.castSucc.isRelFree_eq]
-  | .sdiff r₁ r₂ => by
-    simp only [isCharFree_sdiff] at hr
-    simp [eq, hr, r₁.castSucc.isRelFree_hasMem, r₂.castSucc.isRelFree_hasMem, r₁.isRelFree_allMem]
-  | .iUnion ri rf => by
-    simp only [isCharFree_iUnion] at hr
-    simp [eq, hr, ri.castSucc.isRelFree_exMem, ri.isRelFree_allMem,
-      (rf.substBoundBound (snoc (Fin.castAdd 2) (last _))).isRelFree_hasMem, rf.isRelFree_allMem]
-  | .char _ _ => by simp at hr
+theorem relFree_eq {n : ℕ} (r : L.RudimentaryTerm n) [hr : r.CharFree] (t : L.Term' n) :
+    (r.eq t).RelFree :=
+  match r, hr with
+  | .var i, _ => by simp only [eq]; infer_instance
+  | .const c, _ => by simp only [eq]; infer_instance
+  | .unorderedPair r₁ r₂, hr => by
+    have := CharFree.of_unorderedPair_left r₁ r₂
+    have := CharFree.of_unorderedPair_right r₁ r₂
+    have := relFree_mem r₁ t
+    have := relFree_mem r₂ t
+    have := relFree_eq r₁.castSucc &-1
+    have := relFree_eq r₂.castSucc &-1
+    simp only [eq]; infer_instance
+  | .sdiff r₁ r₂, hr => by
+    have := CharFree.of_sdiff_left r₁ r₂
+    have := CharFree.of_sdiff_right r₁ r₂
+    have := relFree_hasMem r₁.castSucc &-1
+    have := relFree_hasMem r₂.castSucc &-1
+    have := relFree_allMem r₁ (r₂.castSucc.hasMem &-1 ⊔ &-1 ∈₀ t.castSucc)
+    simp only [eq]; infer_instance
+  | .iUnion ri rf, hr => by
+    have := CharFree.of_iUnion_index ri rf
+    have := CharFree.of_iUnion_function ri rf
+    have := relFree_hasMem (rf.substBoundBound (snoc (Fin.castAdd 2) (last _))) &-2
+    have := relFree_exMem ri.castSucc
+      ((rf.substBoundBound (snoc (Fin.castAdd 2) (last _))).hasMem &-2)
+    have := relFree_allMem rf (&-1 ∈₀ (t.castAdd 2))
+    have := relFree_allMem ri (rf.allMem (&-1 ∈₀ (t.castAdd 2)))
+    simp only [eq]; infer_instance
+  | .char _ _, hr => by simp at hr
   termination_by (r.depth, 1, 0)
   decreasing_by all_goals simp [depth, castSucc, castAdd, castLE, Prod.lex_def]
 
-@[simp]
-theorem isRelFree_mem {n : ℕ} (r : L.RudimentaryTerm n) (hr : r.IsCharFree) (t : L.Term' n) :
-    (r.mem t).IsRelFree := by
-  simp [mem, hr, r.castSucc.isRelFree_eq]
+theorem relFree_mem {n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree] (t : L.Term' n) :
+    (r.mem t).RelFree := by
+  have := relFree_eq r.castSucc &-1
+  simp only [mem]; infer_instance
   termination_by (r.depth, 2, 0)
   decreasing_by simp [castSucc, castAdd, castLE, Prod.lex_def]
 
-@[simp]
-theorem isRelFree_memSelf {n : ℕ} (r : L.RudimentaryTerm n) (hr : r.IsCharFree) :
-    r.memSelf.IsRelFree := by
-  simp [memSelf, hr, r.isRelFree_exMem, r.castSucc.isRelFree_eq]
+theorem relFree_memSelf {n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree] :
+    r.memSelf.RelFree := by
+  have := relFree_eq r.castSucc &-1
+  have := relFree_exMem r (r.castSucc.eq &-1)
+  simp only [memSelf]; infer_instance
   termination_by (r.depth, 3, 0)
   decreasing_by all_goals simp [castSucc, castAdd, castLE, Prod.lex_def]
 
-@[simp]
-theorem isRelFree_allMem {n : ℕ} (r : L.RudimentaryTerm n) (hr : r.IsCharFree)
-    (φ : L.DeltaZeroBoundedFormula (n + 1)) (hφ : φ.IsRelFree) :
-    (r.allMem φ).IsRelFree :=
-  match r with
-  | .var i => by simp [allMem, hφ]
-  | .const c => by simp [allMem, hφ]
-  | .unorderedPair r₁ r₂ => by
-    simp only [isCharFree_unorderedPair] at hr
-    simp [allMem, hφ, hr, r₁.isRelFree_substLowerAt (k := last _), r₂.isRelFree_substLowerAt (k := last _)]
-  | .sdiff r₁ r₂ => by
-    simp only [isCharFree_sdiff] at hr
-    simp [allMem, hφ, hr, r₁.isRelFree_allMem, r₂.castSucc.isRelFree_hasMem]
-  | .iUnion ri rf => by
-    simp only [isCharFree_iUnion] at hr
-    simp [allMem, hφ, hr, ri.isRelFree_allMem, rf.isRelFree_allMem]
-  | .char _ _ => by simp at hr
+theorem relFree_allMem {n : ℕ} (r : L.RudimentaryTerm n) [hr : r.CharFree]
+    (φ : L.DeltaZeroBoundedFormula (n + 1)) [φ.RelFree] :
+    (r.allMem φ).RelFree :=
+  match r, hr with
+  | .var i, _ => by simp only [allMem]; infer_instance
+  | .const c, _ => by simp only [allMem]; infer_instance
+  | .unorderedPair r₁ r₂, hr => by
+    have := CharFree.of_unorderedPair_left r₁ r₂
+    have := CharFree.of_unorderedPair_right r₁ r₂
+    have := relFree_substLowerAt (k := last _) r₁ φ
+    have := relFree_substLowerAt (k := last _) r₂ φ
+    simp only [allMem]; infer_instance
+  | .sdiff r₁ r₂, hr => by
+    have := CharFree.of_sdiff_left r₁ r₂
+    have := CharFree.of_sdiff_right r₁ r₂
+    have := relFree_hasMem r₂.castSucc &-1
+    have := relFree_allMem r₁ (r₂.castSucc.hasMem &-1 ⊔ φ)
+    simp only [allMem]; infer_instance
+  | .iUnion ri rf, hr => by
+    have := CharFree.of_iUnion_index ri rf
+    have := CharFree.of_iUnion_function ri rf
+    have := relFree_allMem rf (φ.substBoundBound (snoc (Fin.castAdd 2) (last _)))
+    have := relFree_allMem ri (rf.allMem (φ.substBoundBound (snoc (Fin.castAdd 2) (last _))))
+    simp only [allMem]; infer_instance
+  | .char _ _, hr => by simp at hr
   termination_by (r.depth, 1, 0)
   decreasing_by all_goals simp [castSucc, castAdd, castLE, depth, Prod.lex_def]
 
-@[simp]
-theorem isRelFree_exMem {n : ℕ} (r : L.RudimentaryTerm n) (hr : r.IsCharFree)
-    (φ : L.DeltaZeroBoundedFormula (n + 1)) (hφ : φ.IsRelFree) :
-    (r.exMem φ).IsRelFree := by
-  simp [exMem, hr, hφ, r.isRelFree_allMem]
+theorem relFree_exMem {n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree]
+    (φ : L.DeltaZeroBoundedFormula (n + 1)) [φ.RelFree] :
+    (r.exMem φ).RelFree := by
+  have := relFree_allMem r (∼φ)
+  simp only [exMem]; infer_instance
   termination_by (r.depth, 2, 0)
   decreasing_by all_goals simp [Prod.lex_def]
 
-@[simp]
-theorem isRelFree_substLowerAt {n : ℕ} {k : Fin (n + 1)}
-  (r : L.RudimentaryTerm k.val) (hr : r.IsCharFree)
-    (φ : L.DeltaZeroBoundedFormula (n + 1)) (hφ : φ.IsRelFree) :
-    (r.substLowerAt φ).IsRelFree :=
-  match φ with
-  | .falsum => by simp [substLowerAt]
-  | .equal t₁ t₂ => by
+theorem relFree_substLowerAt {n : ℕ} {k : Fin (n + 1)}
+    (r : L.RudimentaryTerm k.val) [r.CharFree]
+    (φ : L.DeltaZeroBoundedFormula (n + 1)) [hφ : φ.RelFree] :
+    (r.substLowerAt φ).RelFree :=
+  match φ, hφ with
+  | .falsum, _ => by simp only [substLowerAt]; infer_instance
+  | .equal t₁ t₂, _ => by
     simp only [substLowerAt, Function.comp_apply]
     split_ifs with h₁₂ h₁ h₂
-    · simp
-    · simp [hr, (r.castLE (is_le k)).isRelFree_eq]
-    · simp [hr, (r.castLE (is_le k)).isRelFree_eq]
-    · simp
-  | .mem t₁ t₂ => by
+    · infer_instance
+    · exact relFree_eq (r.castLE (is_le k)) _
+    · exact relFree_eq (r.castLE (is_le k)) _
+    · infer_instance
+  | .mem t₁ t₂, _ => by
     simp only [substLowerAt, Function.comp_apply]
     split_ifs with h₁ h₁₂ h₂
-    · simp [hr, (r.castLE (is_le k)).isRelFree_memSelf]
-    · simp [hr, (r.castLE (is_le k)).isRelFree_mem]
-    · simp [hr, (r.castLE (is_le k)).isRelFree_hasMem]
-    · simp
-  | .imp φ₁ φ₂ => by
-    simp only [DeltaZeroBoundedFormula.isRelFree_imp] at hφ
-    simp [substLowerAt, hφ, r.isRelFree_substLowerAt hr φ₁, r.isRelFree_substLowerAt hr φ₂]
-  | .allMem t ψ => by
+    · exact relFree_memSelf (r.castLE (is_le k))
+    · exact relFree_mem (r.castLE (is_le k)) _
+    · exact relFree_hasMem (r.castLE (is_le k)) _
+    · infer_instance
+  | .imp φ₁ φ₂, hφ => by
+    have := DeltaZeroBoundedFormula.RelFree.of_imp_left φ₁ φ₂
+    have := DeltaZeroBoundedFormula.RelFree.of_imp_right φ₁ φ₂
+    have := relFree_substLowerAt r φ₁
+    have := relFree_substLowerAt r φ₂
+    simp only [substLowerAt]; infer_instance
+  | .allMem t ψ, hφ => by
+    have := DeltaZeroBoundedFormula.RelFree.of_allMem t ψ
+    have := relFree_substLowerAt (k := k.castSucc) r ψ
     simp only [substLowerAt, Function.comp_apply, ne_eq, dite_not]
-    simp only [DeltaZeroBoundedFormula.isRelFree_allMem] at hφ
     split_ifs with h
-    · simp [hr, hφ, r.isRelFree_substLowerAt (k := k.castSucc) hr ψ,
-        (r.castLE (is_le k)).isRelFree_allMem]
-    · simp [hφ, r.isRelFree_substLowerAt (k := k.castSucc) hr ψ]
-  | .rel _ _ => by simp at hφ
+    · exact relFree_allMem (r.castLE (is_le k)) _
+    · infer_instance
+  | .rel _ _, hφ => by simp at hφ
   termination_by (r.depth, 4, sizeOf φ)
   decreasing_by all_goals simp [castLE, Prod.lex_def, Nat.lt_add_right]
 end
+
+attribute [instance] relFree_hasMem relFree_eq relFree_mem relFree_memSelf relFree_allMem
+  relFree_exMem relFree_substLowerAt
 
 notation "∀ᵣ∈ " x:arg y:50 => FirstOrder.Language.RudimentaryTerm.allMem x y
 
@@ -475,12 +554,11 @@ noncomputable def substBoundRud (t : L.Term' n)
   | .func F _ (l := 0) => const F
   | .func F _ (l := l + 1) => IsEmpty.elim (by infer_instance) F
 
-@[simp]
-theorem isCharFree_substBoundRud (t : L.Term' n) (rs : Fin n → L.RudimentaryTerm m)
-    (hrs : ∀ i, (rs i).IsCharFree) :
-    (t.substBoundRud rs).IsCharFree := match t with
-  | .var (Sum.inr i) => by simp [substBoundRud, hrs]
-  | .func F _ (l := 0) => by simp [substBoundRud]
+instance (t : L.Term' n) (rs : Fin n → L.RudimentaryTerm m)
+  [hrs : ∀ i, (rs i).CharFree] :
+  (t.substBoundRud rs).CharFree := match t with
+  | .var (Sum.inr i) => by simp only [substBoundRud]; infer_instance
+  | .func F _ (l := 0) => by simp only [substBoundRud]; infer_instance
   | .func F _ (l := l + 1) => IsEmpty.elim (by infer_instance) F
 
 noncomputable def toRudimentaryTerm {n} (t : L.Term' n) :
@@ -490,11 +568,10 @@ noncomputable def toRudimentaryTerm {n} (t : L.Term' n) :
   | .func F _ (l := 0) => const F
   | .func F _ (l := n + 1) => IsEmpty.elim (by infer_instance) F
 
-@[simp]
-theorem isCharFree_toRudimentaryTerm {n} (t : L.Term' n) :
-    t.toRudimentaryTerm.IsCharFree := match t with
-  | .var (Sum.inr i) => by simp [toRudimentaryTerm]
-  | .func F _ (l := 0) => by simp [toRudimentaryTerm]
+instance {n} (t : L.Term' n) :
+  t.toRudimentaryTerm.CharFree := match t with
+  | .var (Sum.inr i) => by simp only [toRudimentaryTerm]; infer_instance
+  | .func F _ (l := 0) => by simp only [toRudimentaryTerm]; infer_instance
   | .func F _ (l := l + 1) => IsEmpty.elim (by infer_instance) F
 
 end Term
@@ -520,31 +597,22 @@ noncomputable def substBoundRud (φ : L.DeltaZeroBoundedFormula n)
     ∀ᵣ∈ (t.substBoundRud rs) (ψ.substBoundRud (snoc (castSucc ∘ rs) (ᵣ-1)))
   | .rel _ _ => ⊥
 
-@[simp]
-theorem isRelFree_substBoundRud {φ : L.DeltaZeroBoundedFormula n}
-    (hφ : φ.IsRelFree)
-    (rs : Fin n → L.RudimentaryTerm m)
-    (hrs : ∀ i, (rs i).IsCharFree) :
-    (φ.substBoundRud rs).IsRelFree := by
-  induction φ generalizing m with
-  | falsum => simp [substBoundRud]
-  | equal t₁ t₂ =>
-    simp only [substBoundRud, Function.comp_apply, isRelFree_inf]
-    constructor <;> apply RudimentaryTerm.isRelFree_allMem <;> simp [hrs]
-  | mem t₁ t₂ =>
-    simp only [substBoundRud, Function.comp_apply]
-    apply RudimentaryTerm.isRelFree_exMem <;> simp [hrs]
-  | imp φ₁ φ₂ ih₁ ih₂ =>
-    simp only [isRelFree_imp] at hφ
-    simp [substBoundRud, hφ, hrs, ih₁, ih₂]
-  | allMem t ψ ih =>
-    simp only [isRelFree_allMem] at hφ
-    apply RudimentaryTerm.isRelFree_allMem
-    · simp [hrs]
-    apply ih hφ
-    intro i
-    cases i using lastCases <;> simp [hrs]
-  | rel _ _ => simp [substBoundRud]
+instance (φ : L.DeltaZeroBoundedFormula n)
+  [hφ : φ.RelFree]
+  (rs : Fin n → L.RudimentaryTerm m)
+  [hrs : ∀ i, (rs i).CharFree] :
+  (φ.substBoundRud rs).RelFree := by
+  induction hφ using relFreeCases generalizing m with
+  | falsum => simp only [substBoundRud]; infer_instance
+  | equal t₁ t₂ => simp only [substBoundRud]; infer_instance
+  | mem t₁ t₂ => simp only [substBoundRud]; infer_instance
+  | imp φ₁ φ₂ _ _ _ ih₁ ih₂ =>
+    have := ih₁ rs
+    have := ih₂ rs
+    simp only [substBoundRud]; infer_instance
+  | allMem t ψ _ _ ih =>
+    have := ih (snoc (castSucc ∘ rs) (ᵣ-1))
+    simp only [substBoundRud]; infer_instance
 
 end DeltaZeroBoundedFormula
 
