@@ -588,6 +588,12 @@ theorem IsDefinable.remap {n' : ℕ} {A : Multiclass M n}
 instance {A : Multiclass M n} [hA : A.Definable P] (f : Fin n → Fin n') : (A.remap f).Definable P :=
   ⟨hA.isDefinable.remap f⟩
 
+theorem Sigma.definable {A : Multiclass M n} (hA : A.Sigma k P) : A.Definable P :=
+  let ⟨m, φ, _, vs, hvs, h⟩ := hA.isSigma
+  ⟨m, φ, vs, hvs, h⟩
+
+instance {A : Multiclass M n} [hA : A.Sigma 1 P] : A.Definable P := hA.definable
+
 end Definable
 
 end Multiclass

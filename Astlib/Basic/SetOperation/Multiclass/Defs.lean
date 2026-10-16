@@ -90,6 +90,11 @@ theorem ex_iff {n} (A : Multiclass M (n + 1)) (xs : Fin n → M) :
     convert hv
     exact List.ofFn_inj.mp rfl
 
+/-- Bounded universal quantification `∀ y ∈ xs i, A (xs, y)` -/
+@[simp]
+def allMem {n} (A : Multiclass M (n + 1)) (i : Fin n) : Multiclass M n :=
+  fun xs ↦ ∀ y ∈ xs i, A (snoc xs y)
+
 @[simp]
 def slice {n} (A : Multiclass M (n + m)) (vs : Fin m → M) : Multiclass M n :=
   fun xs ↦ A (append xs vs)

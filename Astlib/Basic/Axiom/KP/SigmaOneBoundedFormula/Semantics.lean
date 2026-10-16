@@ -11,6 +11,7 @@ import Astlib.Basic.SetOperation.Function
 import Astlib.Basic.SetOperation.Foundational
 import Astlib.Basic.SetOperation.Rudimentary.KP
 import Astlib.Mathlib.Fin.Tuple.Basic
+import Astlib.Basic.Ordinal.Transitive
 /-!
 file docstring
 -/
@@ -221,6 +222,18 @@ theorem Multiclass.exists_sigmaOneBoundedFormula_add_one [Extensional M] [RudBas
       realize'_switchBoundRight]
     simp [append_assoc]
 
+/-- `Σ₁` is closed under bounded universal quantification in models of `KP` -/
+instance [ModelsKP M] {n : ℕ} (A : Multiclass M (n + 1)) [A.Sigma 1 Set.univ] (i : Fin n) :
+    (A.allMem i).Sigma 1 Set.univ := by
+  obtain ⟨θ, v, rfl⟩ := Multiclass.exists_sigmaOneBoundedFormula_add_one A
+  -- `θ (xs, y, v)` becomes `∀ y ∈ xs i, θ (xs, y, v)` with the parameter `v` last
+  refine ⟨⟨1, (∀₁∈ (&(castSucc i)) (θ.substBoundBound
+    (snoc (snoc (castAdd 2) (last _)) (last _).castSucc))).toBoundedFormula, inferInstance, ![v],
+    by simp, ?_⟩⟩
+  funext xs
+  simp [SigmaOneBoundedFormula.realize_allMem, SigmaOneBoundedFormula.realize_substBoundBound,
+    append_right_eq_snoc, snoc_snoc_comp_snoc_snoc_castAdd_two]
+
 /-- Strong `Σ₁`-collection -/
 theorem exists_strong_collection_of_modelsKP [ModelsKP M] (F : Multiclass M 2)
     [F.Sigma 1 Set.univ] (a : M) (h : ∀ u ∈ a, ∃ w, F ![u, w]) :
@@ -278,6 +291,32 @@ instance [ModelsKP M] (x : M) (A : Class M) [A.Delta 1 Set.univ] : HasComprehens
     refine ⟨⋃₀ (G ''₀ x), fun z ↦ ?_⟩
     simp only [mem_sUnion_iff, mem_replacement_iff hGx, hG]
     grind
+
+/-- Every set is a member of a transitive set in models of `KP` -/
+theorem exists_mem_transitive_of_modelsKP [ModelsKP M] (x : M) :
+    ∃ y : M, x ∈ y ∧ Transitive y := by
+  -- `F ![u, t]`: `t` is a transitive set containing `u`
+  let F : Multiclass M 2 :=
+    ((&0 ∈₀ &1) ⊓ (ᵣ1).isTransitive : L.DeltaZeroBoundedFormula 2).toBoundedFormula.multiclass
+  have hF (u t : M) : F ![u, t] ↔ u ∈ t ∧ Transitive t := by
+    simp [F, DeltaZeroBoundedFormula.toBoundedFormula]
+  have hFex (x : M) : (F.ex : Class M) x ↔ ∃ t : M, x ∈ t ∧ Transitive t := by
+    simp [Multiclass.toClass_iff, hF]
+  rw [← hFex]
+  refine induction_of_modelsKP (fun x ih ↦ ?_) x
+  simp only [hFex] at ih ⊢
+  -- collect transitive sets containing the elements of `x`
+  obtain ⟨B, hB₁, hB₂⟩ := exists_strong_collection_of_modelsKP F x (by simpa [hF] using ih)
+  simp only [hF] at hB₁ hB₂
+  -- `⋃₀ B ∪ {x}` is a transitive set containing `x`
+  refine ⟨⋃₀ B ∪ {x}, by simp, fun z hz w hw ↦ ?_⟩
+  rw [mem_union_iff, mem_singleton_iff] at hz
+  rcases hz with hz | rfl
+  · rw [mem_sUnion_iff] at hz
+    obtain ⟨t, ht, hzt⟩ := hz
+    obtain ⟨_, -, -, htr⟩ := hB₂ t ht
+    grind [Transitive]
+  · grind
 
 end MemStructure
 

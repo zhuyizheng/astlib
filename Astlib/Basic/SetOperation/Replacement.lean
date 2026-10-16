@@ -44,7 +44,7 @@ theorem mem_replacement_iff {a : M} {F : Multiclass M 2} [hF : HasReplacement a 
 theorem mem_replacement_of_mem {a : M} {F : Multiclass M 2} [HasReplacement a F]
     (hFa : ∀ u ∈ a, ∃! w, F ![u, w]) {u w : M} (hu : u ∈ a) (hw : F ![u, w]) :
     w ∈ F ''₀ a :=
-  (mem_replacement_iff hFa w).2 ⟨u, hu, hw⟩
+  (mem_replacement_iff hFa w).mpr ⟨u, hu, hw⟩
 
 end MemStructure
 

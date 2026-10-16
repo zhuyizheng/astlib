@@ -718,6 +718,19 @@ theorem restrict_empty (f : M) : (f ↾ ∅) = ∅ := by
 theorem restrict_dom {f : M} (hf : IsFunction f) : (f ↾ dom f) = f := by
   apply hf.restrict (dom f) |>.ext hf <;> grind
 
+theorem dom_restrict_of_subset {f a : M} (hf : IsFunction f) (ha : a ⊆ dom f) :
+    dom (f ↾ a) = a := by
+  ext; grind
+
+/-- Two functions agreeing on a common subset of their domains have the same restriction to it -/
+theorem IsFunction.restrict_eq_restrict {f g a : M} (hf : IsFunction f) (hg : IsFunction g)
+    (hfa : a ⊆ dom f) (hga : a ⊆ dom g) (h : ∀ x ∈ a, f ﹫ x = g ﹫ x) : f ↾ a = g ↾ a := by
+  apply (hf.restrict a).ext (hg.restrict a)
+  · simp [hf, hfa, hg, hga]
+  · intro x hx
+    simp only [hf, dom_restrict, hfa, inter_of_subset_left] at hx
+    simp [val_restrict, hf, hg, h, hx, hfa hx, hga hx]
+
 end Restrict
 
 
