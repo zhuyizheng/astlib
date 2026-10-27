@@ -157,11 +157,20 @@ theorem olt_succ_iff (hb : Ordinal b) : a <ₒ succ b ↔ a ≤ₒ b := by grind
 @[simp, grind .]
 theorem olt_succ (ha : Ordinal a) : a <ₒ succ a := by simp [ha]
 
+@[simp, grind =]
 theorem succ_ole_iff (ha : Ordinal a) (hb : Ordinal b) : succ a ≤ₒ b ↔ a <ₒ b := by grind
 
 /-- A nonzero limit ordinal is closed under successors -/
 theorem NonZeroLimOrdinal.succ_olt (ha : NonZeroLimOrdinal a) (hb : b <ₒ a) : succ b <ₒ a :=
   olt_of_mem ha.ordinal (ha.succ_mem hb.mem)
+
+/-- A nonzero ordinal in which every element is below another is a nonzero limit -/
+theorem nonZeroLimOrdinal_of_forall_exists_olt (ha : Ordinal a) (ha₀ : a ≠ ∅)
+    (h : ∀ b <ₒ a, ∃ c <ₒ a, b <ₒ c) : NonZeroLimOrdinal a := by
+  rcases ha.cases_of_ne_empty ha₀ with ⟨β, hβ, rfl⟩ | hlim
+  · obtain ⟨c, hc, hβc⟩ := h β (olt_succ hβ)
+    grind
+  · exact hlim
 
 theorem empty_ole (hb : Ordinal b) : ∅ ≤ₒ b := by grind
 
@@ -603,6 +612,28 @@ instance (A : Multiclass M 2) [A.Definable Set.univ] :
   by_cases h : ∃ c, Ordinal c ∧ A ![x, c]
   · grind [Class.omin_eq, Class.omin_spec]
   · grind [Class.omin_eq_empty, empty_iff (x := v)]
+
+/-- The least element of a fixed set `S` in a `Δ₀` relation with `x` is a `Σ₁` class function of
+`x` -/
+instance (S : M) {R : M → M → Prop}
+    [Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ R (ys 0) (ys 1)) Set.univ] :
+    ClassFunction.Sigma (fun x ↦ Class.omin fun ξ ↦ ξ ∈ S ∧ R x ξ) 1 Set.univ := by
+  -- `w` is the least ordinal of `S` in relation with `x`, or there is none and `w = ∅`
+  refine ClassFunction.Sigma.of_iff (F := fun xs ↦
+    (Ordinal (xs 1) ∧ xs 1 ∈ S ∧ R (xs 0) (xs 1) ∧ ∀ c ∈ xs 1, ¬(c ∈ S ∧ R (xs 0) c)) ∨
+      ((∀ c ∈ S, Ordinal c → ¬R (xs 0) c) ∧ xs 1 = ∅)) (hF := by infer_instance) fun x w ↦ ?_
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+  by_cases h : ∃ ξ ∈ S, Ordinal ξ ∧ R x ξ
+  swap
+  · grind [Class.omin_eq_empty]
+  obtain ⟨ξ, hξ, hξo, hxξ⟩ := h
+  have hspec := Class.omin_spec (A := fun ξ ↦ ξ ∈ S ∧ R x ξ) hξo ⟨hξ, hxξ⟩
+  refine ⟨?_, fun hw ↦ .inl ?_⟩
+  · rintro (⟨hwo, hwS, hxw, hmin⟩ | ⟨hno, -⟩)
+    · exact Class.omin_eq hwo ⟨hwS, hxw⟩ hmin
+    · grind
+  · subst hw
+    exact ⟨hspec.left, hspec.right.left.left, hspec.right.left.right, hspec.right.right⟩
 
 /-- `supRange f` is `Σ₁` -/
 instance (f : M) : (supRange f).Sigma 1 Set.univ :=

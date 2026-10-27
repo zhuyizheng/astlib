@@ -322,6 +322,20 @@ instance {A : (Fin n → M) → M → Prop} (i : Fin n)
   rw [h]
   exact ⟨(hA.isDeltaZero.not.allMem i).not⟩
 
+/-- A `Δ₀` binary relation with its first argument fixed is a `Δ₀` class -/
+instance {R : M → M → Prop}
+    [hR : Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ R (ys 0) (ys 1)) Set.univ] (a : M) :
+    Class.DeltaZero (R a) Set.univ := by
+  -- `[x, a]`
+  let B : Multiclass M (1 + 1) := Multiclass.remap (fun ys : Fin 2 → M ↦ R (ys 0) (ys 1)) ![1, 0]
+  have hB : B.DeltaZero Set.univ := ⟨hR.isDeltaZero.remap _⟩
+  have h : R a = (B.slice ![a] : Class M) := by
+    funext x
+    simp [B, Multiclass.remap, Multiclass.slice, append_left_eq_cons]
+  have : (B.slice ![a]).DeltaZero Set.univ := ⟨hB.isDeltaZero.slice (by simp)⟩
+  rw [h]
+  infer_instance
+
 /-- A definable class applied to a coordinate is definable -/
 instance {A : Class M} [A.Definable P] (i : Fin n) :
     Multiclass.Definable (fun xs : Fin n → M ↦ A (xs i)) P := by
@@ -846,6 +860,15 @@ end MulticlassFunction
 namespace Multiclass
 
 variable {n : ℕ}
+
+/-- A `Δ₀` class applied to a variable is `Δ₀` -/
+instance {A : Class M} [A.DeltaZero P] (i : Fin n) :
+    Multiclass.DeltaZero (fun xs : Fin n → M ↦ A (xs i)) P := by
+  have h : (fun xs : Fin n → M ↦ A (xs i)) = (A : Multiclass M 1).remap ![i] := by
+    funext xs
+    simp [Multiclass.remap]
+  rw [h]
+  infer_instance
 
 /-- A `Σ₁` class applied to a `Σ₁` term is `Σ₁` -/
 instance [Nonempty M] {A : Class M} [A.Sigma 1 P] {t : (Fin n → M) → M}

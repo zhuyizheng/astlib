@@ -6,16 +6,20 @@ Authors: Yizheng Zhu
 import Astlib.Basic.Cardinal.Basic
 import Astlib.Basic.Axiom.Choice.Semantics
 import Astlib.Basic.Cardinal.Countable
+import Astlib.Basic.Ordinal.ClubStationary
 /-!
 # Cofinality
 
-A cofinal map from `β` into `α` is a function `f !: β → α` such that every `γ <ₒ α` is below a
-value `f ﹫ ξ` with `ξ <ₒ β`. The cofinality `cf α` of an ordinal `α` is the least ordinal with a
+A cofinal map from an ordinal `β` into `α` is a function `f !: β → α` whose range is unbounded in
+`α` (`UnboundedInOrd`). The cofinality `cf α` of an ordinal `α` is the least ordinal with a
 cofinal map into `α`, and `α` is regular if `cf α = α`. In models of `KP`:
 
 * `cf_ole`: `cf α ≤ₒ α`; `cf_empty`, `cf_succ`: `cf ∅ = ∅` and `cf (succ α) = succ ∅`;
 * `Regular.cardinal`: regular ordinals are cardinals;
 * `regular_omega`: `ω` is regular.
+
+If `cf α` is uncountable, the intersection of two clubs in `α` is a club (`ClubInOrd.inter`), and
+every club in `α` is stationary (`ClubInOrd.stationary`).
 
 In models of `ZFC`, the successor cardinal `csucc κ` of an infinite ordinal `κ` is regular
 (`regular_csucc`): a cofinal map `f` from `β ∈ csucc κ` together with chosen injections
@@ -30,77 +34,56 @@ open FirstOrder Language BoundedFormula DeltaZeroBoundedFormula Fin RudimentaryT
 
 namespace FirstOrder.Language
 
-namespace RudimentaryTerm
-
-variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
-
-/-- The `Δ₀` formula saying that `f` is a cofinal map from `β` into `α` -/
-noncomputable def isCofinalMap (f β α : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
-  -- `[f, β, α]`
-  ((ᵣ0).isFunctionFromTo (ᵣ1) (ᵣ2) ⊓
-    ∀₀∈ &2 ((ᵣ3).isOrdinal ⊓ (ᵣ2).isOrdinal ⟹ ∃₀∈ &1 ((ᵣ4).isOrdinal ⊓ (ᵣ1).isOrdinal ⊓
-      (ᵣ3).isOrdinal ⊓ ((ᵣ0) ﹫ (ᵣ4)).isOrdinal ⊓ ((&0 ∈₀ &1).substBoundRud ![ᵣ3, (ᵣ0) ﹫ (ᵣ4)] ⊔
-        (&0 =₀ &1).substBoundRud ![ᵣ3, (ᵣ0) ﹫ (ᵣ4)]))) :
-      L.DeltaZeroBoundedFormula 3).substBoundRud ![f, β, α]
-
-instance (f β α : L.RudimentaryTerm n) [f.CharFree] [β.CharFree] [α.CharFree] :
-    (isCofinalMap f β α).RelFree := by
-  unfold isCofinalMap; infer_instance
-
-end RudimentaryTerm
-
 namespace MemStructure
 
 variable {L : Language} {M : Type*} [L.MemStructure M]
   [L.ExtraConstantsUnaryRelationsOnly] [Inhabited M] [ModelsKP M] {α β f : M}
 
-/-- `f` is a cofinal map from `β` into `α` -/
-def IsCofinalMap (f β α : M) : Prop := f !: β → α ∧ ∀ γ <ₒ α, ∃ ξ <ₒ β, γ ≤ₒ f ﹫ ξ
+/-- `f` is a cofinal map from the ordinal `β` into `α`: its range is unbounded in `α` -/
+def IsCofinalMap (f β α : M) : Prop := Ordinal β ∧ f !: β → α ∧ UnboundedInOrd (ran f) α
 
 omit [ModelsKP M] in
-theorem IsCofinalMap.isFunctionFromTo (hf : IsCofinalMap f β α) : f !: β → α := hf.left
+theorem IsCofinalMap.ordinal (hf : IsCofinalMap f β α) : Ordinal β := hf.left
 
 omit [ModelsKP M] in
+theorem IsCofinalMap.isFunctionFromTo (hf : IsCofinalMap f β α) : f !: β → α := hf.right.left
+
+omit [ModelsKP M] in
+theorem IsCofinalMap.unboundedInOrd (hf : IsCofinalMap f β α) : UnboundedInOrd (ran f) α :=
+  hf.right.right
+
 theorem IsCofinalMap.exists_ole (hf : IsCofinalMap f β α) {γ : M} (hγ : γ <ₒ α) :
-    ∃ ξ <ₒ β, γ ≤ₒ f ﹫ ξ :=
-  hf.right γ hγ
+    ∃ ξ <ₒ β, γ ≤ₒ f ﹫ ξ := by
+  obtain ⟨y, hy, hγy⟩ := hf.unboundedInOrd.exists_ole hγ
+  simp only [hf.isFunctionFromTo.isFunction.mem_ran_iff, hf.isFunctionFromTo.dom_eq] at hy
+  obtain ⟨ξ, hξ, rfl⟩ := hy
+  exact ⟨ξ, olt_of_mem hf.ordinal hξ, hγy⟩
 
-@[simp]
-theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isCofinalMap {n : ℕ}
-    (f β α : L.RudimentaryTerm n) [f.CharFree] [β.CharFree] [α.CharFree] (xs : Fin n → M) :
-    (isCofinalMap f β α).toBoundedFormula 〘xs〙 ↔ IsCofinalMap (f〘xs〙 : M) β〘xs〙 α〘xs〙 := by
-  rw [isCofinalMap, DeltaZeroBoundedFormula.realize_substBoundRud]
-  simp only [isValue, Function.comp_apply, Nat.reduceAdd, RudimentaryTerm.val, Nat.succ_eq_add_one,
-    toBoundedFormula_inf, toBoundedFormula, toBoundedFormula_exMem, toBoundedFormula_sup,
-    realize'_inf, realize_isFunctionFromTo, realize_basic, Matrix.cons_val_zero,
-    Matrix.cons_val_one, Matrix.cons_val, BoundedFormula.realize_allMem, Term.realize'_var',
-    realize'_imp, realize_isOrdinal, snoc_nat, coe_ofNat_eq_mod, Nat.mod_succ, lt_self_iff_false,
-    ↓reduceDIte, Nat.reduceMod, Nat.lt_add_one, reduceFinMk, BoundedFormula.realize_exMem,
-    Nat.one_mod, Nat.one_lt_ofNat, mk_one, RudimentaryTerm.realize_substBoundRud, realize_val₀,
-    Nat.zero_mod, zero_lt_four, zero_eta, zero_lt_three, Matrix.cons_val_fin_one, realize'_sup,
-    DeltaZeroBoundedFormula.realize_substBoundRud, realize'_mem, realize'_bdEqual, and_imp,
-    IsCofinalMap, olt_iff, ole_iff, and_congr_right_iff]
-  refine fun _ ↦ ⟨fun h γ hγ hα hγα ↦ ?_, fun h γ hγα hγ hα ↦ ?_⟩
-  · grind [h γ hγα hγ hα]
-  · grind [h γ hγ hα hγα]
+/-- A function from an ordinal `β` whose values are unbounded in the ordinal `α` is a cofinal
+map -/
+theorem isCofinalMap_of_val (hα : Ordinal α) (hβ : Ordinal β) (hf : f !: β → α)
+    (h : ∀ γ <ₒ α, ∃ ξ <ₒ β, γ ≤ₒ f ﹫ ξ) : IsCofinalMap f β α := by
+  refine ⟨hβ, hf, ?_⟩
+  simp only [unboundedInOrd_iff hα]
+  intro γ hγ
+  obtain ⟨ξ, hξ, hγξ⟩ := h γ hγ
+  refine ⟨f ﹫ ξ, ?_, hγξ⟩
+  simp only [hf.isFunction.mem_ran_iff, hf.dom_eq]
+  exact ⟨ξ, hξ.mem, rfl⟩
 
 @[grind .]
-theorem isCofinalMap_id (α : M) : IsCofinalMap (id α) α α := by
-  refine ⟨isFunctionFromTo_id α, fun γ hγ ↦ ⟨γ, hγ, ?_⟩⟩
+theorem isCofinalMap_id (hα : Ordinal α) : IsCofinalMap (id α) α α := by
+  refine isCofinalMap_of_val hα hα (isFunctionFromTo_id α) fun γ hγ ↦ ⟨γ, hγ, ?_⟩
   rw [id_val α hγ.mem]
   exact ole_refl hγ.ordinal_left
 
 /-- The class of ordinals with a cofinal map into `x` -/
 def HasCofinalMap (x : M) : Class M := fun β ↦ ∃ f, IsCofinalMap f β x
 
-/-- `IsCofinalMap` is `Δ₀` -/
-instance : Multiclass.DeltaZero (fun ys : Fin 3 → M ↦ IsCofinalMap (ys 0) (ys 1) (ys 2))
+/-- `IsCofinalMap` is definable -/
+instance : Multiclass.Definable (fun ys : Fin 3 → M ↦ IsCofinalMap (ys 0) (ys 1) (ys 2))
     Set.univ := by
-  have h : (fun ys : Fin 3 → M ↦ IsCofinalMap (ys 0) (ys 1) (ys 2)) =
-      ((ᵣ0 : L.RudimentaryTerm 3).isCofinalMap (ᵣ1) (ᵣ2)).toBoundedFormula.multiclass := by
-    funext ys
-    simp
-  rw [h]
+  unfold IsCofinalMap
   infer_instance
 
 /-- `HasCofinalMap x β` is definable in `x` and `β` -/
@@ -116,14 +99,31 @@ theorem ordinal_cf (x : M) : Ordinal (cf x) :=
   Class.ordinal_omin _
 
 theorem exists_isCofinalMap_cf (hα : Ordinal α) : ∃ f, IsCofinalMap f (cf α) α :=
-  Class.omin_mem (A := HasCofinalMap α) hα ⟨_, isCofinalMap_id α⟩
+  Class.omin_mem (A := HasCofinalMap α) hα ⟨_, isCofinalMap_id hα⟩
 
 theorem cf_ole_of_isCofinalMap (hβ : Ordinal β) (hf : IsCofinalMap f β α) : cf α ≤ₒ β :=
   Class.omin_ole hβ ⟨f, hf⟩
 
 @[grind .]
 theorem cf_ole (hα : Ordinal α) : cf α ≤ₒ α :=
-  cf_ole_of_isCofinalMap hα (isCofinalMap_id α)
+  cf_ole_of_isCofinalMap hα (isCofinalMap_id hα)
+
+/-- The supremum of the values of a function from an ordinal `β <ₒ cf α` into `α` is below `α` -/
+theorem osup_ran_olt_of_olt_cf (hα : Ordinal α) (hβ : β <ₒ cf α) (hf : f !: β → α) :
+    osup (ran f) <ₒ α := by
+  have hran : ∀ y ∈ ran f, Ordinal y := fun y hy ↦ ordinal_of_mem hα (hf.ran_subset hy)
+  refine olt_of_ole_of_ne ?_ fun h ↦ ?_
+  · rw [osup_ole_iff hran hα]
+    exact fun y hy ↦ olt_of_mem hα (hf.ran_subset hy) |>.ole
+  -- otherwise `f` is a cofinal map from `β`
+  have hcof : IsCofinalMap f β α := by
+    refine isCofinalMap_of_val hα hβ.ordinal_left hf fun δ hδ ↦ ?_
+    rw [← h, olt_osup_iff hran hδ.ordinal_left] at hδ
+    obtain ⟨y, hy, hδy⟩ := hδ
+    rw [hf.isFunction.mem_ran_iff, hf.dom_eq] at hy
+    obtain ⟨n, hn, rfl⟩ := hy
+    exact ⟨n, olt_of_mem hβ.ordinal_left hn, hδy.ole⟩
+  grind [cf_ole_of_isCofinalMap hβ.ordinal_left hcof]
 
 @[simp, grind =]
 theorem cf_empty : cf (∅ : M) = ∅ := by
@@ -140,13 +140,13 @@ theorem cf_ne_empty (hα : Ordinal α) (hα₀ : α ≠ ∅) : cf α ≠ ∅ := 
 theorem cf_succ (hα : Ordinal α) : cf (succ α) = succ ∅ := by
   -- `singletonFun ∅ α` is a cofinal map from `succ ∅` into `succ α`
   have hcf : IsCofinalMap (singletonFun ∅ α) (succ ∅) (succ α) := by
-    refine ⟨?_, fun γ hγ ↦ ⟨∅, olt_succ ordinal_empty, ?_⟩⟩
+    refine isCofinalMap_of_val (by grind) (by grind) ?_ fun γ hγ ↦ ⟨∅, olt_succ ordinal_empty, ?_⟩
     · convert isFunctionFromTo_singletonFun (mem_succ_self α)
       simp [succ_empty]
     · simp only [singletonFun_val]
       grind
   refine ole_antisymm (cf_ole_of_isCofinalMap (by grind) hcf) ?_
-  rw [succ_ole_iff ordinal_empty (ordinal_cf _)]
+  simp only [succ_ole_iff ordinal_empty (ordinal_cf _)]
   exact olt_of_ole_of_ne (by grind) (by grind [cf_ne_empty])
 
 /-- A nonzero limit ordinal has a nonzero limit cofinality -/
@@ -162,12 +162,15 @@ theorem NonZeroLimOrdinal.nonZeroLimOrdinal_cf (hα : NonZeroLimOrdinal α) :
   have hlt : f ﹫ β <ₒ f ﹫ ξ₀ := by grind
   have hξ₀β : ξ₀ <ₒ β := by grind
   have hcf : IsCofinalMap (f ↾ β) β α := by
-    refine ⟨hf.isFunctionFromTo.restrict (by grind), fun γ hγ ↦ ?_⟩
+    refine isCofinalMap_of_val hα.ordinal hβ (hf.isFunctionFromTo.restrict (by grind))
+      fun γ hγ ↦ ?_
     obtain ⟨ξ, hξ, hγξ⟩ := hf.exists_ole hγ
     have hval {ζ : M} (hζ : ζ <ₒ β) : (f ↾ β) ﹫ ζ = f ﹫ ζ :=
       val_restrict _ hf.isFunctionFromTo.isFunction hζ.mem
         (by rw [hf.isFunctionFromTo.dom_eq]; exact mem_succ_of_mem hζ.mem)
-    grind
+    rcases mem_or_eq_of_ole ((olt_succ_iff hβ).mp hξ) with h | rfl
+    · grind [hval (olt_of_mem hβ h)]
+    · grind [hval hξ₀β]
   have : cf α ≤ₒ β := cf_ole_of_isCofinalMap hβ hcf
   grind
 
@@ -188,21 +191,14 @@ theorem cf_cf (hα : Ordinal α) : cf (cf α) = cf α := by
   have hr (y : M) (hy : y ∈ ran f) : Ordinal y := by grind
   have hgη {η : M} (hη : η <ₒ cf (cf α)) : g ﹫ η <ₒ cf α := by grind
   have hdom {η : M} (hη : η <ₒ cf (cf α)) : g ﹫ η ⊆ dom f := by grind
-  -- `supRange f (g ﹫ η) <ₒ α`: otherwise `f ↾ (g ﹫ η)` is cofinal and `cf α ≤ₒ g ﹫ η`
-  have hlt {η : M} (hη : η <ₒ cf (cf α)) : supRange f (g ﹫ η) <ₒ α := by
-    refine olt_of_ole_of_ne ?_ fun h ↦ ?_
-    · rw [supRange_ole_iff hr hff.isFunction (hdom hη) hα]
-      grind
-    have hcof : IsCofinalMap (f ↾ (g ﹫ η)) (g ﹫ η) α := by
-      refine ⟨hff.restrict (by grind), fun γ hγ ↦ ?_⟩
-      rw [← h, olt_supRange_iff hr hff.isFunction (hdom hη) hγ.ordinal_left] at hγ
-      obtain ⟨ξ, hξ', hγξ⟩ := hγ
-      exact ⟨ξ, by grind⟩
-    grind [cf_ole_of_isCofinalMap]
+  -- `supRange f (g ﹫ η) <ₒ α` as `g ﹫ η <ₒ cf α`
+  have hlt {η : M} (hη : η <ₒ cf (cf α)) : supRange f (g ﹫ η) <ₒ α :=
+    osup_ran_olt_of_olt_cf hα (hgη hη) (hff.restrict (by grind))
   -- `(supRange f).comp (g ﹫ ·) ↾₀ cf (cf α)` is a cofinal map into `α`
   have hcof : IsCofinalMap (((supRange f).comp fun η ↦ g ﹫ η) ↾₀ cf (cf α)) (cf (cf α)) α := by
-    refine ⟨⟨isFunction_toSetRestrictedTo hres, dom_toSetRestrictedTo hres, fun y hy ↦ ?_⟩,
-      fun γ hγ ↦ ?_⟩
+    refine isCofinalMap_of_val hα (ordinal_cf _)
+      ⟨isFunction_toSetRestrictedTo hres, dom_toSetRestrictedTo hres, fun y hy ↦ ?_⟩
+      fun γ hγ ↦ ?_
     · simp only [mem_ran_toSetRestrictedTo_iff hres] at hy
       simp only [ClassFunction.comp] at hy
       grind
@@ -228,19 +224,18 @@ theorem Regular.cf_eq (hα : Regular α) : cf α = α := hα.right
 /-- The cofinality of an ordinal is regular -/
 theorem regular_cf (hα : Ordinal α) : Regular (cf α) := ⟨ordinal_cf α, cf_cf hα⟩
 
-/-- A surjection from an ordinal is a cofinal map -/
+/-- A surjection from an ordinal onto an ordinal is a cofinal map -/
 @[grind .]
-theorem IsSurjectionFromTo.isCofinalMap (hβ : Ordinal β) (hf : f !: β ↠ α) :
+theorem IsSurjectionFromTo.isCofinalMap (hα : Ordinal α) (hβ : Ordinal β) (hf : f !: β ↠ α) :
     IsCofinalMap f β α := by
-  refine ⟨hf.isFunctionFromTo, fun γ hγ ↦ ?_⟩
-  obtain ⟨ξ, hξ, rfl⟩ := hf.exists_mem_val hγ.mem
-  exact ⟨ξ, olt_of_mem hβ hξ, ole_refl hγ.ordinal_left⟩
+  refine ⟨hβ, hf.isFunctionFromTo, fun γ hγ ↦ ⟨γ, ?_, ole_refl (ordinal_of_mem hα hγ)⟩⟩
+  rwa [hf.ran_eq]
 
 /-- Regular ordinals are cardinals -/
 @[grind .]
 theorem Regular.cardinal (hα : Regular α) : Cardinal α := by
   refine ⟨hα.ordinal, fun β hβ f hf ↦ ?_⟩
-  have h := cf_ole_of_isCofinalMap (by grind) (hf.isCofinalMap (by grind))
+  have h := cf_ole_of_isCofinalMap (by grind) (hf.isCofinalMap hα.ordinal (by grind))
   rw [hα.cf_eq] at h
   grind
 
@@ -271,7 +266,7 @@ theorem exists_bound_of_mem_omega (hn : n ∈ (ω : M)) (hf : f !: n → ω) :
 theorem regular_omega : Regular (ω : M) := by
   refine ⟨ordinal_omega, ole_antisymm (cf_ole ordinal_omega) ?_⟩
   by_contra h
-  rw [not_ole_iff ordinal_omega (ordinal_cf _)] at h
+  simp only [not_ole_iff ordinal_omega (ordinal_cf _)] at h
   -- a cofinal map from a natural number is bounded by some `m ∈ ω`
   obtain ⟨f, hf⟩ := exists_isCofinalMap_cf (ordinal_omega (M := M))
   obtain ⟨m, hm, hmf⟩ := exists_bound_of_mem_omega h.mem hf.isFunctionFromTo
@@ -279,6 +274,94 @@ theorem regular_omega : Regular (ω : M) := by
   grind
 
 end Omega
+
+section ClubInOrd
+
+variable [HasOmega M] {C D : M}
+
+/-- If `cf α` is uncountable, the intersection of two clubs in `α` is a club -/
+theorem ClubInOrd.inter (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hC : ClubInOrd C α)
+    (hD : ClubInOrd D α) : ClubInOrd (C ∩ D) α := by
+  have hlim : NonZeroLimOrdinal α := by
+    rcases hα.cases with rfl | ⟨β, hβ, rfl⟩ | hlim <;> grind
+  refine ⟨hC.closedInOrd.inter hα hD.closedInOrd, ?_⟩
+  simp only [unboundedInOrd_iff hα]
+  intro γ hγ
+  -- `next S x` is an element of the club `S` above `x <ₒ α`
+  have hnext {S x : M} (hS : ClubInOrd S α) (hx : x <ₒ α) :
+      next S x ∈ S ∧ x <ₒ next S x ∧ next S x <ₒ α := by
+    obtain ⟨ξ, hξ, hle⟩ := hS.unboundedInOrd.exists_ole (hlim.succ_olt hx)
+    have hns := next_spec (x := x) ⟨ξ, hξ, by grind⟩
+    exact ⟨hns.left, hns.right, by grind [hS.subset]⟩
+  -- iterate `x ↦ next D (next C x)` from `γ`: `s n <ₒ next C (s n) <ₒ s (succ n)`
+  let G : ClassFunction M := fun x ↦ next D (next C x)
+  have : G.Sigma 1 Set.univ := by unfold G; infer_instance
+  have hG {x : M} (hx : x <ₒ α) :
+      next C x ∈ C ∧ x <ₒ next C x ∧ next C x <ₒ G x ∧ G x ∈ D ∧ G x <ₒ α := by
+    grind
+  let s := natRec γ G
+  have hs {n : M} (hn : n ∈ (ω : M)) : s n <ₒ α :=
+    natRec_induction (A := fun x ↦ x <ₒ α) hγ (fun _ _ ih ↦ by grind) hn
+  have hsucc {n : M} (hn : n ∈ (ω : M)) : s (succ n) = G (s n) := natRec_succ _ _ (by grind)
+  -- `λ = osup (ran (s ↾₀ ω))`
+  have hr := isSetRestrictedTo_of_sigma (G := s) ω
+  have hmem {y : M} : y ∈ ran (s ↾₀ ω) ↔ ∃ n ∈ (ω : M), s n = y :=
+    mem_ran_toSetRestrictedTo_iff hr
+  have hran : ∀ y ∈ ran (s ↾₀ ω), Ordinal y := by
+    simp only [hmem]
+    grind
+  set lam := osup (ran (s ↾₀ ω))
+  have hlam : Ordinal lam := ordinal_osup hran
+  have hle {n : M} (hn : n ∈ (ω : M)) : s n ≤ₒ lam := ole_osup hran (by grind)
+  have hex {δ : M} (hδ : δ <ₒ lam) : ∃ n ∈ (ω : M), δ <ₒ s n := by
+    rw [olt_osup_iff hran hδ.ordinal_left] at hδ
+    obtain ⟨y, hy, hδy⟩ := hδ
+    simp only [hmem] at hy
+    obtain ⟨n, hn, rfl⟩ := hy
+    exact ⟨n, hn, hδy⟩
+  -- each `s (succ n)` is below `lam`
+  have hsucc_lt {n : M} (hn : n ∈ (ω : M)) : s (succ n) <ₒ lam := by
+    grind [hG (hs (succ_mem_omega hn)), hsucc (succ_mem_omega hn),
+      hle (succ_mem_omega (succ_mem_omega hn))]
+  have hlamlim : NonZeroLimOrdinal lam := by
+    refine nonZeroLimOrdinal_of_forall_exists_olt hlam ?_ fun δ hδ ↦ ?_
+    · grind [hsucc_lt empty_mem_omega]
+    · obtain ⟨n, hn, hδn⟩ := hex hδ
+      exact ⟨s (succ n), hsucc_lt hn, by grind [hsucc hn]⟩
+  -- `lam` is a limit point of `C` and of `D` below `α`
+  have hlamα : lam <ₒ α := osup_ran_olt_of_olt_cf hα hcf
+    (isFunctionFromTo_toSetRestrictedTo hr fun n hn ↦ (hs hn).mem)
+  have hlimC : IsLimitPoint C lam := by
+    refine ⟨hlamlim, ?_⟩
+    simp only [unboundedInOrd_iff hlam]
+    intro δ hδ
+    obtain ⟨n, hn, hδn⟩ := hex hδ
+    refine ⟨next C (s n), ?_, by grind [hG (hs hn)]⟩
+    simp only [mem_inter_iff]
+    grind [hG (hs hn)]
+  have hlimD : IsLimitPoint D lam := by
+    refine ⟨hlamlim, ?_⟩
+    simp only [unboundedInOrd_iff hlam]
+    intro δ hδ
+    obtain ⟨n, hn, hδn⟩ := hex hδ
+    exact ⟨s (succ n), by grind, by grind [hG (hs hn)]⟩
+  refine ⟨lam, ?_, ?_⟩
+  · simp only [mem_inter_iff]
+    exact ⟨hC.closedInOrd.mem_of_isLimitPoint hα hlamα hlimC,
+      hD.closedInOrd.mem_of_isLimitPoint hα hlamα hlimD⟩
+  · exact natRec_empty γ G ▸ hle empty_mem_omega
+
+/-- If `cf α` is uncountable, every club in `α` is stationary -/
+theorem ClubInOrd.stationary (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hC : ClubInOrd C α) :
+    StationaryInOrd C α := by
+  refine ⟨hC.subset, fun D hD ↦ ?_⟩
+  have hlim : NonZeroLimOrdinal α := by
+    rcases hα.cases with rfl | ⟨β, hβ, rfl⟩ | hlim <;> grind
+  obtain ⟨ξ, hξ, -⟩ := (hC.inter hα hcf hD).unboundedInOrd.exists_ole (olt_of_mem hα hlim.empty_mem)
+  simp only [ne_empty_iff]
+  exact ⟨ξ, hξ⟩
+
+end ClubInOrd
 
 section Choice
 
@@ -304,7 +387,7 @@ theorem regular_csucc {κ : M} (hκ : Ordinal κ) (hωκ : (ω : M) ≤ₒ κ) :
     (fun ys ↦ ∃ ξ <ₒ β, ys 0 <ₒ f ﹫ ξ ∧ ys 1 = !(ξ, (g ﹫ ξ) ﹫ ys 0)) (csucc κ)
   have hsx {x : M} (hx : x <ₒ csucc κ) :
       ∃ ξ <ₒ β, x <ₒ f ﹫ ξ ∧ s ﹫ x = !(ξ, (g ﹫ ξ) ﹫ x) := by
-    obtain ⟨ξ, hξ, hsub⟩ := hf.exists_ole (γ := succ x) (by grind)
+    obtain ⟨ξ, hξ, hsub⟩ := hf.exists_ole (γ := succ x) (by grind [NonZeroLimOrdinal.succ_olt])
     have hxξ : x <ₒ f ﹫ ξ := by grind
     exact hsP x hx.mem ⟨!(ξ, (g ﹫ ξ) ﹫ x), ξ, hξ, hxξ, rfl⟩
   -- `csucc κ ↪ β ×ˢ κ ↪ κ ×ˢ κ ↪ κ`
@@ -315,7 +398,7 @@ theorem regular_csucc {κ : M} (hκ : Ordinal κ) (hωκ : (ω : M) ≤ₒ κ) :
       exact mem_sprod _ _ _ _ hξ.mem ((hgI hξ).isFunctionFromTo.val_mem hxξ.mem)
     · obtain ⟨ξ, -, hxξ, hsx'⟩ := hsx (x := x) (by grind)
       obtain ⟨η, hη, hyη, hsy⟩ := hsx (x := y) (by grind)
-      rw [hsx', hsy, orderedPair_eq_orderedPair_iff] at hxy
+      simp only [hsx', hsy, orderedPair_eq_orderedPair_iff] at hxy
       obtain ⟨rfl, hval⟩ := hxy
       exact (hgI hη).eq hxξ.mem hyη.mem hval
   obtain ⟨q, hq⟩ := exists_isInjectionFromTo_sprod_self hωκ

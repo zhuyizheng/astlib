@@ -17,6 +17,7 @@ import Astlib.Basic.Order.StrictWellFounded
 import Astlib.Basic.Order.StrictWellOrder
 import Astlib.Basic.Ordinal.Add
 import Astlib.Basic.Ordinal.Basic
+import Astlib.Basic.Ordinal.ClubStationary
 import Astlib.Basic.Ordinal.Function
 import Astlib.Basic.Ordinal.Mul
 import Astlib.Basic.Ordinal.Omega

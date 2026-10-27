@@ -157,3 +157,32 @@ theorem inter_union_distrib_right : x ∩ y ∪ z = (x ∪ z) ∩ (y ∪ z) := b
   ext; grind
 
 end FirstOrder.Language.MemStructure
+
+namespace FirstOrder.Language.MemStructure
+
+open Fin
+
+variable {L : Language} {M : Type*} [L.MemStructure M] [Inhabited M]
+  [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] {n : ℕ} {P : Set M}
+
+/-- Bounded existential quantification over `xs i ∩ xs j` of a `Δ₀` multiclass is `Δ₀` -/
+instance {A : (Fin n → M) → M → Prop} (i j : Fin n)
+    [Multiclass.DeltaZero (fun ys : Fin (n + 1) → M ↦ A (fun k ↦ ys k.castSucc) (ys (last n))) P] :
+    Multiclass.DeltaZero (fun xs ↦ ∃ y ∈ xs i ∩ xs j, A xs y) P := by
+  have h : (fun xs ↦ ∃ y ∈ xs i ∩ xs j, A xs y) = fun xs ↦ ∃ y ∈ xs i, y ∈ xs j ∧ A xs y := by
+    funext xs
+    simp [mem_inter_iff, and_assoc]
+  rw [h]
+  infer_instance
+
+/-- Bounded universal quantification over `xs i ∩ xs j` of a `Δ₀` multiclass is `Δ₀` -/
+instance {A : (Fin n → M) → M → Prop} (i j : Fin n)
+    [Multiclass.DeltaZero (fun ys : Fin (n + 1) → M ↦ A (fun k ↦ ys k.castSucc) (ys (last n))) P] :
+    Multiclass.DeltaZero (fun xs ↦ ∀ y ∈ xs i ∩ xs j, A xs y) P := by
+  have h : (fun xs ↦ ∀ y ∈ xs i ∩ xs j, A xs y) = fun xs ↦ ∀ y ∈ xs i, y ∈ xs j → A xs y := by
+    funext xs
+    simp [mem_inter_iff]
+  rw [h]
+  infer_instance
+
+end FirstOrder.Language.MemStructure
