@@ -12,7 +12,7 @@ open FirstOrder Language BoundedFormula MemStructure RudimentaryTerm Fin
 
 namespace FirstOrder.Language
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M] [L.ExtraConstantsUnaryRelationsOnly]
   [RudClosed M] [Extensional M]
 
@@ -27,11 +27,6 @@ instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
   (r : L.RudimentaryTerm n) [r.CharFree] :
   r.isOrderedPair.RelFree := by
   unfold isOrderedPair; infer_instance
-
-
--- noncomputable abbrev isOrderedPair1 {M : MemStructure} (r : L.RudimentaryTerm n) :
---   L.BoundedFormula' n :=
---   r.isOrderedPair.castLHom.toBoundedFormula
 
 @[simp]
 theorem realize_isOrderedPair (r : L.RudimentaryTerm n) [r.CharFree] (xs : Fin n → M) :
@@ -87,6 +82,9 @@ theorem RudimentaryTerm.realize_left₀ (xs : Fin 1 → M) :
       simpa [snoc_nat, cons_nat, init_def, RudimentaryTerm.sUnion]
     grind [IsOrderedPair]
 
+instance [Extensional M] [RudClosed M] : (left : ClassFunction M).DeltaZero Set.univ :=
+  ClassFunction.deltaZero_of_eq RudimentaryTerm.left₀ fun _ ↦ by simp
+
 noncomputable def RudimentaryTerm.right₀ {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] :
   L.RudimentaryTerm 1 :=
   ᵣ⋃₀ (∃₀∈ &2 ((&0 =₀ &1).substBoundRud ![ᵣ1, ᵣ(ᵣ3, ᵣ0)])
@@ -126,6 +124,9 @@ theorem RudimentaryTerm.realize_right₀ (xs : Fin 1 → M) :
     suffices ∀ x ∈ a, z ∈ x → ∀ (x x_1 : M), x_1 ∈ a → x ∈ x_1 → ¬a = !(x, z) by
       simpa [snoc_nat, cons_nat, init_def, RudimentaryTerm.sUnion]
     grind [IsOrderedPair]
+
+instance [Extensional M] [RudClosed M] : (right : ClassFunction M).DeltaZero Set.univ :=
+  ClassFunction.deltaZero_of_eq RudimentaryTerm.right₀ fun _ ↦ by simp
 
 namespace DeltaZeroBoundedFormula
 

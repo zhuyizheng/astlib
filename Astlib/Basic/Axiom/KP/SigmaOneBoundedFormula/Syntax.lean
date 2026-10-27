@@ -6,14 +6,14 @@ Authors: Yizheng Zhu
 import Astlib.Basic.SetOperation.MemStructure.Levy
 import Astlib.Basic.SetOperation.Rudimentary.Syntax
 import Astlib.Basic.SetOperation.Pair.Syntax
-import Astlib.Basic.SetOperation.Rudimentary.KP
+import Astlib.Basic.SetOperation.Rudimentary.Basis.Semantics
 /-!
 file docstring
 -/
 
 open FirstOrder Language BoundedFormula Theory Fin
 
-variable {L : FirstOrder.Language.{u, v}} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+variable {L : FirstOrder.Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
 
 namespace FirstOrder
 
@@ -37,7 +37,7 @@ def DeltaZeroBoundedFormula.mergeLast :
   | _, 0, φ => φ
   | n, m + 1, φ =>
     -- move `yₘ₊₁` in front of `y₀`, merge `y₀, …, yₘ` into `p'`, and merge `p'` with `yₘ₊₁`
-    ((mergeLast (n := n + 1) m (φ.substBoundBound
+    ((mergeLast m (φ.substBoundBound
       (snoc (append (fun i ↦ castAdd (m + 1) i.castSucc) (natAdd (n + 1)))
         (castAdd (m + 1) (last n))))).substBoundBound
       (snoc (snoc (castAdd 2) (last (n + 1))) (last n).castSucc)).mergeLastTwo

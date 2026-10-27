@@ -66,10 +66,12 @@ theorem all_iff {n} (A : Multiclass M (n + 1)) (xs : Fin n → M) :
   constructor
   · intro h v
     convert h ![v]
-    exact List.ofFn_inj.mp rfl
+    rw [← List.ofFn_inj]
+    exact rfl
   · intro h vs
     convert h (vs 0)
-    exact List.ofFn_inj.mp rfl
+    rw [← List.ofFn_inj]
+    exact rfl
 
 @[simp]
 def ex' {n} (m) (A : Multiclass M (n + m)) : Multiclass M n := fun xs ↦ ∃ vs, A (append xs vs)
@@ -84,11 +86,13 @@ theorem ex_iff {n} (A : Multiclass M (n + 1)) (xs : Fin n → M) :
   · intro ⟨vs, hvs⟩
     refine ⟨vs 0, ?_⟩
     convert hvs
-    exact List.ofFn_inj.mp rfl
+    rw [← List.ofFn_inj]
+    exact rfl
   · intro ⟨v, hv⟩
     refine ⟨![v], ?_⟩
     convert hv
-    exact List.ofFn_inj.mp rfl
+    rw [← List.ofFn_inj]
+    exact rfl
 
 /-- Bounded universal quantification `∀ y ∈ xs i, A (xs, y)` -/
 @[simp]
@@ -286,15 +290,15 @@ theorem remap_iff : (A ⇔ B).remap f = (A.remap f) ⇔ (B.remap f) := by funext
 
 /-- The multiclass of `xs` with `xs i = xs j` -/
 @[simp]
-def Eq (n) (i j : Fin n) : Multiclass M n := fun xs ↦ xs i = xs j
+def Eq {n} (i j : Fin n) : Multiclass M n := fun xs ↦ xs i = xs j
 
 /-- The multiclass of `xs` with `xs i ∈ xs j` -/
 @[simp]
-def Mem (n) (i j : Fin n) : Multiclass M n := fun xs ↦ xs i ∈ xs j
+def Mem {n} (i j : Fin n) : Multiclass M n := fun xs ↦ xs i ∈ xs j
 
 /-- The multiclass of `xs` with `xs i ⊆ xs j` -/
 @[simp]
-def Subset (n) (i j : Fin n) : Multiclass M n := fun xs ↦ xs i ⊆ xs j
+def Subset {n} (i j : Fin n) : Multiclass M n := fun xs ↦ xs i ⊆ xs j
 
 -- /-- For any `xs`, there is `x` with `A (snoc xs x)` -/
 -- def AllEx (A : Multiclass M (n + 1)) := ∀ xs : Fin n → M, ∃ x, A (snoc xs x)
@@ -307,6 +311,13 @@ def Subset (n) (i j : Fin n) : Multiclass M n := fun xs ↦ xs i ⊆ xs j
 -- def AllExUnique (A : Multiclass M (n + 1)) := ∀ xs : Fin n → M, ∃! x, A (snoc xs x)
 
 end MemStructure.Multiclass
+
+/-- The membership relation `y ∈ x` as a class relation -/
+def MemStructure.MemRel : Multiclass M 2 := Multiclass.Mem 0 1
+
+@[simp]
+theorem MemStructure.memRel_iff (x y : M) : (MemRel : Multiclass M 2) ![y, x] ↔ y ∈ x := by
+  simp [MemRel]
 
 
 namespace BoundedFormula
@@ -406,6 +417,7 @@ lemma multiclass_subset :
 end BoundedFormula
 
 
+@[implicit_reducible]
 def MemStructure.Class {L : Language} (M : Type*) [L.MemStructure M] := M → Prop
 
 
@@ -457,8 +469,11 @@ lemma toClass_toMulticlass (A : Class M) : ((A : Multiclass M 1) : Class M) = A 
 lemma _root_.FirstOrder.Language.MemStructure.Multiclass.toMulticlass_toClass (A : Multiclass M 1) :
     ((A : Class M) : Multiclass M 1) = A := by
   funext xs
-  have : xs = ![xs 0] := List.ofFn_inj.mp rfl
-  rw [eq_iff_iff, toMulticlass_iff, Multiclass.toClass_iff, ← this]
+  have : xs = ![xs 0] := by
+    ext i
+    fin_cases i
+    rfl
+  simp only [toMulticlass_iff, Multiclass.toClass_iff, ← this]
 
 @[simp, norm_cast]
 theorem toMulticlass_inj {A B : Class M} : (A : Multiclass M 1) = B ↔ A = B :=
@@ -600,19 +615,19 @@ lemma inf_iff : (A ⊓ B) x ↔ A x ∧ B x := by norm_cast
 lemma iff_iff : (A ⇔ B) x ↔ (A x ↔ B x) := by norm_cast
 
 /-- The class of `x` with `x = c` -/
-def Eq (c : M) : Class M := Multiclass.Eq 2 0 1 |>.slice₀ c
+def Eq (c : M) : Class M := Multiclass.Eq (0 : Fin 2) 1 |>.slice₀ c
 
 @[simp]
 theorem eq_iff (c x : M) : Eq c x ↔ x = c := by norm_cast
 
 /-- The class of `x` with `x ∈ c` -/
-def Mem (c : M) : Class M := Multiclass.Mem 2 0 1 |>.slice₀ c
+def Mem (c : M) : Class M := MemRel.slice₀ c
 
 @[simp]
 theorem mem_iff (c x : M) : Mem c x ↔ x ∈ c := by norm_cast
 
 /-- The class of `x` with `x ⊆ c` -/
-def Subset (c : M) : Class M := Multiclass.Subset 2 0 1 |>.slice₀ c
+def Subset (c : M) : Class M := Multiclass.Subset (0 : Fin 2) 1 |>.slice₀ c
 
 @[simp]
 theorem subset_iff (c x : M) : Subset c x ↔ x ⊆ c := by norm_cast
@@ -661,12 +676,12 @@ theorem proj_eq {n} (i : Fin n) (xs : Fin n → M) : MulticlassFunction.proj i x
 @[norm_cast]
 theorem cast_proj {n} (i : Fin n) :
     MulticlassFunction.toMulticlass (M := M) (MulticlassFunction.proj i) =
-      Multiclass.Eq (n + 1) (i.castSucc) (Fin.last n) := by
+      Multiclass.Eq (i.castSucc) (Fin.last n) := by
   norm_cast
 
 theorem eq_remap_imp_eq {F : MulticlassFunction M n} :
     F = ((F : Multiclass M (n + 1)).remap (snoc (castAdd 2) (last _)) ⟹
-      Multiclass.Eq (n + 2) (last _).castSucc (last _)).all := by
+      Multiclass.Eq (last n).castSucc (last (n + 1))).all := by
   funext xs
   simp only [toMulticlass, Multiclass.all_iff, Multiclass.imp, Multiclass.remap,
     Function.comp_apply, snoc_last, Multiclass.Eq, snoc_castSucc, eq_iff_iff]
@@ -820,5 +835,9 @@ theorem cast_comp (F G : ClassFunction M) :
   norm_cast
 
 end ClassFunction
+
+@[simp]
+theorem Class.subst_toMulticlassFunction_apply (A : Class M) (F : ClassFunction M)
+    (xs : Fin 1 → M) : A.subst (F : MulticlassFunction M 1) xs ↔ A (F (xs 0)) := .rfl
 
 end FirstOrder.Language.MemStructure

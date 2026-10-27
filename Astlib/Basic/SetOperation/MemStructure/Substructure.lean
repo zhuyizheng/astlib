@@ -8,7 +8,7 @@ import Mathlib.ModelTheory.Substructures
 import Astlib.Mathlib.ModelTheory.Semantics
 import Astlib.Basic.SetOperation.MemStructure.Defs
 import Astlib.Basic.SetOperation.Multiclass.Defs
-import Astlib.Basic.SetOperation.Multiclass.Levy
+import Astlib.Basic.SetOperation.Multiclass.Lambda
 import Astlib.Mathlib.Fin.Basic
 import Astlib.Mathlib.Sum.Basic
 /-!
@@ -21,7 +21,7 @@ namespace FirstOrder
 
 namespace Language
 
-variable {m n : ℕ} {L : Language.{u, v}} {M : Type max u v} [L.MemStructure M]
+variable {m n : ℕ} {L : Language} {M : Type*} [L.MemStructure M]
   -- (t : L.Term' n) (φ : L.BoundedFormula' (n + 1))
   -- {xs : Fin n → M}
 
@@ -32,8 +32,11 @@ def toClass (a : M) : Class M := Class.Mem a
 
 instance : Coe M (Class M) := ⟨toClass⟩
 
+@[simp]
+theorem toClass_iff_mem (a x : M) : toClass a x ↔ x ∈ a := Class.mem_iff a x
+
 instance (a : M) : (toClass a).DeltaZero Set.univ := by
-  simp only [toClass]
+  unfold toClass
   infer_instance
 
 theorem toClass_subset {a b : M} (hab : a ⊆ b) : (a : Class M) ⊆ (b : Class M) := by
@@ -48,7 +51,7 @@ instance : IsTrans (Class M) Subset := ⟨@Class.trans _ _ _⟩
 theorem Class.mem_trans {x : M} {A B : Class M} (hxA : A x) (hAB : A ⊆ B) : B x :=
   hAB x hxA
 
-instance : Trans (α := M) (β := Class M) (γ := Class M)
+instance : Trans (γ := Class M)
   (fun x A ↦ A x) Subset (fun x B ↦ B x) :=
   ⟨fun hxy hyz ↦ hyz _ hxy⟩
 

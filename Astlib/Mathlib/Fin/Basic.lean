@@ -18,6 +18,17 @@ variable {α : Type*} {m n p : ℕ} (a : Fin m → α) (b : Fin n → α) (c : F
 open Fin Nat
 
 
+/-- A constant function on `Fin 1` is a one-element vector -/
+theorem Matrix.fun_fin_one_eq : (fun _ : Fin 1 ↦ x) = ![x] := by
+  funext i
+  fin_cases i
+  rfl
+
+/-- A function on `Fin 2` is the vector of its two values -/
+theorem Matrix.vec_fin_two_eq (v : Fin 2 → α) : ![v 0, v 1] = v := by
+  ext i
+  fin_cases i <;> rfl
+
 @[simp, grind =]
 theorem Fin.cast_comp_cast {n m k : ℕ} (h : n = m) (h' : m = k) :
     Fin.cast h' ∘ Fin.cast h  = Fin.cast (Eq.trans h h') := by
@@ -32,11 +43,38 @@ theorem Fin.snoc_castSucc_last : snoc (fun i ↦ i.castSucc) (last n) = id := by
 @[simp]
 theorem Fin.snoc_val_last_eq_cast {n' : ℕ} (h : n = n') :
     snoc (fun i ↦ (⟨i.val, i.prop.trans (h ▸ n'.lt_add_one)⟩)) (last n') =
-      Fin.cast (Nat.succ_inj.mpr h) := by
+      Fin.cast (congrArg (· + 1) h) := by
   ext i
   cases i using Fin.lastCases with
   | last => simp
   | cast i' => simp
+
+@[simp]
+theorem Fin.append_vec₁_vec₁ (x₀ x₁ : α) : append ![x₀] ![x₁] = ![x₀, x₁] := by
+  ext i; fin_cases i <;> rfl
+
+@[simp]
+theorem Fin.append_vec₁_vec₂ (x₀ x₁ x₂ : α) : append ![x₀] ![x₁, x₂] = ![x₀, x₁, x₂] := by
+  ext i; fin_cases i <;> rfl
+
+@[simp]
+theorem Fin.append_vec₁_vec₃ (x₀ x₁ x₂ x₃ : α) :
+    append ![x₀] ![x₁, x₂, x₃] = ![x₀, x₁, x₂, x₃] := by
+  ext i; fin_cases i <;> rfl
+
+@[simp]
+theorem Fin.append_vec₂_vec₁ (x₀ x₁ x₂ : α) : append ![x₀, x₁] ![x₂] = ![x₀, x₁, x₂] := by
+  ext i; fin_cases i <;> rfl
+
+@[simp]
+theorem Fin.append_vec₂_vec₂ (x₀ x₁ x₂ x₃ : α) :
+    append ![x₀, x₁] ![x₂, x₃] = ![x₀, x₁, x₂, x₃] := by
+  ext i; fin_cases i <;> rfl
+
+@[simp]
+theorem Fin.append_vec₂_vec₄ (x₀ x₁ x₂ x₃ x₄ x₅ : α) :
+    append ![x₀, x₁] ![x₂, x₃, x₄, x₅] = ![x₀, x₁, x₂, x₃, x₄, x₅] := by
+  ext i; fin_cases i <;> rfl
 
 @[simp]
 theorem Fin.append_comp_castAdd : append a b ∘ (castAdd n) = a := by ext i; simp
@@ -61,13 +99,13 @@ theorem Fin.snoc_comp_snoc' (f : Fin n → Fin m) :
 @[simp]
 theorem Fin.castLE_succ_castSucc (n : ℕ) : Fin.castLE n.le_succ = Fin.castSucc := by rfl
 
-theorem Fin.castLE_add_two_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 2) (by omega) =
+theorem Fin.castLE_add_two_castSucc (n : ℕ) : Fin.castLE (m := n + 2) (by omega) =
     Fin.castSucc ∘ Fin.castSucc := by rfl
 
-theorem Fin.castLE_add_three_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 3) (by omega) =
+theorem Fin.castLE_add_three_castSucc (n : ℕ) : Fin.castLE (m := n + 3) (by omega) =
     Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc := by rfl
 
-theorem Fin.castLE_add_four_castSucc (n : ℕ) : Fin.castLE (n := n) (m := n + 4) (by omega) =
+theorem Fin.castLE_add_four_castSucc (n : ℕ) : Fin.castLE (m := n + 4) (by omega) =
     Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc ∘ Fin.castSucc := by rfl
 
 @[simp]
@@ -75,8 +113,13 @@ theorem snoc_snoc_comp_castSucc_castSucc {α : Sort*} {a b : α} {f : Fin n → 
     (snoc (snoc f a : Fin (n + 1) → α) b) ∘ castSucc ∘ castSucc = f := by
   simp [← Function.comp_assoc]
 
+/-- A version of `Fin.comp_snoc` with lambdas instead of function composition. -/
+theorem Fin.comp_snoc' {α β : Sort*} (g : α → β) (q : Fin n → α) (y : α) :
+    (fun i ↦ g (snoc (α := fun _ ↦ α) q y i)) = snoc (fun i ↦ g (q i)) (g y) :=
+  comp_snoc g q y
+
 theorem castLE_add_two_eq_castSucc_castSucc :
-    castLE (n := n) (m := n + 2) (by omega) =  castSucc ∘ castSucc := by
+    castLE (m := n + 2) (by omega) =  castSucc ∘ castSucc := by
   ext; simp
 
 @[simp]
@@ -104,9 +147,9 @@ theorem Fin.val_last_plus_two_minus_three : (last (n + 3) - 3).val = n := by
 
 -- @[simp]
 -- theorem Fin.val_last_plus_minus :
---     (last (n + p) - OfNat.ofNat (α := Fin (n + p + 1)) p).val = n := by
+--     (last (n + p) - OfNat.ofNat p).val = n := by
 --   simp only [OfNat.ofNat, last, ofNat_eq_cast, sub_def, val_natCast]
---   rw [Nat.mod_eq_of_lt (a := p) (by lia), Nat.mod_eq_sub_mod (by omega)]
+--   rw [Nat.mod_eq_of_lt (by lia), Nat.mod_eq_sub_mod (by omega)]
 --   convert Nat.mod_eq_of_lt ?_ <;> grind
 
 theorem Fin.cons_nat (i : Fin (m + 1)) :
@@ -137,12 +180,11 @@ theorem snoc_comp_castLE {n m : ℕ} {α : Sort*} (f : Fin n → α) (a : α) (h
 @[simp]
 theorem Fin.exists_fin_add {P : Fin (n + m) → Prop} :
     (∃ i, P i) ↔ (∃ i : Fin n, P (i.castAdd m)) ∨ (∃ i : Fin m, P (i.natAdd n)) := by
-  constructor
-  · intro ⟨i, hi⟩
-    cases i using Fin.addCases with
-    | left i => exact Or.inl ⟨i, hi⟩
-    | right i => exact Or.inr ⟨i, hi⟩
-  · grind
+  refine ⟨?_, by grind⟩
+  intro ⟨i, hi⟩
+  cases i using Fin.addCases with
+  | left i => exact Or.inl ⟨i, hi⟩
+  | right i => exact Or.inr ⟨i, hi⟩
 
   -- ⟨fun ⟨i, h⟩ => Fin.lastCases Or.inr (fun i hi => Or.inl ⟨i, hi⟩) i h,
   --  fun h => h.elim (fun ⟨i, hi⟩ => ⟨i.castSucc, hi⟩) (fun h => ⟨.last _, h⟩)⟩
@@ -322,7 +364,8 @@ theorem Fin.snoc_snoc_eq_append (xs : Fin n → α) (u w : α) :
   simp only [succ_eq_add_one, Nat.reduceAdd, snoc_eq_append, append_assoc, cast_refl,
     Function.comp_id]
   congr
-  exact List.ofFn_inj.mp rfl
+  rw [← List.ofFn_inj]
+  exact rfl
 
 
 /-- Peeling one `castSucc` off `castAdd`. Together with `snoc_castSucc` and `snoc_last`, this
@@ -351,6 +394,17 @@ theorem Fin.append_snoc_comp_snoc_append_castAdd_natAdd {n m : ℕ} (xs : Fin n 
   | cast i =>
     simp only [Function.comp_apply, snoc_castSucc]
     refine addCases (fun j ↦ ?_) (fun j ↦ ?_) i <;> simp [append_left, append_right]
+
+/-- Moving the last variable behind the last `m` variables -/
+theorem Fin.snoc_append_comp_append_snoc_castSucc_natAdd {n m : ℕ} (xs : Fin n → α) (y : α)
+    (zs : Fin m → α) :
+    snoc (append xs zs) y ∘
+      append (snoc (castSucc ∘ castAdd m) (last (n + m))) (castSucc ∘ natAdd n) =
+        append (snoc xs y) zs := by
+  funext j
+  refine addCases (fun k ↦ ?_) (fun k ↦ ?_) j
+  · refine lastCases ?_ (fun l ↦ ?_) k <;> simp
+  · simp only [Function.comp_apply, append_right, snoc_castSucc]
 
 theorem Fin.snoc_snoc_snoc_comp_snoc_castAdd_three_castSucc (xs : Fin n → α) (a b c : α) :
     snoc (snoc (snoc xs a) b) c ∘ snoc (castAdd 3) (last (n + 1)).castSucc = snoc xs b := by

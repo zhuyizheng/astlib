@@ -10,7 +10,7 @@ file docstring
 
 open FirstOrder Language BoundedFormula Fin MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v} [L.MemStructure M] {α : Type*}
+variable {L : Language} {M : Type*} [L.MemStructure M] {α : Type*}
   {n k l m : ℕ} {P : Set M}
   {A B : Multiclass M n}
 
@@ -148,22 +148,39 @@ theorem IsDeltaZero.remap {A : Multiclass M n}
 instance [hA : A.DeltaZero P] {f : Fin n → Fin n'} : (A.remap f).DeltaZero P :=
   ⟨hA.isDeltaZero.remap f⟩
 
+/-- Bounded universal quantification of a `Δ₀` multiclass is `Δ₀` -/
+theorem IsDeltaZero.allMem {A : Multiclass M (n + 1)} (hA : A.IsDeltaZero P) (i : Fin n) :
+    (A.allMem i).IsDeltaZero P := by
+  obtain ⟨m, φ, hφ, vs, hvs, rfl⟩ := hA
+  -- the variables `[xs, y, vs]` of `φ` become `[xs, vs, y]`
+  let σ : Fin (n + 1 + m) → Fin (n + m + 1) :=
+    append (snoc (castSucc ∘ castAdd m) (last (n + m))) (castSucc ∘ natAdd n)
+  refine ⟨m, ∀'∈ &(castAdd m i) (φ.substBoundBound σ), by infer_instance, vs, hvs, ?_⟩
+  funext xs
+  simp [BoundedFormula.allMem, σ, snoc_append_comp_append_snoc_castSucc_natAdd]
+
+instance {A : Multiclass M (n + 1)} [hA : A.DeltaZero P] (i : Fin n) :
+    (A.allMem i).DeltaZero P :=
+  ⟨hA.isDeltaZero.allMem i⟩
+
 variable (i j : Fin n)
 
-lemma isDeltaZero_eq : (Eq (M := M) n i j).IsDeltaZero P :=
+lemma isDeltaZero_eq : (Eq i j).IsDeltaZero P :=
   ⟨0, &i =' &j, by infer_instance, elim0, by simp, by rw [multiclass_eq]; simp⟩
 
-instance : (Eq (M := M) n i j).DeltaZero P := ⟨isDeltaZero_eq i j⟩
+instance : (Eq i j).DeltaZero P := ⟨isDeltaZero_eq i j⟩
 
-lemma isDeltaZero_mem : (Mem (M := M) n i j).IsDeltaZero P :=
+lemma isDeltaZero_mem : (Mem i j).IsDeltaZero P :=
   ⟨0, &i ∈' &j, by infer_instance, elim0, by simp, by rw [multiclass_mem]; simp⟩
 
-instance : (Mem (M := M) n i j).DeltaZero P := ⟨isDeltaZero_mem i j⟩
+instance : (Mem i j).DeltaZero P := ⟨isDeltaZero_mem i j⟩
 
-lemma isDeltaZero_subset : (Subset (M := M) n i j).IsDeltaZero P :=
+instance : (MemRel : Multiclass M 2).DeltaZero P := ⟨isDeltaZero_mem 0 1⟩
+
+lemma isDeltaZero_subset : (Subset i j).IsDeltaZero P :=
   ⟨0, &i ⊆' &j, by infer_instance, elim0, by simp, by rw [multiclass_subset]; simp⟩
 
-instance : (Subset (M := M) n i j).DeltaZero P := ⟨isDeltaZero_subset i j⟩
+instance : (Subset i j).DeltaZero P := ⟨isDeltaZero_subset i j⟩
 
 end DeltaZero
 
@@ -193,9 +210,13 @@ theorem IsPi.all' (hA : A.IsPi (k + 1) P) :
   exact ⟨m, φ.castAssoc.switchBoundRight.castAssoc'.all' _, by infer_instance, vs, hvs,
     by funext; simp⟩
 
-instance [hA : A.Pi (k + 1) P] : (A.all' _).Pi (k + 1) P := ⟨hA.isPi.all' ⟩
+instance [NeZero k] [hA : A.Pi k P] : (A.all' _).Pi k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
+  exact ⟨hA.isPi.all'⟩
 
-instance {A : Multiclass M (n + 1)} [hA : A.Pi (k + 1) P] : A.all.Pi (k + 1) P := ⟨hA.isPi.all'⟩
+instance {A : Multiclass M (n + 1)} [NeZero k] [hA : A.Pi k P] : A.all.Pi k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
+  exact ⟨hA.isPi.all'⟩
 
 theorem IsSigma.ex' (hA : A.IsSigma (k + 1) P) :
     (A.ex' l).IsSigma (k + 1) P := by
@@ -203,10 +224,13 @@ theorem IsSigma.ex' (hA : A.IsSigma (k + 1) P) :
   refine ⟨m, φ.castAssoc.switchBoundRight.castAssoc'.ex' _, by infer_instance, vs, hvs,
     by funext; simp⟩
 
-instance [hA : A.Sigma (k + 1) P] : (A.ex').Sigma (k + 1) P := ⟨hA.isSigma.ex'⟩
+instance [NeZero k] [hA : A.Sigma k P] : (A.ex').Sigma k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
+  exact ⟨hA.isSigma.ex'⟩
 
-instance {A : Multiclass M (n + 1)} [hA : A.Sigma (k + 1) P] : A.ex.Sigma (k + 1) P :=
-  ⟨hA.isSigma.ex'⟩
+instance {A : Multiclass M (n + 1)} [NeZero k] [hA : A.Sigma k P] : A.ex.Sigma k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
+  exact ⟨hA.isSigma.ex'⟩
 
 variable {A : Multiclass M n}
 
@@ -262,46 +286,46 @@ instance [hA : A.DeltaZero P] : A.Sigma k P := ⟨hA.isSigma⟩
 
 variable [Nonempty M]
 
-theorem isPi_iff_isLogicalPi :
+theorem isPi_iff_isProvablePi :
     A.IsPi k P ↔
-      ∃ m, ∃ φ : L.BoundedFormula' (n + m), ∃ _ : φ.LogicalPi k ∅, ∃ vs : Fin m → M,
+      ∃ m, ∃ φ : L.BoundedFormula' (n + m), ∃ _ : φ.ProvablePi k ∅, ∃ vs : Fin m → M,
     Set.range vs ⊆ P ∧ A = φ.multiclass.slice vs := by
   simp only [IsPi, exists_prop]
   refine ⟨fun ⟨m, φ, _, hφ⟩ ↦ ⟨m, φ, by infer_instance, hφ⟩,
     fun ⟨m, φ, hφ, vs, hvs₁, hvs₂⟩ ↦ ?_⟩
-  obtain ⟨ψ, hψ₁, hψ₂⟩ := hφ.isLogicalPi
+  obtain ⟨ψ, hψ₁, hψ₂⟩ := hφ.isProvablePi
   refine ⟨m, ψ, ⟨hψ₁⟩, vs, hvs₁, ?_⟩
   funext xs
-  specialize hψ₂ ⟨M⟩ default (append xs vs)
+  have hψ₂ := hψ₂.sound (default : Empty → M) (by simp) (append xs vs)
   simp only [realize_iff] at hψ₂
   simp only [hvs₂, slice, multiclass, Realize', eq_iff_iff]
   convert hψ₂
 
-theorem isSigma_iff_isLogicalSigma :
+theorem isSigma_iff_isProvableSigma :
     A.IsSigma k P ↔
-      ∃ m, ∃ φ : L.BoundedFormula' (n + m), ∃ _ : φ.LogicalSigma k ∅, ∃ vs : Fin m → M,
+      ∃ m, ∃ φ : L.BoundedFormula' (n + m), ∃ _ : φ.ProvableSigma k ∅, ∃ vs : Fin m → M,
     Set.range vs ⊆ P ∧ A = φ.multiclass.slice vs := by
   simp only [IsSigma, exists_prop]
   refine ⟨fun ⟨m, φ, _, hφ⟩ ↦ ⟨m, φ, by infer_instance, hφ⟩,
     fun ⟨m, φ, hφ, vs, hvs₁, hvs₂⟩ ↦ ?_⟩
-  obtain ⟨ψ, hψ₁, hψ₂⟩ := hφ.isLogicalSigma
+  obtain ⟨ψ, hψ₁, hψ₂⟩ := hφ.isProvableSigma
   refine ⟨m, ψ, ⟨hψ₁⟩, vs, hvs₁, ?_⟩
   funext xs
-  specialize hψ₂ ⟨M⟩ default (append xs vs)
+  have hψ₂ := hψ₂.sound (default : Empty → M) (by simp) (append xs vs)
   simp only [realize_iff] at hψ₂
   simp only [hvs₂, slice, multiclass, Realize', eq_iff_iff]
   convert hψ₂
 
 theorem IsPi.not (hA : A.IsPi k P) : (∼A).IsSigma k P := by
   obtain ⟨m, φ, hφ, vs, hvs, rfl⟩ := hA
-  rw [isSigma_iff_isLogicalSigma]
+  rw [isSigma_iff_isProvableSigma]
   exact ⟨m, ∼φ, by infer_instance, vs, hvs, by simp⟩
 
 instance [hA : A.Pi k P] : (∼A).Sigma k P := ⟨hA.isPi.not⟩
 
 theorem IsSigma.not (hA : A.IsSigma k P) : (∼A).IsPi k P := by
   obtain ⟨m, φ, hφ, vs, hvs, rfl⟩ := hA
-  rw [isPi_iff_isLogicalPi]
+  rw [isPi_iff_isProvablePi]
   exact ⟨m, ∼φ, by infer_instance, vs, hvs, by simp⟩
 
 instance [hA : A.Sigma k P] : (∼A).Pi k P := ⟨hA.isSigma.not⟩
@@ -309,7 +333,7 @@ instance [hA : A.Sigma k P] : (∼A).Pi k P := ⟨hA.isSigma.not⟩
 theorem IsPi.imp (hA : A.IsPi k P) (hB : B.IsSigma k P) : (A ⟹ B).IsSigma k P := by
   obtain ⟨m, φ, hφ, ys, hys, rfl⟩ := hA
   obtain ⟨l, ψ, hψ, zs, hzs, rfl⟩ := hB
-  rw [isSigma_iff_isLogicalSigma]
+  rw [isSigma_iff_isProvableSigma]
   refine ⟨m + l, (φ.splitImp ψ).castAssoc,
     by infer_instance, append ys zs, by simp [hys, hzs], by funext; simp⟩
 
@@ -318,7 +342,7 @@ instance [hA : A.Pi k P] [hB : B.Sigma k P] : (A ⟹ B).Sigma k P := ⟨hA.isPi.
 theorem IsSigma.imp (hA : A.IsSigma k P) (hB : B.IsPi k P) : (A ⟹ B).IsPi k P := by
   obtain ⟨m, φ, hφ, ys, hys, rfl⟩ := hA
   obtain ⟨l, ψ, hψ, zs, hzs, rfl⟩ := hB
-  rw [isPi_iff_isLogicalPi]
+  rw [isPi_iff_isProvablePi]
   refine ⟨m + l, (φ.splitImp ψ).castAssoc,
     by infer_instance, append ys zs, by simp [hys, hzs], by funext; simp⟩
 
@@ -588,11 +612,21 @@ theorem IsDefinable.remap {n' : ℕ} {A : Multiclass M n}
 instance {A : Multiclass M n} [hA : A.Definable P] (f : Fin n → Fin n') : (A.remap f).Definable P :=
   ⟨hA.isDefinable.remap f⟩
 
+instance {A : Multiclass M (n + 1)} [A.Definable P] (i : Fin n) : (A.allMem i).Definable P := by
+  rw [show A.allMem i = (Mem (last n) i.castSucc ⟹ A).all by funext xs; simp [Mem] ]
+  infer_instance
+
 theorem Sigma.definable {A : Multiclass M n} (hA : A.Sigma k P) : A.Definable P :=
   let ⟨m, φ, _, vs, hvs, h⟩ := hA.isSigma
   ⟨m, φ, vs, hvs, h⟩
 
 instance {A : Multiclass M n} [hA : A.Sigma 1 P] : A.Definable P := hA.definable
+
+theorem Pi.definable {A : Multiclass M n} (hA : A.Pi k P) : A.Definable P :=
+  let ⟨m, φ, _, vs, hvs, h⟩ := hA.isPi
+  ⟨m, φ, vs, hvs, h⟩
+
+instance {A : Multiclass M n} [hA : A.Pi 1 P] : A.Definable P := hA.definable
 
 end Definable
 
@@ -717,10 +751,10 @@ class abbrev DeltaZero (F : MulticlassFunction M n) (P : Set M) : Prop :=
   (F : Multiclass M (n + 1)).DeltaZero P
 
 theorem isDeltaZero_proj (i : Fin n) :
-    (MulticlassFunction.toMulticlass (proj (M := M) i)).IsDeltaZero P :=
+    (MulticlassFunction.toMulticlass (proj i)).IsDeltaZero P :=
   Multiclass.isDeltaZero_eq i.castSucc (last n)
 
-instance (i : Fin n) : DeltaZero (proj (M := M) i) P where
+instance (i : Fin n) : DeltaZero (proj i) P where
   isDeltaZero := isDeltaZero_proj i
 
 class abbrev Pi (F : MulticlassFunction M n) (k : ℕ) (P : Set M) : Prop :=
@@ -729,24 +763,27 @@ class abbrev Pi (F : MulticlassFunction M n) (k : ℕ) (P : Set M) : Prop :=
 class abbrev Sigma (F : MulticlassFunction M n) (k : ℕ) (P : Set M) : Prop :=
   (F : Multiclass M (n + 1)).Sigma k P
 
-instance [Nonempty M] {F : MulticlassFunction M n} [F.Sigma (k + 1) P] :
-  F.Pi (k + 1) P := by
+instance [Nonempty M] [NeZero k] {F : MulticlassFunction M n} [F.Sigma k P] :
+  F.Pi k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   refine { toPi:= ?_}
   rw [eq_remap_imp_eq]
   infer_instance
 
-instance [Nonempty M] {F : MulticlassFunction M l}
-  [F.Sigma (k + 1) P]
-  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-  (F.comp Gs).Sigma (k + 1) P := by
+instance [Nonempty M] [NeZero k] {F : MulticlassFunction M l}
+  [F.Sigma k P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma k P] :
+  (F.comp Gs).Sigma k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   refine { toSigma := ?_}
   rw [comp_eq_ex']
   infer_instance
 
-instance [Nonempty M] {F : MulticlassFunction M l}
-  [F.Pi (k + 1) P]
-  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-  (F.comp Gs).Pi (k + 1) P := by
+instance [Nonempty M] [NeZero k] {F : MulticlassFunction M l}
+  [F.Pi k P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma k P] :
+  (F.comp Gs).Pi k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   refine { toPi := ?_}
   rw [comp_eq_all']
   infer_instance
@@ -754,8 +791,8 @@ instance [Nonempty M] {F : MulticlassFunction M l}
 class abbrev Delta (F : MulticlassFunction M n) (k : ℕ) (P : Set M) : Prop :=
   (F : Multiclass M (n + 1)).Pi k P, (F : Multiclass M (n + 1)).Sigma k P
 
-instance [Nonempty M] (F : MulticlassFunction M n) [hF : F.Sigma (k + 1) P] :
-  F.Delta (k + 1) P where
+instance [Nonempty M] [NeZero k] (F : MulticlassFunction M n) [hF : F.Sigma k P] :
+  F.Delta k P where
 
 class abbrev Definable (F : MulticlassFunction M n) (P : Set M) : Prop :=
   (F : Multiclass M (n + 1)).Definable P
@@ -781,14 +818,50 @@ class Pi (F : ClassFunction M) (k : ℕ) (P : Set M) : Prop extends
 class Sigma (F : ClassFunction M) (k : ℕ) (P : Set M) : Prop extends
   sigmaMulticlassFunction : (F : MulticlassFunction M 1).Sigma k P
 
-theorem Sigma.of_iff {F : Multiclass M 2} [hF : F.Sigma k P] {G : ClassFunction M}
+instance {F : ClassFunction M} [F.DeltaZero P] : F.Sigma k P where
+  sigmaMulticlassFunction := inferInstance
+
+theorem Sigma.of_iff {F : (Fin 2 → M) → Prop} [hF : Multiclass.Sigma k F P] {G : ClassFunction M}
     (h : ∀ u w, F ![u, w] ↔ G u = w) : G.Sigma k P where
   sigmaMulticlassFunction := by
     have : ((G : MulticlassFunction M 1) : Multiclass M 2).Sigma k P := by
       rw [cast_cast, show (G : Multiclass M 2) = F from funext fun xs ↦ by
-        rw [show xs = ![xs 0, xs 1] by ext i; fin_cases i <;> rfl, toMulticlass_vec_iff, h] ]
+        rw [← Matrix.vec_fin_two_eq xs, toMulticlass_vec_iff, h] ]
       infer_instance
     infer_instance
+
+/-- Fixing the first argument of a `Σ_k` multiclass function of two arguments gives a `Σ_k` class
+function -/
+instance [Nonempty M] {F : MulticlassFunction M 2}
+    [F.Sigma k Set.univ] (a : M) :
+    ClassFunction.Sigma (fun x ↦ F ![a, x]) k Set.univ := by
+  -- `B ![x, y, a]` says `F ![a, x] = y`
+  let B : Multiclass M 3 := (F : Multiclass M 3).remap ![2, 0, 1]
+  refine .of_iff (F := B.slice ![a]) fun u w ↦ ?_
+  simp only [B, Multiclass.slice, Multiclass.remap]
+  rw [show append ![u, w] ![a] ∘ ![2, 0, 1] = snoc ![a, u] w by ext i; fin_cases i <;> rfl]
+  exact MulticlassFunction.toMulticlass_snoc_iff _ _ _
+
+/-- Fixing the second argument of a `Σ_k` multiclass function of two arguments gives a `Σ_k` class
+function -/
+instance [Nonempty M] {F : MulticlassFunction M 2}
+    [F.Sigma k Set.univ] (a : M) :
+    ClassFunction.Sigma (fun x ↦ F ![x, a]) k Set.univ := by
+  -- `B ![x, y, a]` says `F ![x, a] = y`
+  let B : Multiclass M 3 := (F : Multiclass M 3).remap ![0, 2, 1]
+  refine .of_iff (F := B.slice ![a]) fun u w ↦ ?_
+  simp only [B, Multiclass.slice, Multiclass.remap]
+  rw [show append ![u, w] ![a] ∘ ![0, 2, 1] = snoc ![u, a] w by ext i; fin_cases i <;> rfl]
+  exact MulticlassFunction.toMulticlass_snoc_iff _ _ _
+
+/-- A class function agreeing with a `Σ_k` multiclass function of one argument is `Σ_k` -/
+theorem Sigma.of_eq {F : ClassFunction M} {G : MulticlassFunction M 1} [hG : G.Sigma k P]
+    (h : ∀ x, F x = G ![x]) : F.Sigma k P where
+  sigmaMulticlassFunction := by
+    have hF : (F : MulticlassFunction M 1) = G := by
+      funext xs
+      rw [show xs = ![xs 0] by ext i; fin_cases i; rfl, ← eq_toMulticlassFunction, h]
+    rwa [hF]
 
 instance (φ : L.BoundedFormula' n) [φ.Pi k] : φ.multiclass.Pi k P :=
   ⟨⟨0, φ, by infer_instance, elim0, by simp, by simp⟩⟩
@@ -796,13 +869,14 @@ instance (φ : L.BoundedFormula' n) [φ.Pi k] : φ.multiclass.Pi k P :=
 instance (φ : L.BoundedFormula' n) [φ.Sigma k] : φ.multiclass.Sigma k P :=
   ⟨⟨0, φ, by infer_instance, elim0, by simp, by simp⟩⟩
 
-instance [Nonempty M] {F : ClassFunction M} [hF : F.Sigma (k + 1) P] :
-  F.Pi (k + 1) P :=
+instance [Nonempty M] [NeZero k] {F : ClassFunction M} [hF : F.Sigma k P] :
+  F.Pi k P :=
     { piMulticlassFunction := by infer_instance }
 
-instance [Nonempty M] {F : ClassFunction M} [hF : F.Sigma (k + 1) P]
-  {G : ClassFunction M} [hG : G.Sigma (k + 1) P] :
-  (F.comp G).Sigma (k + 1) P := by
+instance [Nonempty M] [NeZero k] {F : ClassFunction M} [hF : F.Sigma k P]
+  {G : ClassFunction M} [hG : G.Sigma k P] :
+  (F.comp G).Sigma k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   refine { sigmaMulticlassFunction := ?_}
   push_cast
   infer_instance
@@ -810,11 +884,14 @@ instance [Nonempty M] {F : ClassFunction M} [hF : F.Sigma (k + 1) P]
 class Delta (F : ClassFunction M) (k : ℕ) (P : Set M) : Prop extends
   DeltaMulticlassFunction : (F : MulticlassFunction M 1).Delta k P
 
-instance [Nonempty M] (F : ClassFunction M) [hF : F.Sigma (k + 1) P] :
-  F.Delta (k + 1) P where
+instance [Nonempty M] [NeZero k] (F : ClassFunction M) [hF : F.Sigma k P] :
+  F.Delta k P where
 
 class Definable (F : ClassFunction M) (P : Set M) : Prop extends
   DefinableMulticlassFunction : (F : MulticlassFunction M 1).Definable P
+
+instance {F : ClassFunction M} [hF : F.Sigma 1 P] : F.Definable P where
+  DefinableMulticlassFunction := by infer_instance
 
 instance {F : ClassFunction M} [F.DeltaZero P] : (F : Multiclass M 2).DeltaZero P := by
   rw [← cast_cast]
@@ -836,21 +913,44 @@ instance {F : ClassFunction M} [F.Definable P] : (F : Multiclass M 2).Definable 
   rw [← cast_cast]
   infer_instance
 
+theorem Definable.of_iff {F : (Fin 2 → M) → Prop} [hF : Multiclass.Definable F P]
+    {G : ClassFunction M}
+    (h : ∀ u w, F ![u, w] ↔ G u = w) : G.Definable P where
+  DefinableMulticlassFunction := by
+    have : ((G : MulticlassFunction M 1) : Multiclass M 2).Definable P := by
+      rw [cast_cast, show (G : Multiclass M 2) = F from funext fun xs ↦ by
+        rw [← Matrix.vec_fin_two_eq xs, toMulticlass_vec_iff, h] ]
+      infer_instance
+    infer_instance
+
+/-- The class `{x | F x = G x}` for definable class functions `F` and `G` is definable -/
+instance [Nonempty M] {F G : ClassFunction M} [F.Sigma 1 Set.univ]
+    [G.Sigma 1 Set.univ] : Class.Definable (fun x ↦ F x = G x : Class M) Set.univ := by
+  -- `F x = G x` iff `∃ v, F x = v ∧ G x = v`
+  let B : Multiclass M 2 := ClassFunction.toMulticlass F ⊓ ClassFunction.toMulticlass G
+  have hB : (fun x ↦ F x = G x : Class M) = (B.ex : Class M) := by
+    funext x
+    simp [B, Multiclass.toClass_iff, eq_comm]
+  rw [hB]
+  infer_instance
+
 end ClassFunction
 
 namespace Multiclass
 
-instance [Nonempty M] {A : Multiclass M l}
-  [A.Sigma (k + 1) P]
-  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-  (A.subst Gs).Sigma (k + 1) P := by
+instance [Nonempty M] [NeZero k] {A : Multiclass M l}
+  [A.Sigma k P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma k P] :
+  (A.subst Gs).Sigma k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   rw [subst_eq_ex']
   infer_instance
 
-instance [Nonempty M] {A : Multiclass M l}
-  [A.Pi (k + 1) P]
-  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma (k + 1) P] :
-  (A.subst Gs).Pi (k + 1) P := by
+instance [Nonempty M] [NeZero k] {A : Multiclass M l}
+  [A.Pi k P]
+  {Gs : Fin l → MulticlassFunction M n} [∀ i, (Gs i).Sigma k P] :
+  (A.subst Gs).Pi k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   rw [subst_eq_all']
   infer_instance
 
@@ -862,22 +962,29 @@ instance {G : MulticlassFunction M n} [G.Sigma k P] : ∀ i, (![G] i).Sigma k P 
   simp only [Matrix.cons_val_fin_one]
   infer_instance
 
-instance [Nonempty M] {A : Class M}
-  [A.Sigma (k + 1) P]
-  {G : MulticlassFunction M n} [G.Sigma (k + 1) P] :
-  (A.subst G).Sigma (k + 1) P := by
+instance {G₁ G₂ : MulticlassFunction M n} [G₁.Sigma k P] [G₂.Sigma k P] :
+    ∀ i, (![G₁, G₂] i).Sigma k P := by
+  intro i
+  fin_cases i <;> simpa
+
+instance [Nonempty M] [NeZero k] {A : Class M}
+  [A.Sigma k P]
+  {G : MulticlassFunction M n} [G.Sigma k P] :
+  (A.subst G).Sigma k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   rw [subst_eq_subst_toMulticlass]
   infer_instance
 
-instance [Nonempty M] {A : Class M}
-  [hF : A.Pi (k + 1) P]
-  {G : MulticlassFunction M n} [G.Sigma (k + 1) P] :
-  (A.subst G).Pi (k + 1) P := by
+instance [Nonempty M] [NeZero k] {A : Class M}
+  [hF : A.Pi k P]
+  {G : MulticlassFunction M n} [G.Sigma k P] :
+  (A.subst G).Pi k P := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (NeZero.ne k)
   rw [subst_eq_subst_toMulticlass]
   infer_instance
 
 instance (a : M) : (Mem a).DeltaZero Set.univ := by
-  simp only [Class.Mem, Multiclass.slice₀, isValue]
+  simp only [Class.Mem, Multiclass.slice₀]
   infer_instance
 
 instance (a : M) : (Eq a).DeltaZero Set.univ := by
@@ -895,6 +1002,38 @@ instance (R : L.Relations 1) : (Class.Rel R (M := M)).DeltaZero Set.univ where
     simp only [Multiclass.slice, multiclass, Nat.add_zero, isValue, Function.comp_apply,
       append_elim0, cast_refl, Function.comp_id, realize'_rel₁, Term.realize'_var', eq_iff_iff]
     simp
+
+/-- The fiber `{y | A ![x, y]}` of a definable relation is definable -/
+instance (A : Multiclass M 2) [A.Definable Set.univ] (x : M) :
+    Class.Definable (fun y ↦ A ![x, y] : Class M) Set.univ := by
+  suffices (fun y ↦ A ![x, y] : Class M) =
+      (((A.remap ![1, 0]).slice ![x] : Multiclass M 1) : Class M) by
+    rw [this]
+    infer_instance
+  funext y
+  simp [Multiclass.slice, Multiclass.remap, Matrix.comp_vecCons, Matrix.empty_eq]
+
+/-- The preimage `{x | A (F x)}` of a definable class under a definable class function is
+definable -/
+instance {A : Class M} [A.Definable Set.univ] {F : ClassFunction M}
+    [F.Definable Set.univ] : Class.Definable (fun x ↦ A (F x) : Class M) Set.univ := by
+  suffices (fun x ↦ A (F x) : Class M) =
+      ((((F : Multiclass M 2) ⊓ (A : Multiclass M 1).remap ![1]).ex : Multiclass M 1) : Class M) by
+    rw [this]
+    infer_instance
+  funext x
+  simp [ClassFunction.toMulticlass_vec_iff]
+
+/-- The preimage `{x | A (F x)}` of a `Σ₁` class under a `Σ₁` class function is definable -/
+instance [Nonempty M] {A : Class M} [A.Sigma 1 Set.univ] {F : ClassFunction M}
+    [F.Sigma 1 Set.univ] : Class.Definable (fun x ↦ A (F x) : Class M) Set.univ := by
+  suffices (fun x ↦ A (F x) : Class M) = (A.subst (F : MulticlassFunction M 1) : Class M) by
+    rw [this]
+    infer_instance
+  funext x
+  simp only [Class.subst]
+  rw [ClassFunction.eq_toMulticlassFunction F x]
+  rfl
 
 end Class
 

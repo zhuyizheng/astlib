@@ -10,14 +10,14 @@ file docstring
 
 open FirstOrder Language BoundedFormula MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M] [PairClosed M] [SDiffClosed M] (x : M)
 
 namespace FirstOrder.Language
 
 namespace RudimentaryTerm
 
-def orderedPair {L : FirstOrder.Language.{u, v}} [L.HasMem]
+def orderedPair {L : FirstOrder.Language} [L.HasMem]
   (r₁ r₂ : L.RudimentaryTerm n) := ᵣ{ᵣ{r₁, r₁}, ᵣ{r₁, r₂}}
 
 @[inherit_doc] scoped[FirstOrder] notation:max "ᵣ(" x ", " y ")" =>
@@ -77,7 +77,7 @@ noncomputable def orderedPair (x y : M) :=
   MemStructure.orderedPair x y
 
 @[grind]
-def IsOrderedPair (z : M) := ∃ x y, z = !(x, y)
+def IsOrderedPair : Class M := fun z ↦ ∃ x y, z = !(x, y)
 
 omit [PairClosed M] [SDiffClosed M] in
 @[simp, grind =]
@@ -85,6 +85,10 @@ theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_orderedPair
     (r₁ r₂ : L.RudimentaryTerm n) (xs : Fin n → M) :
     ᵣ(r₁, r₂)〘xs〙 = (!(r₁〘xs〙, r₂〘xs〙) : M) := by
   simp [orderedPair, RudimentaryTerm.orderedPair]
+
+instance [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] :
+    MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ !(ys 0, ys 1)) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ ᵣ(ᵣ0, ᵣ1) fun _ _ ↦ by simp
 
 -- omit [PairClosed M] [SDiffClosed M] in
 -- @[grind =]
@@ -115,7 +119,7 @@ variable [Extensional M]
 noncomputable instance (a : M) : Decidable (∃ x y, a = !(x, y)) := by exact Classical.propDecidable _
 
 /-- The left component of `a` if `a` is an ordered pair, `∅` otherwise -/
-noncomputable def left (a : M) : M := dite (∃ x y, a = !(x, y)) Classical.choose fun _ ↦ ∅
+noncomputable def left : ClassFunction M := fun a ↦ dite (∃ x y, a = !(x, y)) Classical.choose fun _ ↦ ∅
 
 @[simp]
 theorem left_of_not_isOrderedPair {a : M} (ha : ¬IsOrderedPair a) :
@@ -131,7 +135,7 @@ theorem left_orderedPair {a b : M} :
 noncomputable instance (a : M) : Decidable (∃ y x, a = !(x, y)) := by exact Classical.propDecidable _
 
 /-- The right component of `a` if `a` is an ordered pair, `∅` otherwise -/
-noncomputable def right (a : M) : M := dite (∃ y x, a = !(x, y)) Classical.choose fun _ ↦ ∅
+noncomputable def right : ClassFunction M := fun a ↦ dite (∃ y x, a = !(x, y)) Classical.choose fun _ ↦ ∅
 
 @[simp]
 theorem right_of_not_isOrderedPair {a : M} (ha : ¬IsOrderedPair a) :

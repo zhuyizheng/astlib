@@ -3,10 +3,12 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
-import Astlib.Basic.SetOperation.Rudimentary.Semantics
+import Astlib.Basic.SetOperation.Rudimentary.DeltaZero
 import Astlib.Basic.SetOperation.Insert
 import Astlib.Basic.SetOperation.SDiff
-import Astlib.Basic.SetOperation.Multiclass.Levy
+import Astlib.Basic.SetOperation.Multiclass.Lambda
+import Astlib.Basic.Axiom.KP.Semantics
+import Astlib.Basic.SetOperation.MemStructure.Substructure
 -- import Astlib.Mathlib.ModelTheory.Semantics
 /-!
 file docstring
@@ -16,7 +18,7 @@ open Fin FirstOrder Language MemStructure
 
 namespace FirstOrder.Language
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M]
 namespace MemStructure
 
@@ -66,21 +68,9 @@ theorem comprehension_eq_empty_iff [Extensional M] [RudClosed M] (x : M) (A : Cl
     x ∩₀ A = ∅ ↔ ∀ z ∈ x, ¬A z := by
   simp [eq_iff]
 
-variable (M) in
-class ClosedUnderDefinableComprehension : Prop where
-  closedUnderDefinableComprehension (x : M) (A : Class M)
-    [A.Definable Set.univ] :
-    ∃ a : M, IsComprehension a x A
-
--- export ClosedUnderDefinableComprehension (closedUnderDefinableComprehension)
-
-instance [ClosedUnderDefinableComprehension M] (A : Class M) [A.Definable Set.univ] :
-  HasComprehension x A :=
-  ⟨ClosedUnderDefinableComprehension.closedUnderDefinableComprehension x A⟩
-
 variable [RudClosed M] [Extensional M]
 
-def IsZeroOrOne (x : M) := x = ∅ ∨ x = {∅}
+def IsZeroOrOne : Class M := fun x ↦ x = ∅ ∨ x = {∅}
 
 @[grind =]
 theorem isZeroOrOne_iff_subset_singleton_empty {x : M} :
@@ -185,14 +175,14 @@ variable [RudClosed M] [Extensional M] {xs : Fin 1 → M} {ys : Fin 2 → M}
 -- @[simp, grind =]
 theorem realize_isNonempty₀_of_ne_empty (h : xs 0 ≠ ∅) :
     isNonempty₀〘xs〙 = {∅} := by
-  rw [ne_empty_iff] at h
+  simp only [ne_empty_iff] at h
   ext z
   simp [isNonempty₀, h]
 
 -- @[simp, grind =]
 theorem realize_isNonempty₀_of_empty (h : xs 0 = ∅) :
     isNonempty₀〘xs〙 = ∅ := by
-  rw [empty_iff] at h
+  simp only [empty_iff] at h
   ext z
   simp [isNonempty₀, h]
 
@@ -275,10 +265,9 @@ theorem realize_ifNonempty₀_of_empty (h : ys 1 = ∅) :
 @[simp]
 theorem realize_ifNonempty₀_of_ne_empty (h : ys 1 ≠ ∅) :
     ifNonempty₀〘ys〙 = ys 0 := by
-  rw [ne_empty_iff] at h
+  simp only [ne_empty_iff] at h
   ext z
-  simp only [ifNonempty₀, mem_realize_iUnion_iff, realize_basic]
-  simp only [Fin.snoc, Fin.val_zero]
+  simp only [ifNonempty₀, mem_realize_iUnion_iff, realize_basic, Fin.snoc, Fin.val_zero]
   grind
 
 @[simp]
@@ -345,7 +334,6 @@ mutual
       convert mem_singleton (∅ : M)
       simp
     | imp φ₁ φ₂ => by
-      simp only [toBoundedFormula, BoundedFormula.realize'_imp] at h
       simp only [charRudimentaryTerm]
       by_cases h₁ : φ₁.toBoundedFormula〘xs〙
       · simp [realize_charRudimentaryTerm_of_realize (h h₁),
@@ -527,7 +515,8 @@ instance (A : Class M) [hA : A.DeltaZero Set.univ] : HasComprehension x A where
       DeltaZeroBoundedFormula.mem_realize_comprehensionRudimentaryTerm_iff, snoc_last,
       DeltaZeroBoundedFormula.coe_cast, BoundedFormula.cast, init_snoc,
       BoundedFormula.realize'_substBoundBound, and_congr_right_iff]
-    simp [Class.toMulticlass_eq_iff.mp hvs, append_left_eq_cons]
+    rw [Class.toMulticlass_eq_iff] at hvs
+    simp [hvs, append_left_eq_cons]
 
 @[simp]
 theorem comprehension_top (x : M) :
@@ -538,6 +527,66 @@ theorem comprehension_top (x : M) :
 theorem comprehension_bot [RudClosed M] (x : M) :
     x ∩₀ ⊥ = ∅ := by
   ext; simp
+
+end MemStructure
+
+namespace MemStructure
+
+section KP
+
+open BoundedFormula
+
+variable [L.ExtraConstantsUnaryRelationsOnly]
+
+/-- `Δ₀`-comprehension in models of `KP` -/
+instance [hM : ModelsKP₀ M] (x : M) (A : Class M) [hA : A.DeltaZero Set.univ] :
+    HasComprehension x A where
+  hasComprehension := by
+    replace hM := hM.modelsKP₀
+    simp only [KP₀, Theory.model_iff, Set.mem_union, Set.mem_insert_iff, Set.mem_singleton_iff,
+      realize_iff_realize'] at hM
+    obtain ⟨n, φ, _, vs, _, hA⟩ := hA.toDeltaZero
+    have : φ.switchBound.comprehension ∈ deltaZeroComprehensionSchema :=
+      ⟨n, φ.switchBound, by infer_instance, rfl⟩
+    specialize hM φ.switchBound.comprehension (by simp [this])
+    simp only [BoundedFormula.comprehension, Function.comp_apply, realize'_alls, realize'_ex,
+      realize'_all, realize'_iff, realize'_mem, Term.realize'_var', snoc_snoc_castAdd_one_last,
+      snoc_last, realize'_inf, realize'_substBoundBound] at hM
+    obtain ⟨a, ha⟩ := hM (snoc vs x)
+    refine ⟨a, fun z ↦ ?_⟩
+    rw [ha]
+    simp only [snoc_nat, val_castAdd, val_last, Order.lt_add_one_iff, le_add_iff_nonneg_right,
+      _root_.zero_le, ↓reduceDIte, lt_add_iff_pos_right, Order.lt_one_iff, lt_self_iff_false,
+      snoc_snoc_snoc_comp_snoc_castAdd_three_last, and_congr_right_iff]
+    simp only [snoc_eq_append, Nat.reduceAdd, realize'_switchBound, Class.iff_toMulticlass, hA,
+      Multiclass.slice, multiclass]
+    intro _
+    rfl
+
+omit [L.ExtraConstantsUnaryRelationsOnly] in
+theorem sdiffClosed_of_modelsKP [hM : ModelsKP₀ M] (x y : M) : ∃ a, IsSDiff a x y :=
+  ⟨x ∩₀ ∼(toClass y), by simp [IsSDiff, toClass]⟩
+
+instance [hM : ModelsKP₀ M] : SDiffClosed M := ⟨sdiffClosed_of_modelsKP⟩
+
+omit [L.ExtraConstantsUnaryRelationsOnly] in
+theorem pairClosed_of_modelsKP [hM : ModelsKP₀ M] (x y : M) : ∃ a, IsUnorderedPair a x y := by
+  have hM := hM.modelsKP₀
+  simp only [KP₀, Theory.model_iff, Set.mem_union, Set.mem_insert_iff, Set.mem_singleton_iff,
+    realize_iff_realize'] at hM
+  specialize hM pairAxiom (by simp)
+  simp only [pairAxiom, Nat.reduceAdd, isValue, Function.comp_apply, realize'_all, realize'_ex,
+    realize'_inf, realize'_mem, Term.realize'_var', snoc_nat, coe_ofNat_eq_mod, Nat.mod_succ,
+    lt_self_iff_false, ↓reduceDIte, Nat.zero_mod, Order.lt_two_iff, _root_.zero_le, zero_eta,
+    Order.lt_one_iff, Nat.one_mod, Std.le_refl, mk_one] at hM
+  obtain ⟨b, hb⟩ := hM x y
+  refine ⟨b ∩₀ (Class.Eq x ⊔ Class.Eq y), fun z ↦ ?_⟩
+  simp only [mem_comprehension_iff, Class.sup_iff, Class.eq_iff, and_iff_right_iff_imp]
+  grind
+
+instance [hM : ModelsKP₀ M] : PairClosed M := ⟨pairClosed_of_modelsKP⟩
+
+end KP
 
 end MemStructure
 

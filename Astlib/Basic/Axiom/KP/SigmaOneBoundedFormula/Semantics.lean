@@ -9,16 +9,16 @@ import Astlib.Basic.Axiom.KP.Semantics
 import Astlib.Basic.SetOperation.Rudimentary.Semantics
 import Astlib.Basic.SetOperation.Function
 import Astlib.Basic.SetOperation.Foundational
-import Astlib.Basic.SetOperation.Rudimentary.KP
+import Astlib.Basic.SetOperation.Rudimentary.Basis.Semantics
 import Astlib.Mathlib.Fin.Tuple.Basic
-import Astlib.Basic.Ordinal.Transitive
+import Astlib.Basic.Transitive.Basic
 /-!
 file docstring
 -/
 
 open FirstOrder Language BoundedFormula Theory Fin MemStructure DeltaZeroBoundedFormula
 
-variable {L : FirstOrder.Language.{u, v}} {M : Type max u v}
+variable {L : FirstOrder.Language} {M : Type*}
   [L.MemStructure M] (x : M) (xs : Fin n → M)
 
 namespace FirstOrder
@@ -86,7 +86,7 @@ theorem realize_sup : (φ ⊔ ψ).toBoundedFormula 〘xs〙 ↔ φ.toBoundedForm
 
 -- /-- The relation defined by a `Σ₁` formula with parameters `vs` -/
 -- def toMulticlass (φ : L.SigmaOneBoundedFormula (n + 2)) (vs : Fin n → M) : Multiclass M 2 :=
---   (switchBound (n := n) (p := 2) φ.toBoundedFormula).multiclass.slice vs
+--   (switchBound φ.toBoundedFormula).multiclass.slice vs
 
 -- -- @[simp]
 -- theorem toMulticlass_iff (φ : L.SigmaOneBoundedFormula (n + 2)) (vs : Fin n → M) (u w : M) :
@@ -104,7 +104,7 @@ theorem realize_allMem [L.ExtraConstantsUnaryRelationsOnly] [Inhabited M] [Model
     snoc_snoc_snoc_comp_snoc_snoc_castAdd_three]
   refine ⟨by grind, fun h ↦ ?_⟩
   simpa [snoc_snoc_eq_append] using exists_collection_of_modelsKP
-    ((switchBound (n := n) (p := 2) φ.deltaZeroBody.toBoundedFormula).multiclass.slice xs)
+    ((switchBound (p := 2) φ.deltaZeroBody.toBoundedFormula).multiclass.slice xs)
     t〘xs〙 (by simpa [snoc_snoc_eq_append] using h)
 
 theorem realize_iff_deltaZeroBody :
@@ -234,6 +234,30 @@ instance [ModelsKP M] {n : ℕ} (A : Multiclass M (n + 1)) [A.Sigma 1 Set.univ] 
   simp [SigmaOneBoundedFormula.realize_allMem, SigmaOneBoundedFormula.realize_substBoundBound,
     append_right_eq_snoc, snoc_snoc_comp_snoc_snoc_castAdd_two]
 
+/-- `Σ₁` is closed under bounded universal quantification `∀ y ∈ xs i` in models of `KP` -/
+instance [ModelsKP M] {n : ℕ} {A : (Fin n → M) → M → Prop} (i : Fin n)
+    [hA : Multiclass.Sigma 1
+      (fun ys : Fin (n + 1) → M ↦ A (fun j ↦ ys j.castSucc) (ys (last n))) Set.univ] :
+    Multiclass.Sigma 1 (fun xs ↦ ∀ y ∈ xs i, A xs y) Set.univ := by
+  let A' : Multiclass M (n + 1) := fun ys ↦ A (fun j ↦ ys j.castSucc) (ys (last n))
+  have h : (fun xs ↦ ∀ y ∈ xs i, A xs y) = A'.allMem i := by
+    funext xs
+    simp [A']
+  rw [h]
+  infer_instance
+
+/-- `Σ₁` is closed under bounded universal quantification `∀ y ∈ t xs` over a term in models of
+`KP`: the bound `t xs` is named by an existential quantifier -/
+instance (priority := low) [ModelsKP M] {n : ℕ} {t : (Fin n → M) → M}
+    {A : (Fin n → M) → M → Prop}
+    [h : Multiclass.Sigma 1 (fun xs ↦ ∃ d, t xs = d ∧ ∀ y ∈ d, A xs y) Set.univ] :
+    Multiclass.Sigma 1 (fun xs ↦ ∀ y ∈ t xs, A xs y) Set.univ := by
+  have e : (fun xs ↦ ∀ y ∈ t xs, A xs y) = (fun xs ↦ ∃ d, t xs = d ∧ ∀ y ∈ d, A xs y) := by
+    funext xs
+    simp
+  rw [e]
+  exact h
+
 /-- Strong `Σ₁`-collection -/
 theorem exists_strong_collection_of_modelsKP [ModelsKP M] (F : Multiclass M 2)
     [F.Sigma 1 Set.univ] (a : M) (h : ∀ u ∈ a, ∃ w, F ![u, w]) :
@@ -254,7 +278,7 @@ theorem exists_strong_collection_of_modelsKP [ModelsKP M] (F : Multiclass M 2)
     Term.realize'_var', Matrix.cons_val_one, Matrix.cons_val_zero, realize'_substBoundBound,
     Matrix.comp_vecCons, Matrix.cons_val, Matrix.empty_eq] at hb₀
   -- separate the `w ∈ ⋃₀ b₀` with some `u ∈ a` and `q ∈ ⋃₀ b₀` witnessing `φ(u, w, v)`
-  refine ⟨⋃₀ b₀ ∩₀ (((switchBound
+  refine ⟨(⋃₀ b₀) ∩₀ (((switchBound
     (∃₀∈ &0 ∃₀∈⋃₀ &1 (φ.deltaZeroBody.substBoundBound ![4, 3, 2, 5])).toBoundedFormula).multiclass.slice ![a, b₀, v] :
         Multiclass M 1) : Class M), ?_, ?_⟩
   all_goals simp only [Nat.reduceAdd, isValue, Function.comp_apply, toBoundedFormula_exMem,
@@ -273,6 +297,61 @@ instance [ModelsKP M] (x : M) (F : Multiclass M 2) [F.Sigma 1 Set.univ] :
     refine ⟨b, fun z ↦ ⟨hb₂ z, fun ⟨u, hu, hz⟩ ↦ ?_⟩⟩
     obtain ⟨w, hw, hw'⟩ := hb₁ u hu
     rwa [(hFx u hu).unique hz hw']
+
+/-- A class function `G` restricts to `x` if replacement holds on `x` for the graph
+`w = !(u, G u)` -/
+theorem isSetRestrictedTo_of_hasReplacement [Extensional M] [RudClosed M] {G : ClassFunction M}
+    {F : Multiclass M 2}
+    (hF : ∀ u w, F ![u, w] ↔ w = !(u, G u)) (x : M) [HasReplacement x F] :
+    IsSetRestrictedTo G x := by
+  have hFx : ∀ u ∈ x, ∃! w, F ![u, w] :=
+    fun u _ ↦ ⟨!(u, G u), by simp only [hF], fun w hw ↦ by simpa only [hF] using hw⟩
+  have hmem (z : M) : z ∈ F ''₀ x ↔ ∃ u ∈ x, z = !(u, G u) := by
+    simp only [mem_replacement_iff hFx, hF]
+  have hfun : IsFunction (F ''₀ x) := by
+    refine ⟨fun z hz ↦ ?_, fun a b₁ b₂ h₁ h₂ ↦ ?_⟩
+    · rw [hmem z] at hz
+      obtain ⟨u, -, rfl⟩ := hz
+      exact ⟨u, G u, rfl⟩
+    · grind
+  refine ⟨F ''₀ x, hfun, ?_, fun y hy ↦ hfun.val_eq_of_rel ?_⟩
+  rotate_left
+  · rw [hmem]
+    exact ⟨y, hy, rfl⟩
+  ext y
+  simp only [mem_dom_iff]
+  refine ⟨fun ⟨b, hb⟩ ↦ ?_, fun hy ↦ ⟨G y, ?_⟩⟩
+  rotate_left
+  · rw [hmem]
+    exact ⟨y, hy, rfl⟩
+  rw [hmem] at hb
+  obtain ⟨u, hu, h⟩ := hb
+  grind
+
+/-- The graph `w = !(u, G u)` of a class function, as `∃ v, G u = v ∧ w = !(u, v)` -/
+noncomputable def ClassFunction.pairGraph (G : ClassFunction M) : Multiclass M 2 :=
+  ((G : Multiclass M 2).remap ![0, 2] ⊓
+    ((&0 =₀ &1).substBoundRud ![ᵣ1, ᵣ(ᵣ0, ᵣ2)] :
+      L.DeltaZeroBoundedFormula 3).toBoundedFormula.multiclass).ex
+
+instance (G : ClassFunction M) [G.Sigma 1 Set.univ] : G.pairGraph.Sigma 1 Set.univ := by
+  unfold ClassFunction.pairGraph
+  infer_instance
+
+instance (G : ClassFunction M) [(G : Multiclass M 2).Definable Set.univ] :
+    G.pairGraph.Definable Set.univ := by
+  unfold ClassFunction.pairGraph
+  infer_instance
+
+theorem ClassFunction.pairGraph_iff [Extensional M] [RudClosed M] (G : ClassFunction M) (u w : M) :
+    G.pairGraph ![u, w] ↔ w = !(u, G u) := by
+  simp [pairGraph, Multiclass.ex_iff, Multiclass.remap, Matrix.comp_vecCons, Matrix.empty_eq,
+    ClassFunction.toMulticlass_vec_iff]
+
+/-- A `Σ₁` class function restricts to every set -/
+theorem isSetRestrictedTo_of_sigma [ModelsKP M] {G : ClassFunction M} [G.Sigma 1 Set.univ]
+    (x : M) : IsSetRestrictedTo G x :=
+  isSetRestrictedTo_of_hasReplacement G.pairGraph_iff x
 
 /-- `Δ₁`-comprehension -/
 instance [ModelsKP M] (x : M) (A : Class M) [A.Delta 1 Set.univ] : HasComprehension x A where
@@ -295,24 +374,16 @@ instance [ModelsKP M] (x : M) (A : Class M) [A.Delta 1 Set.univ] : HasComprehens
 /-- Every set is a member of a transitive set in models of `KP` -/
 theorem exists_mem_transitive_of_modelsKP [ModelsKP M] (x : M) :
     ∃ y : M, x ∈ y ∧ Transitive y := by
-  -- `F ![u, t]`: `t` is a transitive set containing `u`
-  let F : Multiclass M 2 :=
-    ((&0 ∈₀ &1) ⊓ (ᵣ1).isTransitive : L.DeltaZeroBoundedFormula 2).toBoundedFormula.multiclass
-  have hF (u t : M) : F ![u, t] ↔ u ∈ t ∧ Transitive t := by
-    simp [F, DeltaZeroBoundedFormula.toBoundedFormula]
-  have hFex (x : M) : (F.ex : Class M) x ↔ ∃ t : M, x ∈ t ∧ Transitive t := by
-    simp [Multiclass.toClass_iff, hF]
-  rw [← hFex]
-  refine induction_of_modelsKP (fun x ih ↦ ?_) x
-  simp only [hFex] at ih ⊢
+  refine induction_of_modelsKP (A := fun x ↦ ∃ t : M, x ∈ t ∧ Transitive t) (fun x ih ↦ ?_) x
   -- collect transitive sets containing the elements of `x`
-  obtain ⟨B, hB₁, hB₂⟩ := exists_strong_collection_of_modelsKP F x (by simpa [hF] using ih)
-  simp only [hF] at hB₁ hB₂
+  obtain ⟨B, hB₁, hB₂⟩ := exists_strong_collection_of_modelsKP
+    (fun xs ↦ xs 0 ∈ xs 1 ∧ Transitive (xs 1)) x (by simpa using ih)
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at hB₁ hB₂
   -- `⋃₀ B ∪ {x}` is a transitive set containing `x`
   refine ⟨⋃₀ B ∪ {x}, by simp, fun z hz w hw ↦ ?_⟩
-  rw [mem_union_iff, mem_singleton_iff] at hz
+  simp only [mem_union_iff, mem_singleton_iff] at hz
   rcases hz with hz | rfl
-  · rw [mem_sUnion_iff] at hz
+  · simp only [mem_sUnion_iff] at hz
     obtain ⟨t, ht, hzt⟩ := hz
     obtain ⟨_, -, -, htr⟩ := hB₂ t ht
     grind [Transitive]

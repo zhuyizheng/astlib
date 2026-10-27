@@ -3,8 +3,7 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
-import Astlib.Basic.SetOperation.Foundational
-import Astlib.Basic.SetOperation.Choice
+import Astlib.Basic.SetOperation.MemStructure.Levy
 import Astlib.Mathlib.Fin.Basic
 /-!
 file docstring
@@ -56,13 +55,22 @@ def BoundedFormula.recursion (φ : L.BoundedFormula' (n + 1)) : L.Sentence :=
 def recursionSchema : Set (L.Sentence) :=
   {ψ | ∃ n, ∃ φ : L.BoundedFormula' (n + 1), ψ = φ.recursion}
 
+/-- `KP` without the `∈`-induction schema -/
+def KP₀ : L.Theory :=
+  {extensionalityAxiom, pairAxiom, sUnionAxiom} ∪
+    deltaZeroComprehensionSchema ∪ deltaZeroCollectionSchema
+
 def KP : L.Theory :=
   {extensionalityAxiom, pairAxiom, sUnionAxiom} ∪
     deltaZeroComprehensionSchema ∪ deltaZeroCollectionSchema ∪ recursionSchema
 
+theorem KP₀_subset_KP : (KP₀ : L.Theory) ⊆ KP := Set.subset_union_left
+
+/-- `KP` with the axiom of infinity -/
 def KPInf : L.Theory :=
   KP ∪ {infinityAxiom}
 
+theorem KP_subset_KPInf : (KP : L.Theory) ⊆ KPInf := Set.subset_union_left
 
 end Language
 

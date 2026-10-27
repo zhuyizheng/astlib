@@ -3,6 +3,7 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
+import Astlib.Basic.SetOperation.Rudimentary.DeltaZero
 import Astlib.Basic.SetOperation.Pair.Basic
 /-!
 file docstring
@@ -14,12 +15,16 @@ namespace FirstOrder.Language
 
 namespace MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M]
   (x y : M)
 
 variable (M) in
 noncomputable instance : Singleton M M := ⟨fun x ↦ RudimentaryTerm.singleton₀〘x〙₁⟩
+
+instance [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] :
+    ClassFunction.DeltaZero (fun x ↦ ({x} : M)) Set.univ :=
+  ClassFunction.deltaZero_of_eq RudimentaryTerm.singleton₀ fun _ ↦ rfl
 
 @[grind =]
 theorem singleton_eq : {x} = unorderedPair x x := by
@@ -70,7 +75,7 @@ theorem singleton_subset_singleton : ({x} : M) ⊆ {y} ↔ x = y := by
 theorem subset_singleton_iff [Extensional M] : x ⊆ {y} ↔ x = ∅ ∨ x = {y} := by
   refine ⟨fun hx ↦ ?_, by grind⟩
   by_cases hx₁ : x = ∅
-  · exact Or.inl hx₁
+  · tauto
   right
   ext z
   exact ⟨fun hz ↦ hx hz, by grind [ne_empty_iff]⟩

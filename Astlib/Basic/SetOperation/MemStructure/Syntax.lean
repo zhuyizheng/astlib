@@ -12,15 +12,14 @@ open FirstOrder Language
 
 open Structure Fin
 
-universe u v
 
-variable {L : FirstOrder.Language.{u, v}}
+variable {L : FirstOrder.Language}
 
 namespace FirstOrder
 
 /-- A first-order language which contains the relationship symbol `∈` (and possibly
 other symbols) -/
-class Language.HasMem (L : Language.{u, v}) where
+class Language.HasMem (L : Language) where
   /-- The relation symbol representing `∈`. -/
   memSymb : L.Relations 2
 
@@ -29,12 +28,12 @@ export HasMem (memSymb)
 instance [L.HasMem] : Inhabited (L.Relations 2) := ⟨memSymb⟩
 
 /-- `L` has `∈` and possibly constant symbols and unary relation symbols, but not other symbols -/
-class Language.ExtraConstantsUnaryRelationsOnly (L : Language.{u, v}) [L.HasMem] : Prop where
+class Language.ExtraConstantsUnaryRelationsOnly (L : Language) [L.HasMem] : Prop where
   extraConstantsOnly : ∀ n, n ≠ 0 → IsEmpty (L.Functions n)
   extraUnaryRelationsOnly : (∀ n, n ≠ 1 → n ≠ 2 → IsEmpty (L.Relations n)) ∧
     Subsingleton (L.Relations 2)
 
--- class Language.ExtraConstantsOnly (L : Language.{u, v}) [L.HasMem] : Prop where
+-- class Language.ExtraConstantsOnly (L : Language) [L.HasMem] : Prop where
 --   extraConstantsOnly : ∀ n, n ≠ 0 → IsEmpty (L.Functions n)
 --   noExtraRelation : (∀ n, n ≠ 2 → IsEmpty (L.Relations n)) ∧
 --     Subsingleton (L.Relations 2)
@@ -42,7 +41,7 @@ class Language.ExtraConstantsUnaryRelationsOnly (L : Language.{u, v}) [L.HasMem]
 -- instance [L.HasMem] [L.ExtraConstantsOnly] : L.ExtraConstantsUnaryRelationsOnly where
 --   extraConstantsOnly := ExtraConstantsOnly.extraConstantsOnly
 --   extraUnaryRelationsOnly := by
---     have := ExtraConstantsOnly.noExtraRelation (L := L)
+--     have := ExtraConstantsOnly.noExtraRelation
 --     tauto
 
 instance (L' : Language) [L'.HasMem] [L'.ExtraConstantsUnaryRelationsOnly] :
@@ -61,15 +60,15 @@ instance (L' : Language) [L'.HasMem] [L'.ExtraConstantsUnaryRelationsOnly] :
 instance [hn₁ : Fact (n ≠ 1)] [hn₂ : Fact (n ≠ 2)] (L' : Language) [L'.HasMem]
   [L'.ExtraConstantsUnaryRelationsOnly] :
   IsEmpty (L'.Relations n) :=
-  ExtraConstantsUnaryRelationsOnly.extraUnaryRelationsOnly (L := L') |>.left n hn₁.elim hn₂.elim
+  ExtraConstantsUnaryRelationsOnly.extraUnaryRelationsOnly |>.left n hn₁.elim hn₂.elim
 
 -- instance [hn : Fact (n ≠ 2)] (L' : Language) [L'.HasMem] [L'.ExtraConstantsOnly] :
 --   IsEmpty (L'.Relations n) :=
---   ExtraConstantsOnly.noExtraRelation (L := L') |>.left n hn.elim
+--   ExtraConstantsOnly.noExtraRelation |>.left n hn.elim
 
 -- instance (L' : Language) [L'.HasMem] [L'.ExtraConstantsOnly] :
 --   IsEmpty (L'.Relations 1) :=
---   ExtraConstantsOnly.noExtraRelation (L := L') |>.left 1 (by decide)
+--   ExtraConstantsOnly.noExtraRelation |>.left 1 (by decide)
 
 namespace Language
 

@@ -5,7 +5,7 @@ Authors: Yizheng Zhu
 -/
 -- import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Union
-import Astlib.Basic.SetOperation.Rudimentary.Semantics
+import Astlib.Basic.SetOperation.Rudimentary.Realize
 /-!
 file docstring
 -/
@@ -35,18 +35,10 @@ instance {L : Language} [L.HasMem] (r s : L.RudimentaryTerm n) [r.CharFree] [s.C
 
 namespace MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M]
   (x y z : M)
 
--- variable (M) in
--- noncomputable instance : Inter M := ⟨fun x y ↦ inter x y⟩
-
--- variable [M.ClosedUnderDeltaZeroComprehension]
-
--- @[simp, grind =]
--- theorem mem_inter_iff : x ∈ y ∩ z ↔ x ∈ y ∧ x ∈ z := by
---   simp [Inter.inter]
 noncomputable instance : Inter M := ⟨fun x y ↦ x \ (x \ y)⟩
 
 @[grind =]
@@ -57,6 +49,10 @@ theorem inter_eq : x ∩ y = x \ (x \ y) := by
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inter₀ (xs : Fin 2 → M) :
     inter₀〘xs〙 = xs 0 ∩ xs 1 := by
   simp [inter_eq, inter₀]
+
+instance [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] :
+    MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ ys 0 ∩ ys 1) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ inter₀ fun _ _ ↦ by simp
 
 variable [SDiffClosed M] [PairClosed M]
 
@@ -140,6 +136,9 @@ theorem inter_eq_right_iff_subset :
 @[simp, grind ., push]
 theorem inter_eq_left_iff_subset :
     x ∩ y = x ↔ x ⊆ y := by
+  grind
+
+theorem subset_inter_iff : x ⊆ y ∩ z ↔ x ⊆ y ∧ x ⊆ z := by
   grind
 
 omit [PairClosed M] [SDiffClosed M]

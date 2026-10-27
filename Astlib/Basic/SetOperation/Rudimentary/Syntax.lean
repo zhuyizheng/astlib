@@ -83,48 +83,57 @@ theorem charFree_unorderedPair_iff (r₁ r₂ : L.RudimentaryTerm n) :
   simp [charFree_iff_isCharFree, isCharFree]
 
 instance (r₁ r₂ : L.RudimentaryTerm n) [r₁.CharFree] [r₂.CharFree] :
-  (unorderedPair r₁ r₂).CharFree :=
-  (charFree_unorderedPair_iff _ _).mpr ⟨inferInstance, inferInstance⟩
+  (unorderedPair r₁ r₂).CharFree := by
+  simp only [charFree_unorderedPair_iff]
+  exact ⟨inferInstance, inferInstance⟩
 
 theorem CharFree.of_unorderedPair_left (r₁ r₂ : L.RudimentaryTerm n)
-    [h : (unorderedPair r₁ r₂).CharFree] : r₁.CharFree :=
-  ((charFree_unorderedPair_iff _ _).mp h).left
+    [h : (unorderedPair r₁ r₂).CharFree] : r₁.CharFree := by
+  simp only [charFree_unorderedPair_iff] at h
+  exact h.left
 
 theorem CharFree.of_unorderedPair_right (r₁ r₂ : L.RudimentaryTerm n)
-    [h : (unorderedPair r₁ r₂).CharFree] : r₂.CharFree :=
-  ((charFree_unorderedPair_iff _ _).mp h).right
+    [h : (unorderedPair r₁ r₂).CharFree] : r₂.CharFree := by
+  simp only [charFree_unorderedPair_iff] at h
+  exact h.right
 
 theorem charFree_sdiff_iff (r₁ r₂ : L.RudimentaryTerm n) :
     (sdiff r₁ r₂).CharFree ↔ r₁.CharFree ∧ r₂.CharFree := by
   simp [charFree_iff_isCharFree, isCharFree]
 
 instance (r₁ r₂ : L.RudimentaryTerm n) [r₁.CharFree] [r₂.CharFree] :
-  (sdiff r₁ r₂).CharFree :=
-  (charFree_sdiff_iff _ _).mpr ⟨inferInstance, inferInstance⟩
+  (sdiff r₁ r₂).CharFree := by
+  simp only [charFree_sdiff_iff]
+  exact ⟨inferInstance, inferInstance⟩
 
 theorem CharFree.of_sdiff_left (r₁ r₂ : L.RudimentaryTerm n)
-    [h : (sdiff r₁ r₂).CharFree] : r₁.CharFree :=
-  ((charFree_sdiff_iff _ _).mp h).left
+    [h : (sdiff r₁ r₂).CharFree] : r₁.CharFree := by
+  simp only [charFree_sdiff_iff] at h
+  exact h.left
 
 theorem CharFree.of_sdiff_right (r₁ r₂ : L.RudimentaryTerm n)
-    [h : (sdiff r₁ r₂).CharFree] : r₂.CharFree :=
-  ((charFree_sdiff_iff _ _).mp h).right
+    [h : (sdiff r₁ r₂).CharFree] : r₂.CharFree := by
+  simp only [charFree_sdiff_iff] at h
+  exact h.right
 
 theorem charFree_iUnion_iff (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1)) :
     (iUnion ri rf).CharFree ↔ ri.CharFree ∧ rf.CharFree := by
   simp [charFree_iff_isCharFree, isCharFree]
 
 instance (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1)) [ri.CharFree] [rf.CharFree] :
-  (iUnion ri rf).CharFree :=
-  (charFree_iUnion_iff _ _).mpr ⟨inferInstance, inferInstance⟩
+  (iUnion ri rf).CharFree := by
+  simp only [charFree_iUnion_iff]
+  exact ⟨inferInstance, inferInstance⟩
 
 theorem CharFree.of_iUnion_index (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1))
-    [h : (iUnion ri rf).CharFree] : ri.CharFree :=
-  ((charFree_iUnion_iff _ _).mp h).left
+    [h : (iUnion ri rf).CharFree] : ri.CharFree := by
+  simp only [charFree_iUnion_iff] at h
+  exact h.left
 
 theorem CharFree.of_iUnion_function (ri : L.RudimentaryTerm n) (rf : L.RudimentaryTerm (n + 1))
-    [h : (iUnion ri rf).CharFree] : rf.CharFree :=
-  ((charFree_iUnion_iff _ _).mp h).right
+    [h : (iUnion ri rf).CharFree] : rf.CharFree := by
+  simp only [charFree_iUnion_iff] at h
+  exact h.right
 
 @[simp, grind .]
 theorem not_charFree_char (R : L.Relations 1) (r : L.RudimentaryTerm n) :
@@ -173,18 +182,18 @@ instance {k : ℕ} (rs : Fin k → L.RudimentaryTerm n) (r : L.RudimentaryTerm n
   | var i => exact var _ hr
   | const i => exact const _ hr
   | unorderedPair r₁ r₂ =>
-    have h₁ := CharFree.of_unorderedPair_left r₁ r₂
-    have h₂ := CharFree.of_unorderedPair_right r₁ r₂
+    have h₁ : r₁.CharFree := CharFree.of_unorderedPair_left r₁ r₂
+    have h₂ : r₂.CharFree := CharFree.of_unorderedPair_right r₁ r₂
     exact unorderedPair _ _ h₁ h₂ _ (charFreeCases var const unorderedPair sdiff iUnion h₁)
       (charFreeCases var const unorderedPair sdiff iUnion h₂)
   | sdiff r₁ r₂ =>
-    have h₁ := CharFree.of_sdiff_left r₁ r₂
-    have h₂ := CharFree.of_sdiff_right r₁ r₂
+    have h₁ : r₁.CharFree := CharFree.of_sdiff_left r₁ r₂
+    have h₂ : r₂.CharFree := CharFree.of_sdiff_right r₁ r₂
     exact sdiff _ _ h₁ h₂ _ (charFreeCases var const unorderedPair sdiff iUnion h₁)
       (charFreeCases var const unorderedPair sdiff iUnion h₂)
   | iUnion ri rf =>
-    have h₁ := CharFree.of_iUnion_index ri rf
-    have h₂ := CharFree.of_iUnion_function ri rf
+    have h₁ : ri.CharFree := CharFree.of_iUnion_index ri rf
+    have h₂ : rf.CharFree := CharFree.of_iUnion_function ri rf
     exact iUnion _ _ h₁ h₂ _ (charFreeCases var const unorderedPair sdiff iUnion h₁)
       (charFreeCases var const unorderedPair sdiff iUnion h₂)
   | char R r => simp at hr
@@ -253,8 +262,9 @@ theorem charFree_substBoundBound_iff {L : Language} [L.HasMem] {m n : ℕ}
   simp [charFree_iff_isCharFree]
 
 instance {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree]
-  (f : Fin n → Fin m) : (r.substBoundBound f).CharFree :=
-  (charFree_substBoundBound_iff _ _).mpr inferInstance
+  (f : Fin n → Fin m) : (r.substBoundBound f).CharFree := by
+  simp only [charFree_substBoundBound_iff]
+  exact inferInstance
 
 instance {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n) [r.CharFree]
   (h : n ≤ m) : (r.castLE h).CharFree := by
@@ -277,7 +287,7 @@ instance {L : Language} [L.HasMem] {m n : ℕ} (r : L.RudimentaryTerm n)
 
 def _root_.Fin.lowerAt (i : Fin (n + 1)) {k : Fin (n + 1)} (h : i ≠ k) : Fin n :=
   if hi : i.val < k.val then i.castPred (ne_last_of_lt hi)
-  else i.pred (val_ne_zero_iff.mp (by omega))
+  else i.pred (by rw [← val_ne_zero_iff]; omega)
 
 variable [L.ExtraConstantsUnaryRelationsOnly]
 

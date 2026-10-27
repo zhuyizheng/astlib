@@ -15,7 +15,7 @@ open FirstOrder Language BoundedFormula Fin DeltaZeroBoundedFormula RudimentaryT
 
 namespace RudimentaryTerm
 
-variable {L : Language.{u, v}} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
+variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
 
 variable {n : ℕ}
 
@@ -30,7 +30,7 @@ end RudimentaryTerm
 
 namespace MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M]
   [L.ExtraConstantsUnaryRelationsOnly]
   [Inhabited M] [Extensional M] [RudClosed M] (x y : M)
@@ -47,6 +47,10 @@ theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isTransisitive (t : L
     t.isTransitive.toBoundedFormula 〘xs〙 ↔ Transitive (t〘xs〙 : M) := by
   simp [isTransitive, Transitive, snoc]
 
+instance : (Transitive : Class M).DeltaZero Set.univ := by
+  unfold Transitive
+  infer_instance
+
 @[simp, grind .]
 theorem isTransitive_empty : Transitive (∅ : M) := by
   simp [Transitive]
@@ -62,6 +66,14 @@ theorem transitive_succ_iff [Foundational M] (a : M) :
   intro h x hx y hy
   specialize h x (by simp [succ, hx]) hy
   grind [notMem_of_mem]
+
+@[simp, grind =]
+theorem sUnion_succ {a : M} (ha : Transitive a) : ⋃₀ succ a = a := by
+  ext; grind
+
+omit [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] in
+theorem mem_of_succ_mem_succ {a b : M} (hb : Transitive b) (h : succ a ∈ succ b) : a ∈ b := by
+  grind
 
 theorem transitive_inter
     {a b : M} (ha : Transitive a) (hb : Transitive b) : Transitive (a ∩ b) := by
@@ -86,7 +98,7 @@ theorem exists_min_class_of_mem_transitive [Foundational M]
     simp only [exists_prop, ne_eq, comprehension_eq_empty_iff, not_forall, not_not]
     use x
   use memMin (y ∩₀ A)
-  have hyA₁ := memMin_mem hyA₀
+  have hyA₁ : memMin (y ∩₀ A) ∈ y ∩₀ A := memMin_mem hyA₀
   simp only [mem_comprehension_iff] at hyA₁
   refine ⟨hyA₁.right, fun z hz ↦ ?_⟩
   have := notMem_of_mem_memMin hz

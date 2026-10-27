@@ -5,8 +5,7 @@ Authors: Yizheng Zhu
 -/
 import Astlib.Basic.SetOperation.MemStructure.Defs
 import Astlib.Basic.SetOperation.MemStructure.Syntax
-import Astlib.Mathlib.ModelTheory.Satisfiability
-import Astlib.Mathlib.ModelTheory.Bundled
+import Astlib.Mathlib.ModelTheory.Completeness.DerivedRules
 /-!
 file docstring
 -/
@@ -387,16 +386,19 @@ theorem relFree_imp_iff :
     (φ₁ ⟹ φ₂).RelFree ↔ φ₁.RelFree ∧ φ₂.RelFree := by
   simp [relFree_iff_isRelFree, isRelFree]
 
-instance [φ₁.RelFree] [φ₂.RelFree] : (φ₁ ⟹ φ₂).RelFree :=
-  (relFree_imp_iff _ _).mpr ⟨inferInstance, inferInstance⟩
+instance [φ₁.RelFree] [φ₂.RelFree] : (φ₁ ⟹ φ₂).RelFree := by
+  simp only [relFree_imp_iff]
+  exact ⟨inferInstance, inferInstance⟩
 
 /-- If `φ₁ ⟹ φ₂` is relation-free, then so is `φ₁` -/
-theorem RelFree.of_imp_left [h : (φ₁ ⟹ φ₂).RelFree] : φ₁.RelFree :=
-  ((relFree_imp_iff _ _).mp h).left
+theorem RelFree.of_imp_left [h : (φ₁ ⟹ φ₂).RelFree] : φ₁.RelFree := by
+  simp only [relFree_imp_iff] at h
+  exact h.left
 
 /-- If `φ₁ ⟹ φ₂` is relation-free, then so is `φ₂` -/
-theorem RelFree.of_imp_right [h : (φ₁ ⟹ φ₂).RelFree] : φ₂.RelFree :=
-  ((relFree_imp_iff _ _).mp h).right
+theorem RelFree.of_imp_right [h : (φ₁ ⟹ φ₂).RelFree] : φ₂.RelFree := by
+  simp only [relFree_imp_iff] at h
+  exact h.right
 
 instance [φ.RelFree] : (∼φ).RelFree := by
   unfold not; infer_instance
@@ -421,13 +423,14 @@ theorem relFree_allMem_iff (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 
   simp [relFree_iff_isRelFree, isRelFree]
 
 instance (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1)) [ψ.RelFree] :
-  (∀₀∈t ψ).RelFree :=
-  (relFree_allMem_iff _ _).mpr inferInstance
+  (∀₀∈t ψ).RelFree := by
+  simp only [relFree_allMem_iff]
+  exact inferInstance
 
 /-- If `∀₀∈ t ψ` is relation-free, then so is `ψ` -/
 theorem RelFree.of_allMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1))
-    [h : (∀₀∈ t ψ).RelFree] : ψ.RelFree :=
-  (relFree_allMem_iff _ _).mp h
+    [h : (∀₀∈ t ψ).RelFree] : ψ.RelFree := by
+  rwa [relFree_allMem_iff] at h
 
 /-- Induction on a relation-free formula, which has no `rel` case -/
 @[elab_as_elim] def relFreeCases
@@ -446,12 +449,12 @@ theorem RelFree.of_allMem (t : L.Term' n) (ψ : L.DeltaZeroBoundedFormula (n + 1
   | equal => exact equal _ _ h
   | mem => exact mem _ _ h
   | imp φ₁ φ₂ =>
-    have h₁ := RelFree.of_imp_left φ₁ φ₂
-    have h₂ := RelFree.of_imp_right φ₁ φ₂
+    have h₁ : φ₁.RelFree := RelFree.of_imp_left φ₁ φ₂
+    have h₂ : φ₂.RelFree := RelFree.of_imp_right φ₁ φ₂
     exact imp _ _ h₁ h₂ h (relFreeCases falsum equal mem imp allMem h₁)
       (relFreeCases falsum equal mem imp allMem h₂)
   | allMem t ψ =>
-    have hψ := RelFree.of_allMem t ψ
+    have hψ : ψ.RelFree := RelFree.of_allMem t ψ
     exact allMem _ _ hψ h (relFreeCases falsum equal mem imp allMem hψ)
   | rel R t => simp at h
 
@@ -479,8 +482,9 @@ theorem relFree_substBound_iff
   simp [relFree_iff_isRelFree]
 
 instance {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n) [φ.RelFree] (ts : Fin n → L.Term' m) :
-  (φ.substBound ts).RelFree :=
-  (relFree_substBound_iff _ _).mpr inferInstance
+  (φ.substBound ts).RelFree := by
+  simp only [relFree_substBound_iff]
+  exact inferInstance
 
 instance {n m : ℕ} (φ : L.DeltaZeroBoundedFormula n) [φ.RelFree] (f : Fin n → Fin m) :
   (φ.substBoundBound f).RelFree := by
@@ -966,158 +970,161 @@ instance [hφ : φ.DeltaZero] : φ.Sigma k :=
 end SyntacticalLevyHierarchy
 
 
-section LogicalLevyHierarchy
+section ProvableLevyHierarchy
 
 variable {k n : ℕ} {φ ψ : L.BoundedFormula' n}
 
-/-- `φ` is `T`-logically `Π n` means that `φ` is `T`-equivalent to a `Π n` formula -/
-def IsLogicalPi (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
-  ∃ ψ : L.BoundedFormula' n, (ψ.IsPi k ∧ T ⊨ᵇ φ ⇔ ψ)
+/-- `φ` is `T`-provably `Π n` means that `φ` is provably equivalent in `T` to a `Π n` formula -/
+def IsProvablePi (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
+  ∃ ψ : L.BoundedFormula' n, (ψ.IsPi k ∧ T ⊢' φ ⇔ ψ)
 
-/-- `φ` is `T`-logically `Σ n` means that `φ` is `T`-equivalent to a `Σ n` formula -/
-def IsLogicalSigma (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
-  ∃ ψ : L.BoundedFormula' n, (ψ.IsSigma k ∧ T ⊨ᵇ φ ⇔ ψ)
+/-- `φ` is `T`-provably `Σ n` means that `φ` is provably equivalent in `T` to a `Σ n` formula -/
+def IsProvableSigma (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
+  ∃ ψ : L.BoundedFormula' n, (ψ.IsSigma k ∧ T ⊢' φ ⇔ ψ)
 
--- /-- `φ` is `T`-logically `Δ n` means that `φ` is `T`-logically `Π n` and `T`-logically `Σ n` -/
--- def IsLogicalDelta (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
---   φ.IsLogicalPi k T ∧ φ.IsLogicalSigma k T
+-- /-- `φ` is `T`-provably `Δ n` means that `φ` is `T`-provably `Π n` and `T`-provably `Σ n` -/
+-- def IsProvableDelta (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
+--   φ.IsProvablePi k T ∧ φ.IsProvableSigma k T
 
 variable {T : L.Theory}
 
-theorem IsPi.isLogicalPi (h : φ.IsPi k) : φ.IsLogicalPi k T :=
-  ⟨φ, h, by simp [ModelsBoundedFormula]⟩
+theorem IsPi.isProvablePi (h : φ.IsPi k) : φ.IsProvablePi k T :=
+  ⟨φ, h, .iff_refl⟩
 
-theorem IsSigma.isLogicalSigma (h : φ.IsSigma k) : φ.IsLogicalSigma k T :=
-  ⟨φ, h, by simp [ModelsBoundedFormula]⟩
+theorem IsSigma.isProvableSigma (h : φ.IsSigma k) : φ.IsProvableSigma k T :=
+  ⟨φ, h, .iff_refl⟩
 
-theorem IsDeltaZero.isLogicalPi (h : φ.IsDeltaZero) : φ.IsLogicalPi 0 T :=
-  IsPi.isLogicalPi (by simpa)
+theorem IsDeltaZero.isProvablePi (h : φ.IsDeltaZero) : φ.IsProvablePi 0 T :=
+  IsPi.isProvablePi (by simpa)
 
-theorem IsDeltaZero.isLogicalSigma (h : φ.IsDeltaZero) : φ.IsLogicalSigma 0 T :=
-  IsSigma.isLogicalSigma (by simpa)
+theorem IsDeltaZero.isProvableSigma (h : φ.IsDeltaZero) : φ.IsProvableSigma 0 T :=
+  IsSigma.isProvableSigma (by simpa)
 
-theorem isLogicalSigma_zero_iff_isLogicalPi_zero :
-    φ.IsLogicalSigma 0 T ↔ φ.IsLogicalPi 0 T :=
+theorem isProvableSigma_zero_iff_isProvablePi_zero :
+    φ.IsProvableSigma 0 T ↔ φ.IsProvablePi 0 T :=
   ⟨fun ⟨ψ, hψ⟩ ↦ ⟨ψ, by simpa using hψ⟩, fun ⟨ψ, hψ⟩ ↦ ⟨ψ, by simpa using hψ⟩⟩
 
--- theorem IsLogicalDelta.isLogicalPi (h : φ.IsLogicalDelta k T) : φ.IsLogicalPi k T := h.left
+-- theorem IsProvableDelta.isProvablePi (h : φ.IsProvableDelta k T) : φ.IsProvablePi k T := h.left
 
--- theorem IsLogicalDelta.isLogicalSigma (h : φ.IsLogicalDelta k T) : φ.IsLogicalSigma k T := h.right
+-- theorem IsProvableDelta.isProvableSigma (h : φ.IsProvableDelta k T) : φ.IsProvableSigma k T :=
+--   h.right
 
-/- logical quantifiers -/
+/- provable quantifiers -/
 
 variable {m : ℕ} {φ : L.BoundedFormula' (n + m)}
 
-theorem IsLogicalPi.all' (h : φ.IsLogicalPi (k + 1) T) : (φ.all' m).IsLogicalPi (k + 1) T := by
+theorem IsProvablePi.all' (h : φ.IsProvablePi (k + 1) T) : (φ.all' m).IsProvablePi (k + 1) T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ.all' m, hψ₁.all'
-  simp only [ModelsBoundedFormula.iff_iff]
-  constructor <;> exact hψ₂.all'.of_imp (by simp +contextual [ModelsBoundedFormula])
+  simp only [Provable.iff_iff]
+  constructor <;> exact .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hψ₂.all'
 
-theorem IsLogicalPi.all'₀ (h : φ.IsLogicalPi k T) (hk : k ≠ 0) : (φ.all' m).IsLogicalPi k T := by
+theorem IsProvablePi.all'₀ (h : φ.IsProvablePi k T) (hk : k ≠ 0) : (φ.all' m).IsProvablePi k T := by
   rw [show k = k - 1 + 1 by omega] at h ⊢
   exact h.all'
 
-theorem IsLogicalPi.ex' (h : φ.IsLogicalPi k T) :  (φ.ex' m).IsLogicalSigma (k + 1) T := by
+theorem IsProvablePi.ex' (h : φ.IsProvablePi k T) :  (φ.ex' m).IsProvableSigma (k + 1) T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ.ex' m, hψ₁.ex'
-  simp only [ModelsBoundedFormula.iff_iff]
-  constructor <;> exact hψ₂.all'.of_imp (by simp +contextual [ModelsBoundedFormula])
+  simp only [Provable.iff_iff]
+  constructor <;> exact .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hψ₂.all'
 
-theorem IsLogicalSigma.ex' (h : φ.IsLogicalSigma (k + 1) T) :
-    (φ.ex' m).IsLogicalSigma (k + 1) T := by
+theorem IsProvableSigma.ex' (h : φ.IsProvableSigma (k + 1) T) :
+    (φ.ex' m).IsProvableSigma (k + 1) T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ.ex' m, hψ₁.ex'
-  simp only [ModelsBoundedFormula.iff_iff]
-  constructor <;> exact hψ₂.all'.of_imp (by simp +contextual [ModelsBoundedFormula])
+  simp only [Provable.iff_iff]
+  constructor <;> exact .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hψ₂.all'
 
-theorem IsLogicalSigma.ex'₀ (h : φ.IsLogicalSigma k T) (hk : k ≠ 0) :
-    (φ.ex' m).IsLogicalSigma k T := by
+theorem IsProvableSigma.ex'₀ (h : φ.IsProvableSigma k T) (hk : k ≠ 0) :
+    (φ.ex' m).IsProvableSigma k T := by
   rw [show k = k - 1 + 1 by omega] at h ⊢
   exact h.ex'
 
-theorem IsLogicalSigma.all' (h : φ.IsLogicalSigma k T) :  (φ.all' m).IsLogicalPi (k + 1) T := by
+theorem IsProvableSigma.all' (h : φ.IsProvableSigma k T) :  (φ.all' m).IsProvablePi (k + 1) T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ.all' m, hψ₁.all'
-  simp only [ModelsBoundedFormula.iff_iff]
-  constructor <;> exact hψ₂.all'.of_imp (by simp +contextual [ModelsBoundedFormula])
+  simp only [Provable.iff_iff]
+  constructor <;> exact .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hψ₂.all'
 
--- theorem IsLogicalDelta.all' (h : φ.IsLogicalDelta (k + 1) T) : (φ.all' m).IsLogicalPi (k + 1) T :=
+-- theorem IsProvableDelta.all' (h : φ.IsProvableDelta (k + 1) T) :
+--     (φ.all' m).IsProvablePi (k + 1) T :=
 --   h.left.all'
 
--- theorem IsLogicalDelta.all'₀ (h : φ.IsLogicalDelta k T) (hk : k ≠ 0) :
---     (φ.all' m).IsLogicalPi k T :=
+-- theorem IsProvableDelta.all'₀ (h : φ.IsProvableDelta k T) (hk : k ≠ 0) :
+--     (φ.all' m).IsProvablePi k T :=
 --   h.left.all'₀ hk
 
--- theorem IsLogicalDelta.ex' (h : φ.IsLogicalDelta (k + 1) T) : (φ.ex' m).IsLogicalSigma (k + 1) T :=
+-- theorem IsProvableDelta.ex' (h : φ.IsProvableDelta (k + 1) T) :
+--     (φ.ex' m).IsProvableSigma (k + 1) T :=
 --   h.right.ex'
 
--- theorem IsLogicalDelta.ex'₀ (h : φ.IsLogicalDelta k T) (hk : k ≠ 0) :
---     (φ.ex' m).IsLogicalSigma k T :=
+-- theorem IsProvableDelta.ex'₀ (h : φ.IsProvableDelta k T) (hk : k ≠ 0) :
+--     (φ.ex' m).IsProvableSigma k T :=
 --   h.right.ex'₀ hk
 
 
-/- invariance under `T`-logical equivalence -/
+/- invariance under provable equivalence in `T` -/
 
 variable {φ ψ : L.BoundedFormula' n}
 
-theorem IsLogicalPi.of_models_iff (h : φ.IsLogicalPi k T) (h' : T ⊨ᵇ φ ⇔ ψ) :
-    ψ.IsLogicalPi k T := by
+theorem IsProvablePi.of_provable_iff (h : φ.IsProvablePi k T) (h' : T ⊢' φ ⇔ ψ) :
+    ψ.IsProvablePi k T := by
   obtain ⟨θ, hθ₁, hθ₂⟩ := h
-  exact ⟨θ, hθ₁, h'.of_imp_imp hθ₂ (by simp +contextual [ModelsBoundedFormula])⟩
+  exact ⟨θ, hθ₁, .mp₂ (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) h' hθ₂⟩
 
-theorem IsLogicalSigma.of_models_iff (h : φ.IsLogicalSigma k T) (h' : T ⊨ᵇ φ ⇔ ψ) :
-    ψ.IsLogicalSigma k T := by
+theorem IsProvableSigma.of_provable_iff (h : φ.IsProvableSigma k T) (h' : T ⊢' φ ⇔ ψ) :
+    ψ.IsProvableSigma k T := by
   obtain ⟨θ, hθ₁, hθ₂⟩ := h
-  exact ⟨θ, hθ₁, h'.of_imp_imp hθ₂ (by simp +contextual [ModelsBoundedFormula])⟩
+  exact ⟨θ, hθ₁, .mp₂ (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) h' hθ₂⟩
 
--- theorem IsLogicalDelta.of_models_iff (h : φ.IsLogicalDelta k T) (h' : T ⊨ᵇ φ ⇔ ψ) :
---     ψ.IsLogicalDelta k T :=
---   ⟨h.left.of_models_iff h', h.right.of_models_iff h'⟩
+-- theorem IsProvableDelta.of_provable_iff (h : φ.IsProvableDelta k T) (h' : T ⊢' φ ⇔ ψ) :
+--     ψ.IsProvableDelta k T :=
+--   ⟨h.left.of_provable_iff h', h.right.of_provable_iff h'⟩
 
-/- logical connectives -/
+/- provable connectives -/
 
 mutual
-theorem IsLogicalPi.not {k n : ℕ} {φ : L.BoundedFormula' n} (h : φ.IsLogicalPi k T) :
-    (∼φ).IsLogicalSigma k T :=
+theorem IsProvablePi.not {k n : ℕ} {φ : L.BoundedFormula' n} (h : φ.IsProvablePi k T) :
+    (∼φ).IsProvableSigma k T :=
   let ⟨ψ, hψ₁, hψ₂⟩ := h
   match k with
-  | 0 => ⟨∼ψ, by simpa using hψ₁, hψ₂.of_imp (by simp +contextual [ModelsBoundedFormula])⟩
+  | 0 => ⟨∼ψ, by simpa using hψ₁, .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hψ₂⟩
   | k + 1 => let ⟨m, θ, hθ₁, hθ₂⟩ := hψ₁.exists_Sigma_all'
-    hθ₁.isLogicalSigma.not.ex'.of_models_iff <|
-      (hθ₂ ▸ hψ₂).of_imp (by simp +contextual [ModelsBoundedFormula])
+    hθ₁.isProvableSigma.not.ex'.of_provable_iff <|
+      .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) (hθ₂ ▸ hψ₂)
 
-theorem IsLogicalSigma.not {k n : ℕ} {φ : L.BoundedFormula' n} (h : φ.IsLogicalSigma k T) :
-    (∼φ).IsLogicalPi k T :=
+theorem IsProvableSigma.not {k n : ℕ} {φ : L.BoundedFormula' n} (h : φ.IsProvableSigma k T) :
+    (∼φ).IsProvablePi k T :=
   let ⟨ψ, hψ₁, hψ₂⟩ := h
   match k with
-  | 0 => ⟨∼ψ, by simpa using hψ₁, hψ₂.of_imp (by simp +contextual [ModelsBoundedFormula])⟩
+  | 0 => ⟨∼ψ, by simpa using hψ₁, .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hψ₂⟩
   | k + 1 => let ⟨m, θ, hθ₁, hθ₂⟩ := hψ₁.exists_Pi_ex'
-    hθ₁.isLogicalPi.not.all'.of_models_iff <|
-      (hθ₂ ▸ hψ₂).of_imp (by simp +contextual [ModelsBoundedFormula])
+    hθ₁.isProvablePi.not.all'.of_provable_iff <|
+      .mp (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) (hθ₂ ▸ hψ₂)
 end
 
--- theorem IsLogicalDelta.not (h : φ.IsLogicalDelta k T) : (∼φ).IsLogicalDelta k T :=
+-- theorem IsProvableDelta.not (h : φ.IsProvableDelta k T) : (∼φ).IsProvableDelta k T :=
 --   ⟨h.right.not, h.left.not⟩
 
 @[simp]
-theorem LogicalPi_not_iff : (∼φ).IsLogicalPi k T ↔ φ.IsLogicalSigma k T := by
-  refine ⟨fun h ↦ h.not.of_models_iff ?_, IsLogicalSigma.not⟩
-  simp +contextual [ModelsBoundedFormula]
+theorem ProvablePi_not_iff : (∼φ).IsProvablePi k T ↔ φ.IsProvableSigma k T := by
+  refine ⟨fun h ↦ h.not.of_provable_iff ?_, IsProvableSigma.not⟩
+  exact .of_realize fun _ _ _ _ _ ↦ by simp +contextual
 
 @[simp]
-theorem LogicalSigma_not_iff : (∼φ).IsLogicalSigma k T ↔ φ.IsLogicalPi k T := by
-  refine ⟨fun h ↦ h.not.of_models_iff ?_, IsLogicalPi.not⟩
-  simp +contextual [ModelsBoundedFormula]
+theorem ProvableSigma_not_iff : (∼φ).IsProvableSigma k T ↔ φ.IsProvablePi k T := by
+  refine ⟨fun h ↦ h.not.of_provable_iff ?_, IsProvablePi.not⟩
+  exact .of_realize fun _ _ _ _ _ ↦ by simp +contextual
 
 -- @[simp]
--- theorem LogicalDelta_not_iff : (∼φ).IsLogicalDelta k T ↔ φ.IsLogicalDelta k T := by
---   refine ⟨fun h ↦ h.not.of_models_iff ?_, IsLogicalDelta.not⟩
---   simp +contextual [ModelsBoundedFormula]
+-- theorem ProvableDelta_not_iff : (∼φ).IsProvableDelta k T ↔ φ.IsProvableDelta k T := by
+--   refine ⟨fun h ↦ h.not.of_provable_iff ?_, IsProvableDelta.not⟩
+--   exact .of_realize fun _ _ _ _ _ ↦ by simp +contextual
 
 mutual
-theorem IsLogicalPi.imp {k n : ℕ} {φ ψ : L.BoundedFormula' n}
-    (hφ : φ.IsLogicalPi k T) (hψ : ψ.IsLogicalSigma k T) : (φ ⟹ ψ).IsLogicalSigma k T :=
+theorem IsProvablePi.imp {k n : ℕ} {φ ψ : L.BoundedFormula' n}
+    (hφ : φ.IsProvablePi k T) (hψ : ψ.IsProvableSigma k T) : (φ ⟹ ψ).IsProvableSigma k T :=
   let ⟨φ', hφ₁, hφ₂⟩ := hφ
   let ⟨ψ', hψ₁, hψ₂⟩ := hψ
   match k with
@@ -1125,15 +1132,16 @@ theorem IsLogicalPi.imp {k n : ℕ} {φ ψ : L.BoundedFormula' n}
     refine ⟨φ' ⟹ ψ', ?_, ?_⟩
     · simp only [pi_zero_iff_deltaZero, sigma_zero_iff_deltaZero] at hφ₁ hψ₁ ⊢
       exact hφ₁.imp hψ₁
-    · exact hφ₂.of_imp_imp hψ₂ (by simp +contextual [ModelsBoundedFormula])
+    · exact .mp₂ (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hφ₂ hψ₂
   | k + 1 => by
     obtain ⟨p, φ'', hφ''₁, hφ''₂⟩ := hφ₁.exists_Sigma_all'
     obtain ⟨q, ψ'', hψ''₁, hψ''₂⟩ := hψ₁.exists_Pi_ex'
-    have : (φ''.splitImp ψ'').ex'.ex'.IsLogicalSigma (k + 1) T :=
-      (hφ''₁.substBound _).isLogicalSigma.imp (hψ''₁.substBound _).isLogicalPi |>.ex'.ex'
-    refine this.of_models_iff (fun M v xs ↦ ?_)
-    specialize hφ₂ M v xs
-    specialize hψ₂ M v xs
+    have : (φ''.splitImp ψ'').ex'.ex'.IsProvableSigma (k + 1) T :=
+      (hφ''₁.substBound _).isProvableSigma.imp (hψ''₁.substBound _).isProvablePi |>.ex'.ex'
+    refine this.of_provable_iff (.of_models.{u, v, 0, 0} fun M _ _ v xs hT ↦ ?_)
+    have hφ₂ := hφ₂.sound v hT xs
+    have hψ₂ := hψ₂.sound v hT xs
+    inhabit M
     simp only [realize_iff] at hφ₂ hψ₂
     simp only [realize_iff, realize_ex', realize_splitImp, realize_imp, hφ₂, hφ''₂, realize_all',
       hψ₂, hψ''₂]
@@ -1145,8 +1153,8 @@ theorem IsLogicalPi.imp {k n : ℕ} {φ ψ : L.BoundedFormula' n}
       obtain ⟨ys, hys⟩ := h₂
       exact ⟨ys, default, by grind⟩
 
-theorem IsLogicalSigma.imp {k n : ℕ} {φ ψ : L.BoundedFormula' n}
-    (hφ : φ.IsLogicalSigma k T) (hψ : ψ.IsLogicalPi k T) : (φ ⟹ ψ).IsLogicalPi k T :=
+theorem IsProvableSigma.imp {k n : ℕ} {φ ψ : L.BoundedFormula' n}
+    (hφ : φ.IsProvableSigma k T) (hψ : ψ.IsProvablePi k T) : (φ ⟹ ψ).IsProvablePi k T :=
   let ⟨φ', hφ₁, hφ₂⟩ := hφ
   let ⟨ψ', hψ₁, hψ₂⟩ := hψ
   match k with
@@ -1154,383 +1162,389 @@ theorem IsLogicalSigma.imp {k n : ℕ} {φ ψ : L.BoundedFormula' n}
     refine ⟨φ' ⟹ ψ', ?_, ?_⟩
     · simp only [sigma_zero_iff_deltaZero, pi_zero_iff_deltaZero] at hφ₁ hψ₁ ⊢
       exact hφ₁.imp hψ₁
-    · exact hφ₂.of_imp_imp hψ₂ (by simp +contextual [ModelsBoundedFormula])
+    · exact .mp₂ (.of_realize fun _ _ _ _ _ ↦ by simp +contextual) hφ₂ hψ₂
   | k + 1 => by
     obtain ⟨p, φ'', hφ''₁, hφ''₂⟩ := hφ₁.exists_Pi_ex'
     obtain ⟨q, ψ'', hψ''₁, hψ''₂⟩ := hψ₁.exists_Sigma_all'
-    have : (φ''.splitImp ψ'').all'.all'.IsLogicalPi (k + 1) T :=
-      (hφ''₁.substBound _).isLogicalPi.imp (hψ''₁.substBound _).isLogicalSigma |>.all'.all'
-    refine this.of_models_iff (fun M v xs ↦ ?_)
-    specialize hφ₂ M v xs
-    specialize hψ₂ M v xs
+    have : (φ''.splitImp ψ'').all'.all'.IsProvablePi (k + 1) T :=
+      (hφ''₁.substBound _).isProvablePi.imp (hψ''₁.substBound _).isProvableSigma |>.all'.all'
+    refine this.of_provable_iff (.of_models.{u, v, 0, 0} fun M _ _ v xs hT ↦ ?_)
+    have hφ₂ := hφ₂.sound v hT xs
+    have hψ₂ := hψ₂.sound v hT xs
+    inhabit M
     simp only [realize_iff] at hφ₂ hψ₂
     simp only [realize_iff, realize_all', realize_splitImp, realize_imp, hφ₂, hφ''₂, realize_ex',
       hψ₂, hψ''₂, forall_exists_index]
     tauto
 end
 
--- theorem IsLogicalDelta.imp {φ ψ : L.BoundedFormula' n}
---     (hφ : φ.IsLogicalDelta k T) (hψ : ψ.IsLogicalDelta k T) : (φ ⟹ ψ).IsLogicalDelta k T :=
+-- theorem IsProvableDelta.imp {φ ψ : L.BoundedFormula' n}
+--     (hφ : φ.IsProvableDelta k T) (hψ : ψ.IsProvableDelta k T) : (φ ⟹ ψ).IsProvableDelta k T :=
 --   ⟨hφ.right.imp hψ.left, hφ.left.imp hψ.right⟩
 
-theorem IsLogicalPi.sup (hφ : φ.IsLogicalPi k T) (hψ : ψ.IsLogicalPi k T) :
-    (φ ⊔ ψ).IsLogicalPi k T := hφ.not.imp hψ
+theorem IsProvablePi.sup (hφ : φ.IsProvablePi k T) (hψ : ψ.IsProvablePi k T) :
+    (φ ⊔ ψ).IsProvablePi k T := hφ.not.imp hψ
 
-theorem IsLogicalPi.inf (hφ : φ.IsLogicalPi k T) (hψ : ψ.IsLogicalPi k T) :
-    (φ ⊓ ψ).IsLogicalPi k T := hφ.imp hψ.not |>.not
+theorem IsProvablePi.inf (hφ : φ.IsProvablePi k T) (hψ : ψ.IsProvablePi k T) :
+    (φ ⊓ ψ).IsProvablePi k T := hφ.imp hψ.not |>.not
 
-theorem IsLogicalSigma.sup (hφ : φ.IsLogicalSigma k T) (hψ : ψ.IsLogicalSigma k T) :
-    (φ ⊔ ψ).IsLogicalSigma k T := hφ.not.imp hψ
+theorem IsProvableSigma.sup (hφ : φ.IsProvableSigma k T) (hψ : ψ.IsProvableSigma k T) :
+    (φ ⊔ ψ).IsProvableSigma k T := hφ.not.imp hψ
 
-theorem IsLogicalSigma.inf (hφ : φ.IsLogicalSigma k T) (hψ : ψ.IsLogicalSigma k T) :
-    (φ ⊓ ψ).IsLogicalSigma k T := hφ.imp hψ.not |>.not
+theorem IsProvableSigma.inf (hφ : φ.IsProvableSigma k T) (hψ : ψ.IsProvableSigma k T) :
+    (φ ⊓ ψ).IsProvableSigma k T := hφ.imp hψ.not |>.not
 
--- theorem IsLogicalDelta.sup (hφ : φ.IsLogicalDelta k T) (hψ : ψ.IsLogicalDelta k T) :
---     (φ ⊔ ψ).IsLogicalDelta k T := hφ.not.imp hψ
+-- theorem IsProvableDelta.sup (hφ : φ.IsProvableDelta k T) (hψ : ψ.IsProvableDelta k T) :
+--     (φ ⊔ ψ).IsProvableDelta k T := hφ.not.imp hψ
 
--- theorem IsLogicalDelta.inf (hφ : φ.IsLogicalDelta k T) (hψ : ψ.IsLogicalDelta k T) :
---     (φ ⊓ ψ).IsLogicalDelta k T := hφ.imp hψ.not |>.not
+-- theorem IsProvableDelta.inf (hφ : φ.IsProvableDelta k T) (hψ : ψ.IsProvableDelta k T) :
+--     (φ ⊓ ψ).IsProvableDelta k T := hφ.imp hψ.not |>.not
 
--- theorem IsLogicalDelta.iff (hφ : φ.IsLogicalDelta k T) (hψ : ψ.IsLogicalDelta k T) :
---     (φ ⇔ ψ).IsLogicalDelta k T := (hφ.imp hψ).inf (hψ.imp hφ)
+-- theorem IsProvableDelta.iff (hφ : φ.IsProvableDelta k T) (hψ : ψ.IsProvableDelta k T) :
+--     (φ ⇔ ψ).IsProvableDelta k T := (hφ.imp hψ).inf (hψ.imp hφ)
 
 /-- substBound -/
-theorem IsLogicalPi.substBound {φ : L.BoundedFormula' n} (ts : Fin n → L.Term' m)
-    (hφ : φ.IsLogicalPi k T) : (φ.substBound ts).IsLogicalPi k T := by
+theorem IsProvablePi.substBound {φ : L.BoundedFormula' n} (ts : Fin n → L.Term' m)
+    (hφ : φ.IsProvablePi k T) : (φ.substBound ts).IsProvablePi k T := by
   obtain ⟨φ', hφ₁, hφ₂⟩ := hφ
-  refine ⟨φ'.substBound ts, hφ₁.substBound _, fun M v xs ↦ ?_⟩
-  simpa [realize_iff, realize_substBound] using hφ₂ M v fun i ↦ ((ts i).realize (Sum.elim v xs))
+  refine ⟨φ'.substBound ts, hφ₁.substBound _, .of_models.{u, v, 0, 0} fun M _ _ v xs hT ↦ ?_⟩
+  simpa [realize_iff, realize_substBound] using
+    hφ₂.sound v hT fun i ↦ ((ts i).realize (Sum.elim v xs))
 
-theorem IsLogicalSigma.substBound {φ : L.BoundedFormula' n} (ts : Fin n → L.Term' m)
-    (hφ : φ.IsLogicalSigma k T) : (φ.substBound ts).IsLogicalSigma k T := by
+theorem IsProvableSigma.substBound {φ : L.BoundedFormula' n} (ts : Fin n → L.Term' m)
+    (hφ : φ.IsProvableSigma k T) : (φ.substBound ts).IsProvableSigma k T := by
   obtain ⟨φ', hφ₁, hφ₂⟩ := hφ
-  refine ⟨φ'.substBound ts, hφ₁.substBound _, fun M v xs ↦ ?_⟩
-  simpa [realize_iff, realize_substBound] using hφ₂ M v fun i ↦ ((ts i).realize (Sum.elim v xs))
+  refine ⟨φ'.substBound ts, hφ₁.substBound _, .of_models.{u, v, 0, 0} fun M _ _ v xs hT ↦ ?_⟩
+  simpa [realize_iff, realize_substBound] using
+    hφ₂.sound v hT fun i ↦ ((ts i).realize (Sum.elim v xs))
 
--- theorem IsLogicalDelta.substBound {φ : L.BoundedFormula' n} (ts : Fin n → L.Term' m)
---     (hφ : φ.IsLogicalDelta k T) : (φ.substBound ts).IsLogicalDelta k T :=
+-- theorem IsProvableDelta.substBound {φ : L.BoundedFormula' n} (ts : Fin n → L.Term' m)
+--     (hφ : φ.IsProvableDelta k T) : (φ.substBound ts).IsProvableDelta k T :=
 --   ⟨hφ.left.substBound _, hφ.right.substBound _⟩
 
 /- lower levels are included in upper levels -/
 
-theorem IsLogicalPi.isLogicalPi_of_le (h : φ.IsLogicalPi k T) (hkm : k ≤ m) :
-    φ.IsLogicalPi m T := by
+theorem IsProvablePi.isProvablePi_of_le (h : φ.IsProvablePi k T) (hkm : k ≤ m) :
+    φ.IsProvablePi m T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ, hψ₁.isPi_of_le hkm
 
-theorem IsLogicalSigma.isLogicalSigma_of_le (h : φ.IsLogicalSigma k T) (hkm : k ≤ m) :
-    φ.IsLogicalSigma m T := by
+theorem IsProvableSigma.isProvableSigma_of_le (h : φ.IsProvableSigma k T) (hkm : k ≤ m) :
+    φ.IsProvableSigma m T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ, hψ₁.isSigma_of_le hkm
 
--- theorem IsLogicalDelta.isLogicalDelta_of_le (h : φ.IsLogicalDelta k T) (hkm : k ≤ m) :
---     φ.IsLogicalDelta m T :=
---   ⟨h.left.isLogicalPi_of_le hkm, h.right.isLogicalSigma_of_le hkm⟩
+-- theorem IsProvableDelta.isProvableDelta_of_le (h : φ.IsProvableDelta k T) (hkm : k ≤ m) :
+--     φ.IsProvableDelta m T :=
+--   ⟨h.left.isProvablePi_of_le hkm, h.right.isProvableSigma_of_le hkm⟩
 
-theorem IsLogicalPi.isLogicalSigma_of_lt (h : φ.IsLogicalPi k T) (hkm : k < m) :
-    φ.IsLogicalSigma m T := by
+theorem IsProvablePi.isProvableSigma_of_lt (h : φ.IsProvablePi k T) (hkm : k < m) :
+    φ.IsProvableSigma m T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ, hψ₁.Sigma_of_lt hkm
 
-theorem IsLogicalSigma.isLogicalPi_of_lt (h : φ.IsLogicalSigma k T) (hkm : k < m) :
-    φ.IsLogicalPi m T := by
+theorem IsProvableSigma.isProvablePi_of_lt (h : φ.IsProvableSigma k T) (hkm : k < m) :
+    φ.IsProvablePi m T := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   use ψ, hψ₁.Pi_of_lt hkm
 
--- theorem IsLogicalPi.isLogicalDelta_of_lt (h : φ.IsLogicalPi k T) (hkm : k < m) :
---     φ.IsLogicalDelta m T :=
---   ⟨h.isLogicalPi_of_le hkm.le, h.isLogicalSigma_of_lt hkm⟩
+-- theorem IsProvablePi.isProvableDelta_of_lt (h : φ.IsProvablePi k T) (hkm : k < m) :
+--     φ.IsProvableDelta m T :=
+--   ⟨h.isProvablePi_of_le hkm.le, h.isProvableSigma_of_lt hkm⟩
 
--- theorem IsLogicalSigma.isLogicalDelta_of_lt (h : φ.IsLogicalSigma k T) (hkm : k < m) :
---     φ.IsLogicalDelta m T :=
---   ⟨h.isLogicalPi_of_lt hkm, h.isLogicalSigma_of_le hkm.le⟩
+-- theorem IsProvableSigma.isProvableDelta_of_lt (h : φ.IsProvableSigma k T) (hkm : k < m) :
+--     φ.IsProvableDelta m T :=
+--   ⟨h.isProvablePi_of_lt hkm, h.isProvableSigma_of_le hkm.le⟩
 
-theorem IsLogicalPi.foldr_sup {f : List (L.BoundedFormula' n)}
-    (hf : ∀ φ ∈ f, φ.IsLogicalPi k T) :
-    (List.foldr (fun x1 x2 ↦ x1 ⊔ x2) ⊥ f).IsLogicalPi k T := by
+theorem IsProvablePi.foldr_sup {f : List (L.BoundedFormula' n)}
+    (hf : ∀ φ ∈ f, φ.IsProvablePi k T) :
+    (List.foldr (fun x1 x2 ↦ x1 ⊔ x2) ⊥ f).IsProvablePi k T := by
   induction f with
-  | nil => exact isDeltaZero_bot.isLogicalPi.isLogicalPi_of_le (by omega)
+  | nil => exact isDeltaZero_bot.isProvablePi.isProvablePi_of_le (by omega)
   | cons ψ f ih =>
     simp only [List.mem_cons, forall_eq_or_imp] at hf
     exact hf.left.sup (ih (hf.right))
 
-theorem isLogicalPi_iSup [Finite β] {f : β → L.BoundedFormula' n}
-    (hf : ∀ i, (f i).IsLogicalPi k T) :
-    (iSup f).IsLogicalPi k T := by
+theorem isProvablePi_iSup [Finite β] {f : β → L.BoundedFormula' n}
+    (hf : ∀ i, (f i).IsProvablePi k T) :
+    (iSup f).IsProvablePi k T := by
   simp only [BoundedFormula.iSup]
-  grind [IsLogicalPi.foldr_sup]
+  grind [IsProvablePi.foldr_sup]
 
-theorem IsLogicalPi.foldr_inf {f : List (L.BoundedFormula' n)}
-    (hf : ∀ φ ∈ f, φ.IsLogicalPi k T) :
-    (List.foldr (fun x1 x2 ↦ x1 ⊓ x2) ⊤ f).IsLogicalPi k T := by
+theorem IsProvablePi.foldr_inf {f : List (L.BoundedFormula' n)}
+    (hf : ∀ φ ∈ f, φ.IsProvablePi k T) :
+    (List.foldr (fun x1 x2 ↦ x1 ⊓ x2) ⊤ f).IsProvablePi k T := by
   induction f with
-  | nil => exact isDeltaZero_top.isLogicalPi.isLogicalPi_of_le (by omega)
+  | nil => exact isDeltaZero_top.isProvablePi.isProvablePi_of_le (by omega)
   | cons ψ f ih =>
     simp only [List.mem_cons, forall_eq_or_imp] at hf
     exact hf.left.inf (ih (hf.right))
 
-theorem isLogicalPi_iInf [Finite β] {f : β → L.BoundedFormula' n}
-    (hf : ∀ i, (f i).IsLogicalPi k T) :
-    (iInf f).IsLogicalPi k T := by
+theorem isProvablePi_iInf [Finite β] {f : β → L.BoundedFormula' n}
+    (hf : ∀ i, (f i).IsProvablePi k T) :
+    (iInf f).IsProvablePi k T := by
   simp only [BoundedFormula.iInf]
-  grind [IsLogicalPi.foldr_inf]
+  grind [IsProvablePi.foldr_inf]
 
-theorem IsLogicalSigma.foldr_sup {f : List (L.BoundedFormula' n)}
-    (hf : ∀ φ ∈ f, φ.IsLogicalSigma k T) :
-    (List.foldr (fun x1 x2 ↦ x1 ⊔ x2) ⊥ f).IsLogicalSigma k T := by
+theorem IsProvableSigma.foldr_sup {f : List (L.BoundedFormula' n)}
+    (hf : ∀ φ ∈ f, φ.IsProvableSigma k T) :
+    (List.foldr (fun x1 x2 ↦ x1 ⊔ x2) ⊥ f).IsProvableSigma k T := by
   induction f with
-  | nil => exact isDeltaZero_bot.isLogicalSigma.isLogicalSigma_of_le (by omega)
+  | nil => exact isDeltaZero_bot.isProvableSigma.isProvableSigma_of_le (by omega)
   | cons ψ f ih =>
     simp only [List.mem_cons, forall_eq_or_imp] at hf
     exact hf.left.sup (ih (hf.right))
 
-theorem isLogicalSigma_iSup [Finite β] {f : β → L.BoundedFormula' n}
-    (hf : ∀ i, (f i).IsLogicalSigma k T) :
-    (iSup f).IsLogicalSigma k T := by
+theorem isProvableSigma_iSup [Finite β] {f : β → L.BoundedFormula' n}
+    (hf : ∀ i, (f i).IsProvableSigma k T) :
+    (iSup f).IsProvableSigma k T := by
   simp only [BoundedFormula.iSup]
-  grind [IsLogicalSigma.foldr_sup]
+  grind [IsProvableSigma.foldr_sup]
 
-theorem IsLogicalSigma.foldr_inf {f : List (L.BoundedFormula' n)}
-    (hf : ∀ φ ∈ f, φ.IsLogicalSigma k T) :
-    (List.foldr (fun x1 x2 ↦ x1 ⊓ x2) ⊤ f).IsLogicalSigma k T := by
+theorem IsProvableSigma.foldr_inf {f : List (L.BoundedFormula' n)}
+    (hf : ∀ φ ∈ f, φ.IsProvableSigma k T) :
+    (List.foldr (fun x1 x2 ↦ x1 ⊓ x2) ⊤ f).IsProvableSigma k T := by
   induction f with
-  | nil => exact isDeltaZero_top.isLogicalSigma.isLogicalSigma_of_le (by omega)
+  | nil => exact isDeltaZero_top.isProvableSigma.isProvableSigma_of_le (by omega)
   | cons ψ f ih =>
     simp only [List.mem_cons, forall_eq_or_imp] at hf
     exact hf.left.inf (ih (hf.right))
 
-theorem isLogicalSigma_iInf [Finite β] {f : β → L.BoundedFormula' n}
-    (hf : ∀ i, (f i).IsLogicalSigma k T) :
-    (iInf f).IsLogicalSigma k T := by
+theorem isProvableSigma_iInf [Finite β] {f : β → L.BoundedFormula' n}
+    (hf : ∀ i, (f i).IsProvableSigma k T) :
+    (iInf f).IsProvableSigma k T := by
   simp only [BoundedFormula.iInf]
-  grind [IsLogicalSigma.foldr_inf]
+  grind [IsProvableSigma.foldr_inf]
 
 /- monotone in the theory -/
 
 variable {T' : L.Theory}
 
-theorem IsLogicalPi.mono (h : φ.IsLogicalPi k T) (h' : T ⊆ T') : φ.IsLogicalPi k T' := by
+theorem IsProvablePi.mono (h : φ.IsProvablePi k T) (h' : T ⊆ T') : φ.IsProvablePi k T' := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   exact ⟨ψ, hψ₁, hψ₂.mono h'⟩
 
-theorem IsLogicalSigma.mono (h : φ.IsLogicalSigma k T) (h' : T ⊆ T') : φ.IsLogicalSigma k T' := by
+theorem IsProvableSigma.mono (h : φ.IsProvableSigma k T) (h' : T ⊆ T') :
+    φ.IsProvableSigma k T' := by
   obtain ⟨ψ, hψ₁, hψ₂⟩ := h
   exact ⟨ψ, hψ₁, hψ₂.mono h'⟩
 
--- theorem IsLogicalDelta.mono (h : φ.IsLogicalDelta k T) (h' : T ⊆ T') : φ.IsLogicalDelta k T' := by
+-- theorem IsProvableDelta.mono (h : φ.IsProvableDelta k T) (h' : T ⊆ T') :
+--     φ.IsProvableDelta k T' := by
 --   obtain ⟨hψ₁, hψ₂⟩ := h
 --   exact ⟨hψ₁.mono h', hψ₂.mono h'⟩
 
-class LogicalPi (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop where
-  isLogicalPi : φ.IsLogicalPi k T
+class ProvablePi (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop where
+  isProvablePi : φ.IsProvablePi k T
 
-class LogicalSigma (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop where
-  isLogicalSigma : φ.IsLogicalSigma k T
+class ProvableSigma (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop where
+  isProvableSigma : φ.IsProvableSigma k T
 
-class abbrev LogicalDelta (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
-  φ.LogicalPi k T, φ.LogicalSigma k T
+class abbrev ProvableDelta (k : ℕ) (φ : L.BoundedFormula' n) (T : L.Theory) : Prop :=
+  φ.ProvablePi k T, φ.ProvableSigma k T
 
--- instance [φ.LogicalDelta k T] : φ.LogicalPi k T := by infer_instance
--- instance [φ.LogicalDelta k T] : φ.LogicalSigma k T := by infer_instance
+-- instance [φ.ProvableDelta k T] : φ.ProvablePi k T := by infer_instance
+-- instance [φ.ProvableDelta k T] : φ.ProvableSigma k T := by infer_instance
 
-instance [h : φ.Pi k] : φ.LogicalPi k T := ⟨h.isPi.isLogicalPi⟩
+instance [h : φ.Pi k] : φ.ProvablePi k T := ⟨h.isPi.isProvablePi⟩
 
-instance [h : φ.Sigma k] : φ.LogicalSigma k T := ⟨h.isSigma.isLogicalSigma⟩
+instance [h : φ.Sigma k] : φ.ProvableSigma k T := ⟨h.isSigma.isProvableSigma⟩
 
-instance [h : φ.DeltaZero] : φ.LogicalPi 0 T := ⟨h.isDeltaZero.isLogicalPi⟩
+instance [h : φ.DeltaZero] : φ.ProvablePi 0 T := ⟨h.isDeltaZero.isProvablePi⟩
 
-instance [h : φ.DeltaZero] : φ.LogicalSigma 0 T := ⟨h.isDeltaZero.isLogicalSigma⟩
+instance [h : φ.DeltaZero] : φ.ProvableSigma 0 T := ⟨h.isDeltaZero.isProvableSigma⟩
 
-instance [h : φ.LogicalPi 0 T] : φ.LogicalSigma 0 T :=
-  ⟨by simpa [isLogicalSigma_zero_iff_isLogicalPi_zero] using h.isLogicalPi⟩
+instance [h : φ.ProvablePi 0 T] : φ.ProvableSigma 0 T :=
+  ⟨by simpa [isProvableSigma_zero_iff_isProvablePi_zero] using h.isProvablePi⟩
 
-instance [h : φ.LogicalSigma 0 T] : φ.LogicalPi 0 T :=
-  ⟨by simpa [isLogicalSigma_zero_iff_isLogicalPi_zero] using h.isLogicalSigma⟩
+instance [h : φ.ProvableSigma 0 T] : φ.ProvablePi 0 T :=
+  ⟨by simpa [isProvableSigma_zero_iff_isProvablePi_zero] using h.isProvableSigma⟩
 
 variable {φ : L.BoundedFormula' (n + m)}
 
-instance [h : φ.LogicalPi (k + 1) T] : (φ.all' m).LogicalPi (k + 1) T := ⟨h.isLogicalPi.all'⟩
+instance [h : φ.ProvablePi (k + 1) T] : (φ.all' m).ProvablePi (k + 1) T := ⟨h.isProvablePi.all'⟩
 
-instance [h : φ.LogicalPi k T] [hk : NeZero k] :
-  (φ.all' m).LogicalPi k T := ⟨h.isLogicalPi.all'₀ hk.out⟩
+instance [h : φ.ProvablePi k T] [hk : NeZero k] :
+  (φ.all' m).ProvablePi k T := ⟨h.isProvablePi.all'₀ hk.out⟩
 
-instance [h : φ.LogicalPi k T] :
-  (φ.ex' m).LogicalSigma (k + 1) T := ⟨h.isLogicalPi.ex'⟩
+instance [h : φ.ProvablePi k T] :
+  (φ.ex' m).ProvableSigma (k + 1) T := ⟨h.isProvablePi.ex'⟩
 
-instance [h : φ.LogicalSigma (k + 1) T] :
-  (φ.ex' m).LogicalSigma (k + 1) T := ⟨h.isLogicalSigma.ex'⟩
+instance [h : φ.ProvableSigma (k + 1) T] :
+  (φ.ex' m).ProvableSigma (k + 1) T := ⟨h.isProvableSigma.ex'⟩
 
-instance [h : φ.LogicalSigma k T] [hk : NeZero k] :
-  (φ.ex' m).LogicalSigma k T := ⟨h.isLogicalSigma.ex'₀ hk.out⟩
+instance [h : φ.ProvableSigma k T] [hk : NeZero k] :
+  (φ.ex' m).ProvableSigma k T := ⟨h.isProvableSigma.ex'₀ hk.out⟩
 
-instance [h : φ.LogicalSigma k T] :
-  (φ.all' m).LogicalPi (k + 1) T := ⟨h.isLogicalSigma.all'⟩
+instance [h : φ.ProvableSigma k T] :
+  (φ.all' m).ProvablePi (k + 1) T := ⟨h.isProvableSigma.all'⟩
 
 variable {φ : L.BoundedFormula' (n + 1)}
 
-instance [h : φ.LogicalPi (k + 1) T] : (φ.all).LogicalPi (k + 1) T := ⟨h.isLogicalPi.all'⟩
+instance [h : φ.ProvablePi (k + 1) T] : (φ.all).ProvablePi (k + 1) T := ⟨h.isProvablePi.all'⟩
 
-instance [h : φ.LogicalPi k T] [hk : NeZero k] :
-  (φ.all).LogicalPi k T := ⟨h.isLogicalPi.all'₀ hk.out⟩
+instance [h : φ.ProvablePi k T] [hk : NeZero k] :
+  (φ.all).ProvablePi k T := ⟨h.isProvablePi.all'₀ hk.out⟩
 
-instance [h : φ.LogicalPi k T] :
-  (φ.ex).LogicalSigma (k + 1) T := ⟨h.isLogicalPi.ex'⟩
+instance [h : φ.ProvablePi k T] :
+  (φ.ex).ProvableSigma (k + 1) T := ⟨h.isProvablePi.ex'⟩
 
-instance [h : φ.LogicalSigma (k + 1) T] :
-  (φ.ex).LogicalSigma (k + 1) T := ⟨h.isLogicalSigma.ex'⟩
+instance [h : φ.ProvableSigma (k + 1) T] :
+  (φ.ex).ProvableSigma (k + 1) T := ⟨h.isProvableSigma.ex'⟩
 
-instance [h : φ.LogicalSigma k T] [hk : NeZero k] :
-  (φ.ex).LogicalSigma k T := ⟨h.isLogicalSigma.ex'₀ hk.out⟩
+instance [h : φ.ProvableSigma k T] [hk : NeZero k] :
+  (φ.ex).ProvableSigma k T := ⟨h.isProvableSigma.ex'₀ hk.out⟩
 
-instance [h : φ.LogicalSigma k T] :
-  (φ.all).LogicalPi (k + 1) T := ⟨h.isLogicalSigma.all'⟩
+instance [h : φ.ProvableSigma k T] :
+  (φ.all).ProvablePi (k + 1) T := ⟨h.isProvableSigma.all'⟩
 
 variable {φ ψ : L.BoundedFormula' n}
 
-instance [h : φ.LogicalPi k T] :
-  (∼φ).LogicalSigma k T := ⟨h.isLogicalPi.not⟩
+instance [h : φ.ProvablePi k T] :
+  (∼φ).ProvableSigma k T := ⟨h.isProvablePi.not⟩
 
-instance [h : φ.LogicalSigma k T] :
-  (∼φ).LogicalPi k T := ⟨h.isLogicalSigma.not⟩
+instance [h : φ.ProvableSigma k T] :
+  (∼φ).ProvablePi k T := ⟨h.isProvableSigma.not⟩
 
--- instance [h : φ.LogicalDelta k T] : (∼φ).LogicalDelta k T where
---   isLogicalPi := h.isLogicalSigma.not
---   isLogicalSigma := h.isLogicalPi.not
+-- instance [h : φ.ProvableDelta k T] : (∼φ).ProvableDelta k T where
+--   isProvablePi := h.isProvableSigma.not
+--   isProvableSigma := h.isProvablePi.not
 
-instance [hφ : φ.LogicalPi k T] [hψ : ψ.LogicalSigma k T] :
-  (φ ⟹ ψ).LogicalSigma k T := ⟨hφ.isLogicalPi.imp hψ.isLogicalSigma⟩
+instance [hφ : φ.ProvablePi k T] [hψ : ψ.ProvableSigma k T] :
+  (φ ⟹ ψ).ProvableSigma k T := ⟨hφ.isProvablePi.imp hψ.isProvableSigma⟩
 
-instance [hφ : φ.LogicalSigma k T] [hψ : ψ.LogicalPi k T] :
-  (φ ⟹ ψ).LogicalPi k T := ⟨hφ.isLogicalSigma.imp hψ.isLogicalPi⟩
+instance [hφ : φ.ProvableSigma k T] [hψ : ψ.ProvablePi k T] :
+  (φ ⟹ ψ).ProvablePi k T := ⟨hφ.isProvableSigma.imp hψ.isProvablePi⟩
 
 -- instance {k n : ℕ} {φ ψ : L.BoundedFormula' n}
-  -- [hφ : φ.LogicalDelta k T] [hψ : ψ.LogicalDelta k T] :
-  -- (φ ⟹ ψ).LogicalDelta k T where
-  -- isLogicalPi := hφ.isLogicalSigma.imp hψ.isLogicalPi
-  -- isLogicalSigma := hφ.isLogicalPi.imp hψ.isLogicalSigma
+  -- [hφ : φ.ProvableDelta k T] [hψ : ψ.ProvableDelta k T] :
+  -- (φ ⟹ ψ).ProvableDelta k T where
+  -- isProvablePi := hφ.isProvableSigma.imp hψ.isProvablePi
+  -- isProvableSigma := hφ.isProvablePi.imp hψ.isProvableSigma
 
 instance {φ ψ : L.BoundedFormula' n}
-  [hφ : φ.LogicalPi k T] [hψ : ψ.LogicalPi k T] :
-  (φ ⊔ ψ).LogicalPi k T := ⟨hφ.isLogicalPi.sup hψ.isLogicalPi⟩
+  [hφ : φ.ProvablePi k T] [hψ : ψ.ProvablePi k T] :
+  (φ ⊔ ψ).ProvablePi k T := ⟨hφ.isProvablePi.sup hψ.isProvablePi⟩
 
 instance {φ ψ : L.BoundedFormula' n}
-  [hφ : φ.LogicalPi k T] [hψ : ψ.LogicalPi k T] :
-  (φ ⊓ ψ).LogicalPi k T := ⟨hφ.isLogicalPi.inf hψ.isLogicalPi⟩
+  [hφ : φ.ProvablePi k T] [hψ : ψ.ProvablePi k T] :
+  (φ ⊓ ψ).ProvablePi k T := ⟨hφ.isProvablePi.inf hψ.isProvablePi⟩
 
 instance {φ ψ : L.BoundedFormula' n}
-  [hφ : φ.LogicalSigma k T] [hψ : ψ.LogicalSigma k T] :
-  (φ ⊔ ψ).LogicalSigma k T := ⟨hφ.isLogicalSigma.sup hψ.isLogicalSigma⟩
+  [hφ : φ.ProvableSigma k T] [hψ : ψ.ProvableSigma k T] :
+  (φ ⊔ ψ).ProvableSigma k T := ⟨hφ.isProvableSigma.sup hψ.isProvableSigma⟩
 
 instance {φ ψ : L.BoundedFormula' n}
-  [hφ : φ.LogicalSigma k T] [hψ : ψ.LogicalSigma k T] :
-  (φ ⊓ ψ).LogicalSigma k T := ⟨hφ.isLogicalSigma.inf hψ.isLogicalSigma⟩
+  [hφ : φ.ProvableSigma k T] [hψ : ψ.ProvableSigma k T] :
+  (φ ⊓ ψ).ProvableSigma k T := ⟨hφ.isProvableSigma.inf hψ.isProvableSigma⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-  [hf : ∀ i, (f i).LogicalPi k T] :
-  (iSup f).LogicalPi k T := ⟨isLogicalPi_iSup (fun i ↦ (hf i).isLogicalPi)⟩
+  [hf : ∀ i, (f i).ProvablePi k T] :
+  (iSup f).ProvablePi k T := ⟨isProvablePi_iSup (fun i ↦ (hf i).isProvablePi)⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-  [hf : ∀ i, (f i).LogicalPi k T] :
-  (iInf f).LogicalPi k T := ⟨isLogicalPi_iInf (fun i ↦ (hf i).isLogicalPi)⟩
+  [hf : ∀ i, (f i).ProvablePi k T] :
+  (iInf f).ProvablePi k T := ⟨isProvablePi_iInf (fun i ↦ (hf i).isProvablePi)⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-  [hf : ∀ i, (f i).LogicalSigma k T] :
-  (iSup f).LogicalSigma k T := ⟨isLogicalSigma_iSup (fun i ↦ (hf i).isLogicalSigma)⟩
+  [hf : ∀ i, (f i).ProvableSigma k T] :
+  (iSup f).ProvableSigma k T := ⟨isProvableSigma_iSup (fun i ↦ (hf i).isProvableSigma)⟩
 
 instance [Finite β] {f : β → L.BoundedFormula' n}
-  [hf : ∀ i, (f i).LogicalSigma k T] :
-  (iInf f).LogicalSigma k T := ⟨isLogicalSigma_iInf (fun i ↦ (hf i).isLogicalSigma)⟩
+  [hf : ∀ i, (f i).ProvableSigma k T] :
+  (iInf f).ProvableSigma k T := ⟨isProvableSigma_iInf (fun i ↦ (hf i).isProvableSigma)⟩
 
 -- instance {φ ψ : L.BoundedFormula' n}
---   [hφ : φ.LogicalDelta k T] [hψ : ψ.LogicalDelta k T] :
---   (φ ⊔ ψ).LogicalDelta k T where
---   isLogicalPi := hφ.isLogicalPi.sup hψ.isLogicalPi
---   isLogicalSigma := hφ.isLogicalSigma.sup hψ.isLogicalSigma
+--   [hφ : φ.ProvableDelta k T] [hψ : ψ.ProvableDelta k T] :
+--   (φ ⊔ ψ).ProvableDelta k T where
+--   isProvablePi := hφ.isProvablePi.sup hψ.isProvablePi
+--   isProvableSigma := hφ.isProvableSigma.sup hψ.isProvableSigma
 
 -- instance {φ ψ : L.BoundedFormula' n}
---   [hφ : φ.LogicalDelta k T] [hψ : ψ.LogicalDelta k T] :
---   (φ ⊓ ψ).LogicalDelta k T where
---   isLogicalPi := hφ.isLogicalPi.inf hψ.isLogicalPi
---   isLogicalSigma := hφ.isLogicalSigma.inf hψ.isLogicalSigma
+--   [hφ : φ.ProvableDelta k T] [hψ : ψ.ProvableDelta k T] :
+--   (φ ⊓ ψ).ProvableDelta k T where
+--   isProvablePi := hφ.isProvablePi.inf hψ.isProvablePi
+--   isProvableSigma := hφ.isProvableSigma.inf hψ.isProvableSigma
 
 instance {φ ψ : L.BoundedFormula' n}
-  [hφ : φ.LogicalDelta k T] [hψ : ψ.LogicalDelta k T] :
-  (φ ⇔ ψ).LogicalDelta k T where
-  isLogicalPi :=
-    (hφ.isLogicalSigma.imp hψ.isLogicalPi).inf (hψ.isLogicalSigma.imp hφ.isLogicalPi)
-  isLogicalSigma :=
-    (hφ.isLogicalPi.imp hψ.isLogicalSigma).inf (hψ.isLogicalPi.imp hφ.isLogicalSigma)
+  [hφ : φ.ProvableDelta k T] [hψ : ψ.ProvableDelta k T] :
+  (φ ⇔ ψ).ProvableDelta k T where
+  isProvablePi :=
+    (hφ.isProvableSigma.imp hψ.isProvablePi).inf (hψ.isProvableSigma.imp hφ.isProvablePi)
+  isProvableSigma :=
+    (hφ.isProvablePi.imp hψ.isProvableSigma).inf (hψ.isProvablePi.imp hφ.isProvableSigma)
 
 instance {φ : L.BoundedFormula' n}
-  [hφ : φ.LogicalPi k T] (ts : Fin n → L.Term' m) :
-  (φ.substBound ts).LogicalPi k T :=
-  ⟨hφ.isLogicalPi.substBound _⟩
+  [hφ : φ.ProvablePi k T] (ts : Fin n → L.Term' m) :
+  (φ.substBound ts).ProvablePi k T :=
+  ⟨hφ.isProvablePi.substBound _⟩
 
 instance {φ : L.BoundedFormula' n}
-  [hφ : φ.LogicalSigma k T] (ts : Fin n → L.Term' m) :
-  (φ.substBound ts).LogicalSigma k T :=
-  ⟨hφ.isLogicalSigma.substBound _⟩
+  [hφ : φ.ProvableSigma k T] (ts : Fin n → L.Term' m) :
+  (φ.substBound ts).ProvableSigma k T :=
+  ⟨hφ.isProvableSigma.substBound _⟩
 
-instance {φ : L.BoundedFormula' n} [h : φ.LogicalPi k T] :
-  (φ.substBoundBound f).LogicalPi k T := ⟨h.isLogicalPi.substBound _⟩
+instance {φ : L.BoundedFormula' n} [h : φ.ProvablePi k T] :
+  (φ.substBoundBound f).ProvablePi k T := ⟨h.isProvablePi.substBound _⟩
 
-instance {φ : L.BoundedFormula' n} [h : φ.LogicalSigma k T] :
-  (φ.substBoundBound f).LogicalSigma k T := ⟨h.isLogicalSigma.substBound _⟩
+instance {φ : L.BoundedFormula' n} [h : φ.ProvableSigma k T] :
+  (φ.substBoundBound f).ProvableSigma k T := ⟨h.isProvableSigma.substBound _⟩
 
-instance {φ : L.BoundedFormula' n} [h : φ.LogicalPi k T] (h' : n = n') :
-  (φ.cast h').LogicalPi k T := ⟨h.isLogicalPi.substBound _⟩
+instance {φ : L.BoundedFormula' n} [h : φ.ProvablePi k T] (h' : n = n') :
+  (φ.cast h').ProvablePi k T := ⟨h.isProvablePi.substBound _⟩
 
-instance {φ : L.BoundedFormula' n} [h : φ.LogicalSigma k T] (h' : n = n') :
-  (φ.cast h').LogicalSigma k T := ⟨h.isLogicalSigma.substBound _⟩
+instance {φ : L.BoundedFormula' n} [h : φ.ProvableSigma k T] (h' : n = n') :
+  (φ.cast h').ProvableSigma k T := ⟨h.isProvableSigma.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + p)} {ψ : L.BoundedFormula' (n + q)} [hφ : φ.LogicalSigma k T]
-  [hψ : ψ.LogicalPi k T] : (φ.splitImp ψ).LogicalPi k T :=
-  ⟨(hφ.isLogicalSigma.substBound _).imp (hψ.isLogicalPi.substBound _)⟩
+instance {φ : L.BoundedFormula' (n + p)} {ψ : L.BoundedFormula' (n + q)} [hφ : φ.ProvableSigma k T]
+  [hψ : ψ.ProvablePi k T] : (φ.splitImp ψ).ProvablePi k T :=
+  ⟨(hφ.isProvableSigma.substBound _).imp (hψ.isProvablePi.substBound _)⟩
 
-instance {φ : L.BoundedFormula' (n + p)} {ψ : L.BoundedFormula' (n + q)} [hφ : φ.LogicalPi k T]
-  [hψ : ψ.LogicalSigma k T] : (φ.splitImp ψ).LogicalSigma k T :=
-  ⟨(hφ.isLogicalPi.substBound _).imp (hψ.isLogicalSigma.substBound _)⟩
+instance {φ : L.BoundedFormula' (n + p)} {ψ : L.BoundedFormula' (n + q)} [hφ : φ.ProvablePi k T]
+  [hψ : ψ.ProvableSigma k T] : (φ.splitImp ψ).ProvableSigma k T :=
+  ⟨(hφ.isProvablePi.substBound _).imp (hψ.isProvableSigma.substBound _)⟩
 
-instance {φ : L.BoundedFormula' (n + p)} [hφ : φ.LogicalPi k T] :
-  (φ.switchBound).LogicalPi k T :=
-  ⟨hφ.isLogicalPi.substBound _⟩
+instance {φ : L.BoundedFormula' (n + p)} [hφ : φ.ProvablePi k T] :
+  (φ.switchBound).ProvablePi k T :=
+  ⟨hφ.isProvablePi.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + p)} [hφ : φ.LogicalSigma k T] :
-  (φ.switchBound).LogicalSigma k T :=
-  ⟨hφ.isLogicalSigma.substBound _⟩
+instance {φ : L.BoundedFormula' (n + p)} [hφ : φ.ProvableSigma k T] :
+  (φ.switchBound).ProvableSigma k T :=
+  ⟨hφ.isProvableSigma.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + p + q)} [hφ : φ.LogicalPi k T] :
-  (φ.castAssoc).LogicalPi k T :=
-  ⟨hφ.isLogicalPi.substBound _⟩
+instance {φ : L.BoundedFormula' (n + p + q)} [hφ : φ.ProvablePi k T] :
+  (φ.castAssoc).ProvablePi k T :=
+  ⟨hφ.isProvablePi.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + p + q)} [hφ : φ.LogicalSigma k T] :
-  (φ.castAssoc).LogicalSigma k T :=
-  ⟨hφ.isLogicalSigma.substBound _⟩
+instance {φ : L.BoundedFormula' (n + p + q)} [hφ : φ.ProvableSigma k T] :
+  (φ.castAssoc).ProvableSigma k T :=
+  ⟨hφ.isProvableSigma.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.LogicalPi k T] :
-  (φ.castAssoc').LogicalPi k T :=
-  ⟨hφ.isLogicalPi.substBound _⟩
+instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.ProvablePi k T] :
+  (φ.castAssoc').ProvablePi k T :=
+  ⟨hφ.isProvablePi.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.LogicalSigma k T] :
-  (φ.castAssoc').LogicalSigma k T :=
-  ⟨hφ.isLogicalSigma.substBound _⟩
+instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.ProvableSigma k T] :
+  (φ.castAssoc').ProvableSigma k T :=
+  ⟨hφ.isProvableSigma.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.LogicalPi k T] :
-  (φ.switchBoundRight).LogicalPi k T :=
-  ⟨hφ.isLogicalPi.substBound _⟩
+instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.ProvablePi k T] :
+  (φ.switchBoundRight).ProvablePi k T :=
+  ⟨hφ.isProvablePi.substBound _⟩
 
-instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.LogicalSigma k T] :
-  (φ.switchBoundRight).LogicalSigma k T :=
-  ⟨hφ.isLogicalSigma.substBound _⟩
+instance {φ : L.BoundedFormula' (n + (p + q))} [hφ : φ.ProvableSigma k T] :
+  (φ.switchBoundRight).ProvableSigma k T :=
+  ⟨hφ.isProvableSigma.substBound _⟩
 
-instance {φ : L.BoundedFormula' (p + n)} {ψ : L.BoundedFormula' (q + n)} [hφ : φ.LogicalSigma k T]
-  [hψ : ψ.LogicalPi k T] : (φ.splitImp' ψ).LogicalPi k T := by rw [splitImp']; infer_instance
+instance {φ : L.BoundedFormula' (p + n)} {ψ : L.BoundedFormula' (q + n)} [hφ : φ.ProvableSigma k T]
+  [hψ : ψ.ProvablePi k T] : (φ.splitImp' ψ).ProvablePi k T := by rw [splitImp']; infer_instance
 
-instance {φ : L.BoundedFormula' (p + n)} {ψ : L.BoundedFormula' (q + n)} [hφ : φ.LogicalPi k T]
-  [hψ : ψ.LogicalSigma k T] : (φ.splitImp' ψ).LogicalSigma k T := by rw [splitImp']; infer_instance
+instance {φ : L.BoundedFormula' (p + n)} {ψ : L.BoundedFormula' (q + n)} [hφ : φ.ProvablePi k T]
+  [hψ : ψ.ProvableSigma k T] : (φ.splitImp' ψ).ProvableSigma k T := by
+  rw [splitImp']; infer_instance
 
 
-end LogicalLevyHierarchy
+end ProvableLevyHierarchy
 
 end BoundedFormula
 

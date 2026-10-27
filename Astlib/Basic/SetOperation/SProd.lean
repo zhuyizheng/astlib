@@ -3,9 +3,9 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
+import Astlib.Basic.SetOperation.Rudimentary.DeltaZero
 import Astlib.Basic.SetOperation.SDiff
 import Astlib.Basic.SetOperation.Singleton
-import Astlib.Basic.SetOperation.Powerset
 /-!
 file docstring
 -/
@@ -32,7 +32,7 @@ instance {L : Language} [L.HasMem] :
 
 namespace MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M]
   (x y z x₁ x₂ y₁ y₂ u v : M)
 
@@ -41,6 +41,10 @@ noncomputable def sprod (x y : M) : M :=
 
 noncomputable instance : SProd M M M :=
   ⟨fun x y ↦ sprod₀ 〘x, y〙₂⟩
+
+instance [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] :
+    MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ ys 0 ×ˢ ys 1) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ sprod₀ fun _ _ ↦ rfl
 
 instance {L : Language} [L.HasMem] (r s : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] :
   (r ×ˢ s).CharFree := by
@@ -56,8 +60,7 @@ theorem sprod_eq : x ×ˢ y = iUnion x (fun u ↦ iUnion y fun v ↦ {!(u, v)}) 
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_sprod₀ (xs : Fin 2 → M) :
     RudimentaryTerm.sprod₀〘xs〙 = xs 0 ×ˢ xs 1 := by
   simp only [SProd.sprod]
-  congr
-  ext i; fin_cases i <;> rfl
+  rw [Matrix.vec_fin_two_eq]
 
 variable [RudClosed M]
 
@@ -114,12 +117,11 @@ theorem inter_sprod [Extensional M] :
     (x₁ ∩ x₂) ×ˢ y = x₁ ×ˢ y ∩ x₂ ×ˢ y := by
   ext z
   simp only [mem_sprod_iff]
-  constructor
-  · grind
-  · intro h
-    simp only [mem_inter_iff, mem_sprod_iff] at h
-    obtain ⟨⟨u, hu, v, hv, huv⟩, ⟨u', hu', v', hv', huv'⟩⟩ := h
-    grind
+  refine ⟨by grind, ?_⟩
+  intro h
+  simp only [mem_inter_iff, mem_sprod_iff] at h
+  obtain ⟨⟨u, hu, v, hv, huv⟩, ⟨u', hu', v', hv', huv'⟩⟩ := h
+  grind
 
 theorem sprod_inter [Extensional M] :
     x ×ˢ (y₁ ∩ y₂) = x ×ˢ y₁ ∩ x ×ˢ y₂ := by

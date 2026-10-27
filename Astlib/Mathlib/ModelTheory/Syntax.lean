@@ -203,7 +203,8 @@ theorem substBound_rel_boundedFormula₂ (R : L.Relations 2) (t₁ t₂ : L.Term
       R.boundedFormula₂ (t₁.substBound ts) (t₂.substBound ts) := by
   simp only [Relations.boundedFormula₂, Relations.boundedFormula, substBound_rel, rel.injEq,
     heq_eq_eq, true_and]
-  exact List.ofFn_inj.mp rfl
+  rw [← List.ofFn_inj]
+  exact rfl
 
 @[simp]
 theorem substBound_imp (φ ψ : L.BoundedFormula α n) :
@@ -318,6 +319,10 @@ theorem substBoundBound_id {φ : L.BoundedFormula α n} : φ.substBoundBound id 
   | rel R ts => simp
   | imp φ₁ φ₂ ih₁ ih₂ => simp [ih₁, ih₂]
   | all ψ ih => simp [ih]
+
+@[simp]
+theorem substBound_var (φ : L.BoundedFormula α n) : φ.substBound (fun i ↦ &i) = φ :=
+  substBoundBound_id
 
 @[simp]
 def cast {m n : ℕ} (h : m = n) (φ : L.BoundedFormula α m) : L.BoundedFormula α n :=

@@ -3,7 +3,7 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
-import Astlib.Basic.SetOperation.Rudimentary.Semantics
+import Astlib.Basic.SetOperation.Rudimentary.DeltaZero
 import Astlib.Basic.SetOperation.SProd
 /-!
 file docstring
@@ -131,9 +131,8 @@ theorem tupleVal_eq_substBoundRudBasis (r : L.RudimentaryBasisTerm n) {l : ℕ} 
         simp only [tupleVal, right, isValue, snoc_last]
         rfl
       | cast i =>
-        simp only [tupleVal, snoc_castSucc, isValue]
-        rw [ih r.left, ih (var 0).left]
-        simp only [substBoundRudBasis_substBoundRudBasis]
+        simp only [tupleVal, snoc_castSucc, isValue, ih r.left, ih (var 0).left,
+          substBoundRudBasis_substBoundRudBasis]
         congr
         ext i; fin_cases i
         simp only [left, Nat.succ_eq_add_one, Nat.reduceAdd, zero_eta, isValue,
@@ -152,7 +151,7 @@ def iterSwitch (r : L.RudimentaryBasisTerm n) {l : ℕ} (rs : Fin l → L.Rudime
 /-- The set of `l + 1`-tuples where after unraveling, the first `l` elements are in `rs`
 pointwise, and the `l`th element is a member of the `i`th element. -/
 def lastMemFin {n} (i : Fin l) (rs : Fin l → L.RudimentaryBasisTerm n) : L.RudimentaryBasisTerm n :=
-  (rotateSProd (rs i).invMemGraph (rs ∘ Fin.castLE (n := i) (i.prop.le))).iterSwitch
+  (rotateSProd (rs i).invMemGraph (rs ∘ Fin.castLE (i.prop.le))).iterSwitch
     fun j : Fin (l - (i.val + 1)) ↦ rs (⟨i.val + 1 + j.val, by omega⟩)
 
 /-- The set of elements `l + 1`-tuples where after unraveling, the first `l` elements are in `rs`

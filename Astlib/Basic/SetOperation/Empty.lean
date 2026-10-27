@@ -5,14 +5,14 @@ Authors: Yizheng Zhu
 -/
 import Astlib.Basic.SetOperation.Extensional
 import Astlib.Mathlib.Sum.Basic
-import Astlib.Basic.SetOperation.Rudimentary.Semantics
+import Astlib.Basic.SetOperation.Rudimentary.Realize
 /-!
 file docstring
 -/
 
 open FirstOrder Language MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M] [PairClosed M] [SDiffClosed M] (x : M)
 
 namespace FirstOrder.Language
@@ -38,9 +38,9 @@ end MemStructure
 
 namespace RudimentaryTerm
 
-instance {L : FirstOrder.Language.{u, v}} [L.HasMem] [NeZero n] : Inhabited (L.RudimentaryTerm n) := ⟨ᵣ0⟩
+instance {L : FirstOrder.Language} [L.HasMem] [NeZero n] : Inhabited (L.RudimentaryTerm n) := ⟨ᵣ0⟩
 
-instance {L : FirstOrder.Language.{u, v}} [L.HasMem] [NeZero n] : EmptyCollection (L.RudimentaryTerm n) :=
+instance {L : FirstOrder.Language} [L.HasMem] [NeZero n] : EmptyCollection (L.RudimentaryTerm n) :=
   ⟨ᵣ0 \ ᵣ0⟩
 
 instance {L : Language} [L.HasMem] {n : ℕ} [NeZero n] :

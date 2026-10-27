@@ -43,7 +43,7 @@ theorem realize_mem {n : ℕ} (t₁ t₂ : L.Term' n)
     (v : Empty → M) (xs : Fin n → M) :
     BoundedFormula.Realize (t₁ ∈' t₂) v xs ↔ t₁〘xs〙 ∈ t₂〘xs〙 := by
   convert realize'_mem t₁ t₂ xs
-  rw [Realize', Unique.uniq _ v]
+  simp only [Realize', Unique.uniq _ v]
 
 end MemStructure
 

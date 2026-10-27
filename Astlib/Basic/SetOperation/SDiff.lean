@@ -12,7 +12,7 @@ open FirstOrder.Language.BoundedFormula
 
 namespace FirstOrder.Language.MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M] [RudClosed M]
   (x y z : M)
 
@@ -46,6 +46,11 @@ theorem sdiff_union_right [Extensional M] :
     (x \ y) ∪ (x ∩ y) = x := by
   ext; grind
 
+
+instance [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] :
+    MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ ys 0 \ ys 1) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ (ᵣ0 \ ᵣ1) fun _ _ ↦ by simp
+
 variable [Extensional M]
 
 @[simp, grind =]
@@ -56,7 +61,7 @@ theorem sdiff_empty_of_subset {x y : M} (h : x ⊆ y) : x \ y = ∅ := by
 theorem subset_of_sdiff_empty {x y : M} (h : x \ y = ∅) : x ⊆ y := by
   intro z hz
   contrapose! h
-  rw [ne_empty_iff]
+  simp only [ne_empty_iff]
   exact ⟨z, by grind⟩
 
 @[simp]

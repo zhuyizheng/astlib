@@ -14,7 +14,7 @@ open Fin FirstOrder Language MemStructure RudimentaryTerm DeltaZeroBoundedFormul
 
 namespace FirstOrder.Language.MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M]
   (x y z x₁ x₂ y₁ y₂ u v : M)
 
@@ -22,7 +22,7 @@ variable {L : Language.{u, v}} {M : Type max u v}
 section Basic
 
 @[grind]
-def IsRelation (R : M) :=
+def IsRelation : Class M := fun R ↦
   ∀ ⦃z : M⦄, z ∈ R → IsOrderedPair z
 
 notation:50 x " [" R:50 "] " y:50 => !(x, y) ∈ R
@@ -56,8 +56,12 @@ lemma IsRelation.subset_iff {R S : M} (hR : IsRelation R) :
 
 @[grind .]
 theorem IsRelation.ext [Extensional M] {R S : M} (hR : IsRelation R) (hS : IsRelation S)
-    (h : ∀ x y : M, x [R] y ↔ x [S] y) : R = S :=
-  eq_of_subset_of_subset (hR.subset_iff.mpr (by grind)) (hS.subset_iff.mpr (by grind))
+    (h : ∀ x y : M, x [R] y ↔ x [S] y) : R = S := by
+  refine eq_of_subset_of_subset ?_ ?_
+  · simp only [hR.subset_iff]
+    grind
+  · simp only [hS.subset_iff]
+    grind
 
 @[grind .]
 theorem IsRelation.eq_iff [Extensional M] {R S : M} (hR : IsRelation R) (hS : IsRelation S) :
@@ -125,7 +129,10 @@ instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
 
 variable [L.ExtraConstantsUnaryRelationsOnly] [Extensional M]
 
-noncomputable def dom (R : M) := dom₀ 〘R〙₁
+noncomputable def dom : ClassFunction M := fun R ↦ dom₀ 〘R〙₁
+
+instance : (dom : ClassFunction M).DeltaZero Set.univ :=
+  ClassFunction.deltaZero_of_eq dom₀ fun _ ↦ rfl
 
 omit [RudClosed M] in
 @[simp, grind =]
@@ -158,6 +165,16 @@ theorem dom_empty :
     dom (∅ : M) = ∅ := by
   ext; grind
 
+theorem IsRelation.eq_empty_of_dom_eq_empty {R : M} (hR : IsRelation R) (h : dom R = ∅) :
+    R = ∅ := by
+  ext z
+  refine ⟨fun hz ↦ ?_, by simp⟩
+  obtain ⟨x, y, rfl⟩ := hR hz
+  have hx : x ∈ dom R := by
+    simp only [mem_dom_iff]
+    exact ⟨y, hz⟩
+  simp [h] at hx
+
 theorem dom_union (R S : M) :
     dom (R ∪ S) = dom R ∪ dom S := by
   ext; grind
@@ -172,7 +189,8 @@ theorem dom_sprod
     dom (a ×ˢ b) = a := by
   ext; rw [mem_dom_iff]
   refine ⟨by grind, fun hz ↦ ?_⟩
-  obtain ⟨v, hv⟩ := ne_empty_iff _ |>.mp hb
+  simp only [ne_empty_iff] at hb
+  obtain ⟨v, hv⟩ := hb
   exact ⟨v, by grind⟩
 
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.ran₀
@@ -195,7 +213,10 @@ instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
   (r : L.RudimentaryTerm n) [r.CharFree] : (r.ran).CharFree := by
   unfold ran; infer_instance
 
-noncomputable def ran (R : M) := ran₀ 〘R〙₁
+noncomputable def ran : ClassFunction M := fun R ↦ ran₀ 〘R〙₁
+
+instance : (ran : ClassFunction M).DeltaZero Set.univ :=
+  ClassFunction.deltaZero_of_eq ran₀ fun _ ↦ rfl
 
 omit [RudClosed M] in
 @[simp, grind =]
@@ -242,7 +263,8 @@ theorem ran_sprod
     ran (a ×ˢ b) = b := by
   ext; rw [mem_ran_iff]
   refine ⟨by grind, fun hz ↦ ?_⟩
-  obtain ⟨v, hv⟩ := ne_empty_iff _ |>.mp ha
+  simp only [ne_empty_iff] at ha
+  obtain ⟨v, hv⟩ := ha
   exact ⟨v, by grind⟩
 
 theorem IsRelation.subset_dom_sprod_ran {R : M} (hR : IsRelation R) :
@@ -293,10 +315,12 @@ noncomputable def comp (R S : M) : M :=
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_comp₀ (xs : Fin 2 → M) :
     comp₀〘xs〙 = (xs 0 !∘ xs 1 : M) := by
   simp only [comp]
-  congr
-  ext i; fin_cases i <;> rfl
+  rw [Matrix.vec_fin_two_eq]
 
 variable [RudClosed M]
+
+instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ ys 0 !∘ ys 1) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ comp₀ fun _ _ ↦ rfl
 
 @[grind =]
 theorem mem_comp_iff
@@ -366,7 +390,7 @@ instance {L : Language} [L.HasMem]
   unfold RudimentaryTerm.id; infer_instance
 
 /-- The identity relation on `a` -/
-noncomputable def id (a : M) : M :=
+noncomputable def id : ClassFunction M := fun a ↦
   id₀ 〘a〙₁
 
 @[simp, grind =]
@@ -400,13 +424,13 @@ variable [L.ExtraConstantsUnaryRelationsOnly] [Extensional M]
 @[simp, grind =]
 theorem dom_id (a : M) : dom (id a : M) = a := by
   ext z
-  rw [mem_dom_iff]
+  simp only [mem_dom_iff]
   exact ⟨by grind, fun hz ↦ ⟨z, by grind⟩⟩
 
 @[simp, grind =]
 theorem ran_id (a : M) : ran (id a) = a := by
   ext z
-  rw [mem_ran_iff]
+  simp only [mem_ran_iff]
   exact ⟨by grind, fun hz ↦ ⟨z, by grind⟩⟩
 
 @[simp, grind =]
@@ -462,6 +486,9 @@ variable [L.ExtraConstantsUnaryRelationsOnly]
 noncomputable instance : Inv M :=
   ⟨fun R ↦ inv₀ 〘R〙₁⟩
 
+instance [Extensional M] [RudClosed M] : ClassFunction.DeltaZero (fun R ↦ (R⁻¹ : M)) Set.univ :=
+  ClassFunction.deltaZero_of_eq inv₀ fun _ ↦ rfl
+
 @[simp, grind =]
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_inv₀ (xs : Fin 1 → M) :
     inv₀〘xs〙 = (xs 0)⁻¹ := by
@@ -505,6 +532,11 @@ theorem dom_inv {R : M} : dom R⁻¹ = ran R := by
 theorem ran_inv {R : M} : ran R⁻¹ = dom R := by
   ext; simp [mem_dom_iff, mem_ran_iff]
 
+@[simp]
+theorem inv_id (a : M) : (id a)⁻¹ = id a := by
+  apply IsRelation.ext (isRelation_inv _) (id_isRelation a)
+  grind
+
 end Inv
 
 section Restrict
@@ -546,8 +578,7 @@ infix:88 " ↾↾ " => FirstOrder.Language.MemStructure.restrict₂
 theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_restrict₂₀ (xs : Fin 2 → M) :
     restrict₂₀〘xs〙 = (xs 0 ↾↾ xs 1 : M) := by
   simp only [restrict₂]
-  congr
-  ext i; fin_cases i <;> rfl
+  rw [Matrix.vec_fin_two_eq]
 
 @[simp]
 theorem restrict₂_eq (R a : M) :
@@ -607,7 +638,8 @@ variable [L.ExtraConstantsUnaryRelationsOnly]
 
 def IsRelationOn (R a : M) := IsRelation R ∧ R ↾↾ a = R
 
-noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isRelationOn (r s : L.RudimentaryTerm n) :
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isRelationOn
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r s : L.RudimentaryTerm n) :
   L.DeltaZeroBoundedFormula n :=
   (ᵣ0).isRelation ⊓ (&0 =₀ &1).substBoundRud ![ᵣ0 ↾↾ ᵣ1, ᵣ0] |>.substBoundRud ![r, s]
 
@@ -622,10 +654,9 @@ theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isRelationOn
       IsRelationOn (r〘xs〙 : M) s〘xs〙:= by
   simp only [isRelationOn, Nat.succ_eq_add_one, Nat.reduceAdd, isValue, Function.comp_apply,
     IsRelationOn, restrict₂_eq, inter_eq_left_iff_subset]
-  rw [DeltaZeroBoundedFormula.realize_substBoundRud]
-  simp
+  simp [DeltaZeroBoundedFormula.realize_substBoundRud]
 
-instance (r s : L.RudimentaryTerm n)
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r s : L.RudimentaryTerm n)
   [r.CharFree] [s.CharFree] :
   (r.isRelationOn s).RelFree := by
   unfold isRelationOn; infer_instance
@@ -655,8 +686,12 @@ theorem IsRelationOn.subset_iff {R a : M} (hR : IsRelationOn R a) (S : M) :
 
 @[grind .]
 theorem IsRelationOn.ext {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a)
-    (h : ∀ x ∈ a, ∀ y ∈ a, (x [R] y ↔ x [S] y)) : R = S :=
-  eq_of_subset_of_subset ((hR.subset_iff _).mpr (by grind)) ((hS.subset_iff _).mpr (by grind))
+    (h : ∀ x ∈ a, ∀ y ∈ a, (x [R] y ↔ x [S] y)) : R = S := by
+  refine eq_of_subset_of_subset ?_ ?_
+  · simp only [hR.subset_iff]
+    grind
+  · simp only [hS.subset_iff]
+    grind
 
 @[grind .]
 theorem IsRelationOn.eq_iff {R S a : M} (hR : IsRelationOn R a) (hS : IsRelationOn S a) :
@@ -712,7 +747,104 @@ theorem IsRelationOn.ran_subset {R a : M}
   intro x
   grind [mem_restrict₂_iff, hR.restrict_eq]
 
+@[grind .]
+theorem IsRelationOn.mem_left {R a x y : M} (hR : IsRelationOn R a) (h : x [R] y) : x ∈ a := by
+  grind [hR.restrict_eq, mem_restrict₂_iff]
+
+@[grind .]
+theorem IsRelationOn.mem_right {R a x y : M} (hR : IsRelationOn R a) (h : x [R] y) : y ∈ a := by
+  grind [hR.restrict_eq, mem_restrict₂_iff]
+
+@[simp, grind .]
+theorem IsRelationOn.inv {R a : M} (hR : IsRelationOn R a) : IsRelationOn R⁻¹ a :=
+  ⟨isRelation_inv R, (isRelation_inv R).restrict₂ a |>.ext (isRelation_inv R) <| by
+    grind [rel_restrict₂_iff]⟩
+
 end IsRelationOn
+
+section PredSet
+
+variable [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M] {R x y : M}
+
+/-- The set of `R`-predecessors of `x` -/
+noncomputable def predSet (R x : M) : M := dom (R ∩ dom R ×ˢ ({x} : M))
+
+instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ predSet (ys 0) (ys 1)) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂
+    (ᵣ0 ∩ (ᵣ0 : L.RudimentaryTerm 2).dom ×ˢ ({ᵣ1} : L.RudimentaryTerm 2)).dom fun _ _ ↦ by
+      simp [predSet]
+
+@[simp, grind =]
+theorem mem_predSet_iff : y ∈ predSet R x ↔ y [R] x := by
+  simp only [predSet, mem_dom_iff, mem_inter_iff, pair_mem_sprod_iff]
+  grind
+
+theorem IsRelationOn.predSet_subset {a : M} (hRa : IsRelationOn R a) (x : M) :
+    predSet R x ⊆ a := by
+  intro y hy
+  simp only [mem_predSet_iff] at hy
+  exact hRa.mem_left hy
+
+end PredSet
+
+section SetLike
+
+/-- `R` is set-like: the `R`-predecessors of each `x` form a set -/
+def Multiclass.IsSetLike (R : Multiclass M 2) : Prop := ∀ x, ∃ p : M, ∀ y, y ∈ p ↔ R ![y, x]
+
+noncomputable instance (R : Multiclass M 2) (x : M) :
+    Decidable (∃ p : M, ∀ y, y ∈ p ↔ R ![y, x]) :=
+  Classical.propDecidable _
+
+/-- The set of `R`-predecessors of `x`, if it exists -/
+noncomputable def Multiclass.predSet (R : Multiclass M 2) : ClassFunction M := fun x ↦
+  dite (∃ p : M, ∀ y, y ∈ p ↔ R ![y, x]) Classical.choose fun _ ↦ default
+
+theorem Multiclass.IsSetLike.mem_predSet_iff {R : Multiclass M 2} (hS : R.IsSetLike) {x y : M} :
+    y ∈ R.predSet x ↔ R ![y, x] := by
+  specialize hS x
+  simp only [Multiclass.predSet, hS]
+  grind
+
+end SetLike
+
+section OfRel
+
+variable {R x y : M}
+
+/-- The class relation `y [R] x` given by a set `R` -/
+def Multiclass.ofRel (R : M) : Multiclass M 2 := fun xs ↦ !(xs 0, xs 1) ∈ R
+
+@[simp]
+theorem Multiclass.ofRel_iff : Multiclass.ofRel R ![y, x] ↔ y [R] x := .rfl
+
+instance [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M] :
+    (Multiclass.ofRel R).DeltaZero Set.univ := by
+  have : Multiclass.ofRel R = ((&0 ∈₀ &1).substBoundRud ![ᵣ(ᵣ0, ᵣ1), ᵣ2] :
+      L.DeltaZeroBoundedFormula 3).toBoundedFormula.multiclass.slice ![R] := by
+    funext xs
+    simp [Multiclass.ofRel, append_right_eq_snoc, snoc_nat]
+  rw [this]
+  infer_instance
+
+variable [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M]
+
+theorem Multiclass.isSetLike_ofRel : (Multiclass.ofRel R).IsSetLike :=
+  fun x ↦ ⟨MemStructure.predSet R x, by simp⟩
+
+@[simp]
+theorem Multiclass.predSet_ofRel_apply (x : M) :
+    (Multiclass.ofRel R).predSet x = MemStructure.predSet R x := by
+  ext y
+  simp only [isSetLike_ofRel.mem_predSet_iff, MemStructure.mem_predSet_iff, ofRel_iff]
+
+instance : (Multiclass.ofRel R).predSet.Sigma 1 Set.univ := by
+  have h : (Multiclass.ofRel R).predSet = fun x ↦ MemStructure.predSet R x :=
+    funext Multiclass.predSet_ofRel_apply
+  rw [h]
+  infer_instance
+
+end OfRel
 
 end MemStructure
 

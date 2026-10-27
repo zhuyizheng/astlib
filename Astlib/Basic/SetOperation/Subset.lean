@@ -45,7 +45,7 @@ instance : IsTrans M Subset := ⟨@subset_trans _ _ _⟩
 theorem mem_trans_subset {x y z : M} (hxy : x ∈ y) (hyz : y ⊆ z) : x ∈ z :=
   hyz hxy
 
-instance : Trans (α := M) (β := M) (γ := M)
+instance : Trans (γ := M)
   (fun x y ↦ Membership.mem y x) Subset (fun x y ↦ Membership.mem y x) :=
   ⟨fun hxy hyz ↦ hyz hxy⟩
 

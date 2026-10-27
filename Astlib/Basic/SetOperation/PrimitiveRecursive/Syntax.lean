@@ -6,7 +6,7 @@ Authors: Yizheng Zhu
 import Astlib.Basic.SetOperation.Rudimentary.Syntax
 import Astlib.Basic.Axiom.KP.SigmaOneBoundedFormula.Syntax
 import Astlib.Basic.SetOperation.Function
-import Astlib.Basic.Ordinal.Transitive
+import Astlib.Basic.Transitive.Basic
 /-!
 file docstring
 -/
@@ -60,6 +60,52 @@ def RudimentaryTerm.toPrimitiveRecursiveTerm {n} : L.RudimentaryTerm n → L.Pri
   | .sdiff r₁ r₂ => .sdiff r₁.toPrimitiveRecursiveTerm r₂.toPrimitiveRecursiveTerm
   | .iUnion ri rf => .iUnion ri.toPrimitiveRecursiveTerm rf.toPrimitiveRecursiveTerm
   | .char R r => .char R r.toPrimitiveRecursiveTerm
+
+namespace PrimitiveRecursiveTerm
+
+/-- Renaming the variables of a primitive recursive term. As the recursion variable of
+`recursion rg` has to be the last variable, its new value is bound by a union over a singleton. -/
+def substBoundBound {m n : ℕ} (p : L.PrimitiveRecursiveTerm n) (f : Fin n → Fin m) :
+    L.PrimitiveRecursiveTerm m :=
+  match p with
+  | var i => var (f i)
+  | const c => const c
+  | unorderedPair r₁ r₂ => unorderedPair (r₁.substBoundBound f) (r₂.substBoundBound f)
+  | sdiff r₁ r₂ => sdiff (r₁.substBoundBound f) (r₂.substBoundBound f)
+  | iUnion ri rf => iUnion (ri.substBoundBound f) (rf.substBoundBound (snoc (castSucc ∘ f) (last _)))
+  | char R r => char R (r.substBoundBound f)
+  | recursion rg => iUnion {var (f (last _))}
+    (recursion (rg.substBoundBound (snoc (castSucc ∘ f ∘ castSucc) (last _))))
+
+def castSucc {n : ℕ} (p : L.PrimitiveRecursiveTerm n) : L.PrimitiveRecursiveTerm (n + 1) :=
+  p.substBoundBound Fin.castSucc
+
+/-- Substituting primitive recursive terms for the variables of a primitive recursive term.
+As in `substBoundBound`, the new recursion variable is bound by a union over a singleton. -/
+def substBoundPR {m n : ℕ} (p : L.PrimitiveRecursiveTerm n)
+    (ps : Fin n → L.PrimitiveRecursiveTerm m) : L.PrimitiveRecursiveTerm m :=
+  match p with
+  | var i => ps i
+  | const c => const c
+  | unorderedPair r₁ r₂ => unorderedPair (r₁.substBoundPR ps) (r₂.substBoundPR ps)
+  | sdiff r₁ r₂ => sdiff (r₁.substBoundPR ps) (r₂.substBoundPR ps)
+  | iUnion ri rf =>
+    iUnion (ri.substBoundPR ps) (rf.substBoundPR (snoc (castSucc ∘ ps) (var (last _))))
+  | char R r => char R (r.substBoundPR ps)
+  | recursion rg => iUnion {ps (last _)}
+    (recursion (rg.substBoundPR (snoc (castSucc ∘ ps ∘ Fin.castSucc) (var (last _)))))
+
+/-- `p ∪ q` -/
+instance : Union (L.PrimitiveRecursiveTerm n) := ⟨fun p q ↦ iUnion ₚᵣ{p, q} (var (last _))⟩
+
+variable [L.ExtraConstantsUnaryRelationsOnly]
+
+/-- If `φ` holds, then takes value `p`, else `∅` -/
+noncomputable def ifTrue [NeZero n] (p : L.PrimitiveRecursiveTerm n)
+    (φ : L.DeltaZeroBoundedFormula n) : L.PrimitiveRecursiveTerm n :=
+  iUnion φ.charRudimentaryTerm.toPrimitiveRecursiveTerm p.castSucc
+
+end PrimitiveRecursiveTerm
 
 namespace Term
 

@@ -3,6 +3,7 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
+import Astlib.Basic.SetOperation.Rudimentary.DeltaZero
 import Astlib.Basic.SetOperation.Pair.Basic
 /-!
 file docstring
@@ -34,12 +35,16 @@ instance {L : Language} [L.HasMem]
 
 namespace MemStructure
 
-variable {L : Language.{u, v}} {M : Type max u v}
+variable {L : Language} {M : Type*}
   [L.MemStructure M] [Inhabited M] (x : M)
   (x y z : M)
 
 variable (M) in
 noncomputable instance : Union M := ⟨fun x y ↦ RudimentaryTerm.union₀〘x, y〙₂⟩
+
+instance [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] :
+    MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ ys 0 ∪ ys 1) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ RudimentaryTerm.union₀ fun _ _ ↦ rfl
 
 @[grind =]
 theorem union_eq : x ∪ y = sUnion (unorderedPair x y) := by

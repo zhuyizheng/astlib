@@ -85,6 +85,12 @@ theorem realize'_castAdd {n : ℕ} (t : L.Term' n) (k : ℕ) (xs : Fin (n + k) �
   simp only [castAdd, castLE, realize'_substBoundBound]
   rfl
 
+/-- Realizing a `snoc` of terms pointwise -/
+theorem realize'_snoc {n k : ℕ} (ts : Fin n → L.Term' k) (t : L.Term' k) (xs : Fin k → M) :
+    (fun i ↦ ((snoc ts t : Fin (n + 1) → L.Term' k) i)〘xs〙) =
+      (snoc (fun i ↦ (ts i)〘xs〙) t〘xs〙 : Fin (n + 1) → M) :=
+  comp_snoc _ _ _
+
 end Term
 
 namespace BoundedFormula
@@ -222,7 +228,8 @@ theorem realize'_alls (θ : L.BoundedFormula' m) (xs : Fin 0 → M) :
   | zero =>
     simp only [alls, forall_fin_zero_pi, ← eq_iff_iff]
     congr
-    exact List.ofFn_inj.mp rfl
+    rw [← List.ofFn_inj]
+    exact rfl
   | succ n ih =>
     simp only [alls, ih]
     exact ⟨fun h xs => Fin.snoc_init_self xs ▸ h _ _, fun h xs x => h (Fin.snoc xs x)⟩
@@ -234,7 +241,8 @@ theorem realize'_exs (θ : L.BoundedFormula' m) (xs : Fin 0 → M) :
   | zero =>
     simp only [exs, exists_fin_zero_pi, ← eq_iff_iff]
     congr
-    exact List.ofFn_inj.mp rfl
+    rw [← List.ofFn_inj]
+    exact rfl
   | succ n ih =>
     simp only [exs, ih, realize'_ex]
     constructor
@@ -256,7 +264,7 @@ theorem realize'_exs (θ : L.BoundedFormula' m) (xs : Fin 0 → M) :
 --     repeat rw [cast, realize_castLE_of_eq (by omega), realize_liftAt' (by omega)] at h
 --     rw [append_append_gap, ← append_assoc, append_gap_same] at h
 --     exact h hys
---   · rw [← Fin.append_castAdd_natAdd (f := yzs),
+--   · rw [← Fin.append_castAdd_natAdd,
 --       cast, realize_castLE_of_eq (by omega), realize_liftAt' (by omega),
 --       cast, realize_castLE_of_eq (by omega), realize_liftAt' (by omega),
 --       append_append_gap, ← append_assoc, append_gap_same]
@@ -269,7 +277,7 @@ theorem realize'_exs (θ : L.BoundedFormula' m) (xs : Fin 0 → M) :
 --   intro φ
 --   simp only [realize_ex', realize_imp, realize_all', φ]
 --   refine ⟨fun ⟨yzs, h⟩ hys ↦ ⟨yzs ∘ natAdd _, ?_⟩, fun h ↦ ?_⟩
---   · rw [← Fin.append_castAdd_natAdd (f := yzs),
+--   · rw [← Fin.append_castAdd_natAdd,
 --       cast, realize_castLE_of_eq (by omega), realize_liftAt' (by omega),
 --       cast, realize_castLE_of_eq (by omega), realize_liftAt' (by omega),
 --       append_append_gap, ← append_assoc, append_gap_same] at h
