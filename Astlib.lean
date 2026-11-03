@@ -68,6 +68,7 @@ import Astlib.Basic.SetOperation.Subset
 import Astlib.Basic.SetOperation.Union
 import Astlib.Basic.Transitive.Basic
 import Astlib.Basic.Transitive.TransitiveClosure
+import Astlib.Combinatorics.TreeStructure
 import Astlib.Mathlib.Fin.Basic
 import Astlib.Mathlib.Fin.Tuple.Basic
 import Astlib.Mathlib.ModelTheory.Bundled

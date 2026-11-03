@@ -179,6 +179,19 @@ theorem rel_val
     {f x : M} (hf : IsFunction f) (hx : x ∈ dom f) : x [f] (f ﹫ x) := by
   grind
 
+/-- `f ﹫ x` is empty unless `x ∈ dom f` -/
+theorem mem_dom_of_mem_val {f x y : M} (h : y ∈ f ﹫ x) : x ∈ dom f := by
+  simp only [val, val₀, isValue, Nat.reduceAdd, RudimentaryTerm.right, Nat.succ_eq_add_one,
+    Function.comp_apply, RudimentaryTerm.left, mem_realize_iUnion_iff, realize_basic,
+    Matrix.cons_val_zero, Matrix.Fin.snoc_vecCons, Matrix.Fin.snoc_vecEmpty, mem_realize_ifTrue_iff,
+    RudimentaryTerm.realize_substBoundRud, Matrix.cons_val_fin_one, Matrix.cons_val,
+    realize_right₀, toBoundedFormula_inf, BoundedFormula.realize'_inf, realize_isOrderedPair,
+    DeltaZeroBoundedFormula.realize_substBoundRud, toBoundedFormula,
+    BoundedFormula.realize'_bdEqual, Term.realize'_var', realize_left₀, Matrix.cons_val_one] at h
+  obtain ⟨w, hw, -, ⟨u, v, rfl⟩, rfl⟩ := h
+  rw [mem_dom_iff]
+  exact ⟨v, by simpa using hw⟩
+
 lemma IsFunction.subset_iff {f g : M} (hf : IsFunction f) :
     f ⊆ g ↔ ∀ x ∈ dom f, (x [g] (f ﹫ x)) := by
   refine ⟨by grind, fun h z hz ↦ ?_⟩
