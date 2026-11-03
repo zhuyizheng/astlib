@@ -205,6 +205,21 @@ theorem mem_sblptn_iff : s ∈ T.sblptn ↔ (s = T.rt ∨ s ∈ ran T.chd) ∧ s
 theorem ne_empty_of_mem_sblptn {X : M} (hX : X ∈ T.sblptn) : X ≠ ∅ :=
   (mem_sblptn_iff.mp hX).right
 
+@[simp]
+theorem rt_empty : (∅ : TreeStructure M).rt = ∅ := by
+  ext a
+  simp [mem_rt_iff]
+
+/-- The empty tree structure has an empty sibling partition -/
+@[simp]
+theorem sblptn_empty : (∅ : TreeStructure M).sblptn = ∅ := by
+  ext s
+  simp [mem_sblptn_iff]
+
+theorem rt_mem_sblptn (hrt : T.rt ≠ ∅) : T.rt ∈ T.sblptn := by
+  rw [mem_sblptn_iff]
+  exact ⟨Or.inl rfl, hrt⟩
+
 theorem ran_prt_subset : ran T.prt ⊆ T.nd := by
   intro a ha
   rw [mem_ran_iff] at ha
@@ -226,6 +241,17 @@ theorem rel_prt_iff_mem_chd (ha : a ∈ T.nd) : b [T.prt] a ↔ b ∈ T.chd ﹫ 
 theorem mem_nd_of_mem_chd_val (hb : b ∈ T.chd ﹫ a) : a ∈ T.nd := by
   rw [← hT.dom_chd]
   exact mem_dom_of_mem_val hb
+
+/-- The members of the sibling partition are sets of nodes -/
+theorem subset_nd_of_mem_sblptn {X : M} (hX : X ∈ T.sblptn) : X ⊆ T.nd := by
+  rw [mem_sblptn_iff] at hX
+  rcases hX.left with rfl | hX
+  · intro a ha
+    rw [mem_rt_iff] at ha
+    exact ha.left
+  rw [hT.isFunction_chd.mem_ran_iff, hT.dom_chd] at hX
+  obtain ⟨p, hp, rfl⟩ := hX
+  exact hT.chd_subset p hp
 
 theorem dep_val_mem_ran (ha : a ∈ T.nd) : T.dep ﹫ a ∈ ran T.dep := by
   rw [hT.dep_fromTo.isFunction.mem_ran_iff, hT.dep_fromTo.dom_eq]
@@ -537,6 +563,62 @@ theorem irt (hb : b ∉ T.nd) : (T.irt b).IsTreeStructure where
     rw [hT.chd_irt_val_of_mem hb ha'] at hca'
     exact huniq a' hca'
 
+omit [HasOmega M] in
+/-- The roots of `T.irt b` are the old roots and `b` -/
+theorem rt_irt (hb : b ∉ T.nd) : (T.irt b).rt = insert b T.rt := by
+  ext a
+  rw [mem_rt_iff, nd_irt, mem_insert_iff, mem_insert_iff, mem_rt_iff]
+  constructor
+  · rintro ⟨rfl | ha, hd⟩
+    · left
+      rfl
+    right
+    rw [hT.dep_irt_val_of_mem hb ha] at hd
+    exact ⟨ha, hd⟩
+  · rintro (rfl | ⟨ha, hd⟩)
+    · exact ⟨Or.inl rfl, hT.dep_irt_val_self⟩
+    rw [hT.dep_irt_val_of_mem hb ha]
+    exact ⟨Or.inr ha, hd⟩
+
+/-- The sibling partition of `T.irt b`: the old roots together with `b`, and the old sets of
+siblings other than the roots -/
+theorem mem_sblptn_irt_iff (hb : b ∉ T.nd) {X : M} :
+    X ∈ (T.irt b).sblptn ↔ X = insert b T.rt ∨ (X ∈ T.sblptn ∧ X ≠ T.rt) := by
+  have hran : X ∈ ran (T.irt b).chd ↔ X = ∅ ∨ X ∈ ran T.chd := by
+    rw [(hT.irt hb).isFunction_chd.mem_ran_iff, hT.dom_chd_irt, hT.isFunction_chd.mem_ran_iff,
+      hT.dom_chd]
+    constructor
+    · rintro ⟨p, hp, rfl⟩
+      rw [mem_insert_iff] at hp
+      rcases hp with rfl | hp
+      · left
+        exact hT.chd_irt_val_self
+      right
+      exact ⟨p, hp, (hT.chd_irt_val_of_mem hb hp).symm⟩
+    · rintro (rfl | ⟨p, hp, rfl⟩)
+      · exact ⟨b, mem_insert b T.nd, hT.chd_irt_val_self⟩
+      refine ⟨p, ?_, hT.chd_irt_val_of_mem hb hp⟩
+      rw [mem_insert_iff]
+      exact Or.inr hp
+  -- a nonempty set of children is not the set of roots
+  have hrt : X ∈ ran T.chd → X ≠ ∅ → X ≠ T.rt := by
+    intro hX hne hXrt
+    rw [ne_empty_iff] at hne
+    obtain ⟨a, ha⟩ := hne
+    exact hT.not_mem_rt_of_mem_ran_chd hX ha (hXrt ▸ ha)
+  have hins : insert b T.rt ≠ ∅ := insert_ne_empty b T.rt
+  rw [mem_sblptn_iff, mem_sblptn_iff, hT.rt_irt hb, hran]
+  grind
+
+omit [HasOmega M] in
+theorem insert_rt_not_mem_sblptn (hb : b ∉ T.nd) : insert b T.rt ∉ T.sblptn :=
+  fun h ↦ hb (hT.subset_nd_of_mem_sblptn h (mem_insert b T.rt))
+
+/-- A tree structure without roots has no nodes -/
+theorem nd_eq_empty_of_rt_eq_empty (hrt : T.rt = ∅) : T.nd = ∅ := by
+  by_contra hnd
+  exact hT.rt_ne_empty (fun hT₀ ↦ hnd (by rw [hT₀, nd_empty])) hrt
+
 /-- Inserting new children `B` of a node `a` into a tree structure gives a tree structure -/
 theorem ichd (ha : a ∈ T.nd) (hB : B ∩ T.nd = ∅) : (T.ichd a B).IsTreeStructure where
   dep_fromTo := by
@@ -587,6 +669,110 @@ theorem ichd (ha : a ∈ T.nd) (hB : B ∩ T.nd = ∅) : (T.ichd a B).IsTreeStru
 theorem ionechd (ha : a ∈ T.nd) (hb : b ∉ T.nd) : (T.ionechd a b).IsTreeStructure :=
   hT.ichd ha (singleton_inter_eq_empty hb)
 
+omit [HasOmega M] in
+/-- Adding children does not change the roots -/
+theorem rt_ichd (hB : B ∩ T.nd = ∅) : (T.ichd a B).rt = T.rt := by
+  ext c
+  rw [mem_rt_iff, mem_rt_iff, nd_ichd, mem_union_iff]
+  constructor
+  · rintro ⟨hc | hc, hd⟩
+    · rw [hT.dep_ichd_val_of_mem_nd hB hc] at hd
+      exact ⟨hc, hd⟩
+    rw [hT.dep_ichd_val_of_mem_new hB hc] at hd
+    exact (succ_ne_empty (T.dep ﹫ a) hd).elim
+  · rintro ⟨hc, hd⟩
+    rw [hT.dep_ichd_val_of_mem_nd hB hc]
+    exact ⟨Or.inl hc, hd⟩
+
+/-- The sibling partition of `T.ichd a B` for `B ≠ ∅`: the children of `a` together with `B`,
+and the old sets of siblings other than the children of `a` -/
+theorem mem_sblptn_ichd_iff (ha : a ∈ T.nd) (hB : B ∩ T.nd = ∅) (hBne : B ≠ ∅) {X : M} :
+    X ∈ (T.ichd a B).sblptn ↔
+      X = T.chd ﹫ a ∪ B ∨ (X ∈ T.sblptn ∧ X ≠ T.chd ﹫ a) := by
+  have hT' := hT.ichd ha hB
+  rw [ne_empty_iff] at hBne
+  obtain ⟨c₀, hc₀⟩ := hBne
+  have hc₀A := not_mem_nd_of_mem_new hB hc₀
+  have hran : X ∈ ran (T.ichd a B).chd ↔
+      X = ∅ ∨ X = T.chd ﹫ a ∪ B ∨ ∃ p ∈ T.nd, p ≠ a ∧ T.chd ﹫ p = X := by
+    rw [hT'.isFunction_chd.mem_ran_iff, hT'.dom_chd, nd_ichd]
+    constructor
+    · rintro ⟨p, hp, rfl⟩
+      rw [mem_union_iff] at hp
+      rcases hp with hp | hp
+      · by_cases hpa : p = a
+        · subst hpa
+          right
+          left
+          exact hT.chd_ichd_val_self hp hB
+        right
+        right
+        exact ⟨p, hp, hpa, (hT.chd_ichd_val_of_ne ha hB hp hpa).symm⟩
+      left
+      exact hT.chd_ichd_val_of_mem_new ha hB hp
+    · rintro (rfl | rfl | ⟨p, hp, hpa, rfl⟩)
+      · refine ⟨c₀, ?_, hT.chd_ichd_val_of_mem_new ha hB hc₀⟩
+        rw [mem_union_iff]
+        exact Or.inr hc₀
+      · refine ⟨a, ?_, hT.chd_ichd_val_self ha hB⟩
+        rw [mem_union_iff]
+        exact Or.inl ha
+      refine ⟨p, ?_, hT.chd_ichd_val_of_ne ha hB hp hpa⟩
+      rw [mem_union_iff]
+      exact Or.inl hp
+  -- different nonempty sets of children are different
+  have hdisj : ∀ p ∈ T.nd, p ≠ a → T.chd ﹫ p ≠ ∅ → T.chd ﹫ p ≠ T.chd ﹫ a := by
+    intro p hp hpa hne heq
+    rw [ne_empty_iff] at hne
+    obtain ⟨e, he⟩ := hne
+    have hpos := hT.empty_olt_dep_of_mem_chd hp he
+    exact hpa ((hT.existsUnique_prt e (hT.chd_subset p hp he) hpos).unique he (heq ▸ he))
+  have hCran : T.chd ﹫ a ∈ ran T.chd := by
+    rw [hT.isFunction_chd.mem_ran_iff, hT.dom_chd]
+    exact ⟨a, ha, rfl⟩
+  have hrtC : T.rt ≠ ∅ → T.rt ≠ T.chd ﹫ a := by
+    intro hne heq
+    rw [ne_empty_iff] at hne
+    obtain ⟨e, he⟩ := hne
+    exact hT.not_mem_rt_of_mem_ran_chd hCran (heq ▸ he) he
+  have hrtins : T.rt ≠ T.chd ﹫ a ∪ B := by
+    intro h
+    have hc₀rt : c₀ ∈ T.rt := by
+      rw [h, mem_union_iff]
+      exact Or.inr hc₀
+    rw [mem_rt_iff] at hc₀rt
+    exact hc₀A hc₀rt.left
+  have hinsne : T.chd ﹫ a ∪ B ≠ ∅ := by
+    rw [ne_empty_iff]
+    refine ⟨c₀, ?_⟩
+    rw [mem_union_iff]
+    exact Or.inr hc₀
+  rw [mem_sblptn_iff, mem_sblptn_iff, hT.rt_ichd hB, hran, hT.isFunction_chd.mem_ran_iff,
+    hT.dom_chd]
+  constructor
+  · rintro ⟨hX | hX | hX | ⟨p, hp, hpa, rfl⟩, hne⟩
+    · subst hX
+      exact Or.inr ⟨⟨Or.inl rfl, hne⟩, hrtC hne⟩
+    · exact (hne hX).elim
+    · exact Or.inl hX
+    · exact Or.inr ⟨⟨Or.inr ⟨p, hp, rfl⟩, hne⟩, hdisj p hp hpa hne⟩
+  · rintro (rfl | ⟨⟨hX | ⟨p, hp, rfl⟩, hne⟩, hXa⟩)
+    · exact ⟨Or.inr (Or.inr (Or.inl rfl)), hinsne⟩
+    · exact ⟨Or.inl hX, hne⟩
+    refine ⟨Or.inr (Or.inr (Or.inr ⟨p, hp, ?_, rfl⟩)), hne⟩
+    rintro rfl
+    exact hXa rfl
+
+/-- The sibling partition of `T.ionechd a b`: the children of `a` together with `b`, and the old
+sets of siblings other than the children of `a` -/
+theorem mem_sblptn_ionechd_iff (ha : a ∈ T.nd) (hb : b ∉ T.nd) {X : M} :
+    X ∈ (T.ionechd a b).sblptn ↔
+      X = insert b (T.chd ﹫ a) ∨ (X ∈ T.sblptn ∧ X ≠ T.chd ﹫ a) := by
+  have hins : T.chd ﹫ a ∪ {b} = insert b (T.chd ﹫ a) := by
+    rw [insert_eq, union_comm]
+  rw [TreeStructure.ionechd, hT.mem_sblptn_ichd_iff ha (singleton_inter_eq_empty hb)
+    (singleton_ne_empty (x := b)), hins]
+
 /-- A new sibling of a non-root `a` is a new child of the parent of `a` -/
 theorem isbl_eq_ionechd (ha : a ∈ T.nd \ T.rt) (hb : b ∉ T.nd) :
     T.isbl a b = T.ionechd (T.prt ﹫ a) b := by
@@ -633,6 +819,37 @@ theorem isbl_eq_ionechd (ha : a ∈ T.nd \ T.rt) (hb : b ∉ T.nd) :
 theorem isbl (ha : a ∈ T.nd \ T.rt) (hb : b ∉ T.nd) : (T.isbl a b).IsTreeStructure := by
   rw [hT.isbl_eq_ionechd ha hb]
   exact hT.ionechd (hT.prt_val_mem_nd ha) hb
+
+/-- Inserting a new sibling `b ∉ T.nd` of any node `a` gives a tree structure -/
+theorem isbl_of_mem_nd (ha : a ∈ T.nd) (hb : b ∉ T.nd) : (T.isbl a b).IsTreeStructure := by
+  by_cases hart : a ∈ T.rt
+  · rw [isbl_of_mem_rt hart]
+    exact hT.irt hb
+  exact hT.isbl (by rw [mem_sdiff_iff]; exact ⟨ha, hart⟩) hb
+
+/-- The nodes of `T.isbl a b` are the old nodes and `b` -/
+theorem mem_nd_isbl_iff (ha : a ∈ T.nd) (hb : b ∉ T.nd) {c : M} :
+    c ∈ (T.isbl a b).nd ↔ c = b ∨ c ∈ T.nd := by
+  by_cases hart : a ∈ T.rt
+  · rw [isbl_of_mem_rt hart, nd_irt, mem_insert_iff]
+  have ha' : a ∈ T.nd \ T.rt := by
+    rw [mem_sdiff_iff]
+    exact ⟨ha, hart⟩
+  rw [hT.isbl_eq_ionechd ha' hb, TreeStructure.ionechd, nd_ichd, mem_union_iff,
+    mem_singleton_iff, or_comm]
+
+/-- The sibling partition of `T.isbl a b`: the siblings of `a` together with `b`, and the old
+sets of siblings other than the siblings of `a` -/
+theorem mem_sblptn_isbl_iff (ha : a ∈ T.nd) (hb : b ∉ T.nd) {X : M} :
+    X ∈ (T.isbl a b).sblptn ↔
+      X = insert b (T.sbl ﹫ a) ∨ (X ∈ T.sblptn ∧ X ≠ T.sbl ﹫ a) := by
+  by_cases hart : a ∈ T.rt
+  · rw [isbl_of_mem_rt hart, hT.sbl_val_of_mem_rt hart, hT.mem_sblptn_irt_iff hb]
+  have ha' : a ∈ T.nd \ T.rt := by
+    rw [mem_sdiff_iff]
+    exact ⟨ha, hart⟩
+  rw [hT.isbl_eq_ionechd ha' hb, hT.sbl_val_of_not_mem_rt ha',
+    hT.mem_sblptn_ionechd_iff (hT.prt_val_mem_nd ha') hb]
 
 end IsTreeStructure
 

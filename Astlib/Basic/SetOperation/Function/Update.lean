@@ -13,7 +13,9 @@ Pointwise modifications of functions:
 * `update f x y`: `f` with the value at `x` set to `y`, and `singletonFun x y`;
 * `eraseRedirect f x y`: `f` with `x` removed and the preimage of `y` sent to `f ﹫ x`;
 * `moveKey f x y`: `f` with the key `x` moved to `y`;
-* `insertVal f x y`: `f` with `y` added to the value at `x`.
+* `insertVal f x y`: `f` with `y` added to the value at `x`;
+* `mvalIns f a b c`: `f` with the value at `a` replaced by `update (f ﹫ a) b c`;
+* `mkeyIns f a b`: `f` with the key `a` moved to `insert b a`.
 -/
 
 open Fin FirstOrder Language MemStructure RudimentaryTerm DeltaZeroBoundedFormula
@@ -527,5 +529,53 @@ theorem val_insertVal_of_ne {f x z : M} (hf : IsFunction f) (y : M) (hz : z ∈ 
   exact val_update_of_ne hf _ hz hzx
 
 end Update
+
+section Composite
+
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly]
+
+/-- The rudimentary term for `mvalIns f a b c`: `update f a (update (f ﹫ a) b c)` -/
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.mvalIns₀
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] : L.RudimentaryTerm 4 :=
+  update₀.substBoundRud ![ᵣ0, ᵣ1, ((ᵣ0) ﹫ (ᵣ1)).update (ᵣ2) (ᵣ3)]
+
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] :
+    (mvalIns₀ : L.RudimentaryTerm 4).CharFree := by
+  unfold mvalIns₀; infer_instance
+
+/-- The rudimentary term for `mkeyIns f a b`: `moveKey f a (insert b a)` -/
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.mkeyIns₀
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] : L.RudimentaryTerm 3 :=
+  moveKey₀.substBoundRud ![ᵣ0, ᵣ1, insert (ᵣ2) (ᵣ1)]
+
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] :
+    (mkeyIns₀ : L.RudimentaryTerm 3).CharFree := by
+  unfold mkeyIns₀; infer_instance
+
+/-- `f_{mVal.ins}(a, b, c)`: `f` with the value at `a` replaced by `(f ﹫ a)_{ins}(b, c)` -/
+noncomputable def mvalIns (f a b c : M) : M := mvalIns₀〘![f, a, b, c]〙
+
+instance : MulticlassFunction.DeltaZero
+    (fun ys : Fin 4 → M ↦ mvalIns (ys 0) (ys 1) (ys 2) (ys 3)) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq mvalIns₀ fun ys ↦ by
+    rw [mvalIns, show ![ys 0, ys 1, ys 2, ys 3] = ys by ext i; fin_cases i <;> rfl]
+
+omit [RudClosed M] in
+theorem mvalIns_eq (f a b c : M) : mvalIns f a b c = update f a (update (f ﹫ a) b c) := by
+  simp [mvalIns, mvalIns₀]
+
+/-- `f_{mKey.ins}(a, b)`: `f` with the key `a` moved to `a ∪ {b}` -/
+noncomputable def mkeyIns (f a b : M) : M := mkeyIns₀〘f, a, b〙₃
+
+instance : MulticlassFunction.DeltaZero (fun ys : Fin 3 → M ↦ mkeyIns (ys 0) (ys 1) (ys 2))
+    Set.univ :=
+  MulticlassFunction.deltaZero_of_eq mkeyIns₀ fun ys ↦ by
+    rw [mkeyIns, show ![ys 0, ys 1, ys 2] = ys by ext i; fin_cases i <;> rfl]
+
+omit [RudClosed M] in
+theorem mkeyIns_eq (f a b : M) : mkeyIns f a b = moveKey f a (insert b a) := by
+  simp [mkeyIns, mkeyIns₀]
+
+end Composite
 
 end FirstOrder.Language.MemStructure

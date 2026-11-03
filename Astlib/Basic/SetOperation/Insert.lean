@@ -67,6 +67,11 @@ theorem insert_ne_empty [Extensional M] :
     insert x y ≠ ∅ := by
   grind
 
+@[simp]
+theorem insert_empty_eq_singleton [Extensional M] : insert x (∅ : M) = {x} := by
+  ext
+  grind
+
 @[simp, grind! .]
 theorem subset_insert : y ⊆ insert x y := by
   grind
