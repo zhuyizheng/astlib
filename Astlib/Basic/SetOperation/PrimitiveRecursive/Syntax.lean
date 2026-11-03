@@ -5,7 +5,8 @@ Authors: Yizheng Zhu
 -/
 import Astlib.Basic.SetOperation.Rudimentary.Syntax
 import Astlib.Basic.Axiom.KP.SigmaOneBoundedFormula.Syntax
-import Astlib.Basic.SetOperation.Function
+import Astlib.Basic.SetOperation.Function.ClassFunction
+import Astlib.Basic.SetOperation.Function.DisjUnion
 import Astlib.Basic.Transitive.Basic
 /-!
 file docstring

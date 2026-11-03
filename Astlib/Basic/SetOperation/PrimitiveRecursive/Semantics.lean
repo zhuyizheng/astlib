@@ -6,7 +6,8 @@ Authors: Yizheng Zhu
 import Astlib.Basic.SetOperation.PrimitiveRecursive.Syntax
 import Astlib.Basic.SetOperation.Rudimentary.Semantics
 import Astlib.Basic.SetOperation.Multiclass.Lambda
-import Astlib.Basic.SetOperation.Function
+import Astlib.Basic.SetOperation.Function.ClassFunction
+import Astlib.Basic.SetOperation.Function.DisjUnion
 import Astlib.Basic.SetOperation.Foundational
 import Astlib.Basic.Transitive.Basic
 import Astlib.Basic.Axiom.KP.SigmaOneBoundedFormula.Semantics

@@ -29,7 +29,13 @@ import Astlib.Basic.SetOperation.Comprehension
 import Astlib.Basic.SetOperation.Empty
 import Astlib.Basic.SetOperation.Extensional
 import Astlib.Basic.SetOperation.Foundational
-import Astlib.Basic.SetOperation.Function
+import Astlib.Basic.SetOperation.Function.Basic
+import Astlib.Basic.SetOperation.Function.ClassFunction
+import Astlib.Basic.SetOperation.Function.DisjUnion
+import Astlib.Basic.SetOperation.Function.FromTo
+import Astlib.Basic.SetOperation.Function.ProdMap
+import Astlib.Basic.SetOperation.Function.Restrict
+import Astlib.Basic.SetOperation.Function.Update
 import Astlib.Basic.SetOperation.Insert
 import Astlib.Basic.SetOperation.Inter
 import Astlib.Basic.SetOperation.MemStructure.Defs

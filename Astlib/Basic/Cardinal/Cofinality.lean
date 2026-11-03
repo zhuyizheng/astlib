@@ -18,8 +18,10 @@ cofinal map into `α`, and `α` is regular if `cf α = α`. In models of `KP`:
 * `Regular.cardinal`: regular ordinals are cardinals;
 * `regular_omega`: `ω` is regular.
 
-If `cf α` is uncountable, the intersection of two clubs in `α` is a club (`ClubInOrd.inter`), and
-every club in `α` is stationary (`ClubInOrd.stationary`).
+If `cf α` is uncountable, the intersection of fewer than `cf α` clubs in `α` is a club
+(`ClubInOrd.sInter`), in particular so is the intersection of two clubs (`ClubInOrd.inter`), and
+every club in `α` is stationary (`ClubInOrd.stationary`). If `α` is an uncountable regular ordinal,
+the diagonal intersection of `α` clubs in `α` is a club (`ClubInOrd.diagInter`).
 
 In models of `ZFC`, the successor cardinal `csucc κ` of an infinite ordinal `κ` is regular
 (`regular_csucc`): a cofinal map `f` from `β ∈ csucc κ` together with chosen injections
@@ -279,31 +281,35 @@ section ClubInOrd
 
 variable [HasOmega M] {C D : M}
 
-/-- If `cf α` is uncountable, the intersection of two clubs in `α` is a club -/
-theorem ClubInOrd.inter (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hC : ClubInOrd C α)
-    (hD : ClubInOrd D α) : ClubInOrd (C ∩ D) α := by
-  have hlim : NonZeroLimOrdinal α := by
-    rcases hα.cases with rfl | ⟨β, hβ, rfl⟩ | hlim <;> grind
-  refine ⟨hC.closedInOrd.inter hα hD.closedInOrd, ?_⟩
-  simp only [unboundedInOrd_iff hα]
-  intro γ hγ
-  -- `next S x` is an element of the club `S` above `x <ₒ α`
-  have hnext {S x : M} (hS : ClubInOrd S α) (hx : x <ₒ α) :
-      next S x ∈ S ∧ x <ₒ next S x ∧ next S x <ₒ α := by
-    obtain ⟨ξ, hξ, hle⟩ := hS.unboundedInOrd.exists_ole (hlim.succ_olt hx)
-    have hns := next_spec (x := x) ⟨ξ, hξ, by grind⟩
-    exact ⟨hns.left, hns.right, by grind [hS.subset]⟩
-  -- iterate `x ↦ next D (next C x)` from `γ`: `s n <ₒ next C (s n) <ₒ s (succ n)`
-  let G : ClassFunction M := fun x ↦ next D (next C x)
+/-- An ordinal of uncountable cofinality is a nonzero limit ordinal -/
+theorem nonZeroLimOrdinal_of_omega_olt_cf (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) :
+    NonZeroLimOrdinal α := by
+  rcases hα.cases with rfl | ⟨β, hβ, rfl⟩ | hlim <;> grind
+
+/-- If `cf α` is uncountable and every `x <ₒ α` has some `η` above it below `α` with `R x η`, then
+every `γ <ₒ α` is below a limit `lam <ₒ α` such that cofinally many `x <ₒ lam` have such an `η`
+below `lam` -/
+theorem exists_nonZeroLimOrdinal_iterate {R : M → M → Prop}
+    [Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ R (ys 0) (ys 1)) Set.univ]
+    (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hR : ∀ x <ₒ α, ∃ η <ₒ α, x <ₒ η ∧ R x η)
+    {γ : M} (hγ : γ <ₒ α) :
+    ∃ lam <ₒ α, NonZeroLimOrdinal lam ∧ γ ≤ₒ lam ∧
+      ∀ δ <ₒ lam, ∃ x <ₒ lam, δ <ₒ x ∧ ∃ η <ₒ lam, x <ₒ η ∧ R x η := by
+  -- iterate `x ↦ G x`, the least such `η`, from `γ`
+  let G : ClassFunction M := fun x ↦ Class.omin fun η ↦ η ∈ α ∧ (x <ₒ η ∧ R x η)
   have : G.Sigma 1 Set.univ := by unfold G; infer_instance
-  have hG {x : M} (hx : x <ₒ α) :
-      next C x ∈ C ∧ x <ₒ next C x ∧ next C x <ₒ G x ∧ G x ∈ D ∧ G x <ₒ α := by
-    grind
+  have hG {x : M} (hx : x <ₒ α) : G x <ₒ α ∧ x <ₒ G x ∧ R x (G x) := by
+    obtain ⟨η, hη, hxη, hRη⟩ := hR x hx
+    have : Class.Definable (fun η ↦ η ∈ α ∧ (x <ₒ η ∧ R x η)) Set.univ :=
+      definable_mem_and_of_deltaZero (R := fun x η ↦ x <ₒ η ∧ R x η) α x
+    have h := Class.omin_mem (A := fun η ↦ η ∈ α ∧ (x <ₒ η ∧ R x η)) hη.ordinal_left
+      ⟨hη.mem, hxη, hRη⟩
+    exact ⟨olt_of_mem hα h.left, h.right⟩
   let s := natRec γ G
   have hs {n : M} (hn : n ∈ (ω : M)) : s n <ₒ α :=
-    natRec_induction (A := fun x ↦ x <ₒ α) hγ (fun _ _ ih ↦ by grind) hn
+    natRec_induction (A := fun x ↦ x <ₒ α) hγ (fun _ _ ih ↦ (hG ih).left) hn
   have hsucc {n : M} (hn : n ∈ (ω : M)) : s (succ n) = G (s n) := natRec_succ _ _ (by grind)
-  -- `λ = osup (ran (s ↾₀ ω))`
+  -- `lam = osup (ran (s ↾₀ ω))`
   have hr := isSetRestrictedTo_of_sigma (G := s) ω
   have hmem {y : M} : y ∈ ran (s ↾₀ ω) ↔ ∃ n ∈ (ω : M), s n = y :=
     mem_ran_toSetRestrictedTo_iff hr
@@ -319,44 +325,144 @@ theorem ClubInOrd.inter (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hC : Clu
     simp only [hmem] at hy
     obtain ⟨n, hn, rfl⟩ := hy
     exact ⟨n, hn, hδy⟩
-  -- each `s (succ n)` is below `lam`
-  have hsucc_lt {n : M} (hn : n ∈ (ω : M)) : s (succ n) <ₒ lam := by
-    grind [hG (hs (succ_mem_omega hn)), hsucc (succ_mem_omega hn),
-      hle (succ_mem_omega (succ_mem_omega hn))]
+  -- each `s n <ₒ s (succ n)`, so each `s n` is below `lam`
+  have hlt {n : M} (hn : n ∈ (ω : M)) : s n <ₒ s (succ n) := by
+    rw [hsucc hn]
+    exact (hG (hs hn)).right.left
+  have hs_lt {n : M} (hn : n ∈ (ω : M)) : s n <ₒ lam :=
+    olt_of_olt_of_ole (hlt hn) (hle (succ_mem_omega hn))
   have hlamlim : NonZeroLimOrdinal lam := by
     refine nonZeroLimOrdinal_of_forall_exists_olt hlam ?_ fun δ hδ ↦ ?_
-    · grind [hsucc_lt empty_mem_omega]
+    · grind [hs_lt empty_mem_omega]
     · obtain ⟨n, hn, hδn⟩ := hex hδ
-      exact ⟨s (succ n), hsucc_lt hn, by grind [hsucc hn]⟩
-  -- `lam` is a limit point of `C` and of `D` below `α`
-  have hlamα : lam <ₒ α := osup_ran_olt_of_olt_cf hα hcf
-    (isFunctionFromTo_toSetRestrictedTo hr fun n hn ↦ (hs hn).mem)
-  have hlimC : IsLimitPoint C lam := by
-    refine ⟨hlamlim, ?_⟩
-    simp only [unboundedInOrd_iff hlam]
-    intro δ hδ
-    obtain ⟨n, hn, hδn⟩ := hex hδ
-    refine ⟨next C (s n), ?_, by grind [hG (hs hn)]⟩
-    simp only [mem_inter_iff]
-    grind [hG (hs hn)]
-  have hlimD : IsLimitPoint D lam := by
-    refine ⟨hlamlim, ?_⟩
-    simp only [unboundedInOrd_iff hlam]
-    intro δ hδ
-    obtain ⟨n, hn, hδn⟩ := hex hδ
-    exact ⟨s (succ n), by grind, by grind [hG (hs hn)]⟩
-  refine ⟨lam, ?_, ?_⟩
-  · simp only [mem_inter_iff]
-    exact ⟨hC.closedInOrd.mem_of_isLimitPoint hα hlamα hlimC,
-      hD.closedInOrd.mem_of_isLimitPoint hα hlamα hlimD⟩
-  · exact natRec_empty γ G ▸ hle empty_mem_omega
+      exact ⟨s n, hs_lt hn, hδn⟩
+  refine ⟨lam, osup_ran_olt_of_olt_cf hα hcf
+    (isFunctionFromTo_toSetRestrictedTo hr fun n hn ↦ (hs hn).mem), hlamlim,
+    natRec_empty γ G ▸ hle empty_mem_omega, fun δ hδ ↦ ?_⟩
+  obtain ⟨n, hn, hδn⟩ := hex hδ
+  refine ⟨s n, hs_lt hn, hδn, s (succ n), hs_lt (succ_mem_omega hn), hlt hn, ?_⟩
+  rw [hsucc hn]
+  exact (hG (hs hn)).right.right
+
+/-- If `cf α` is uncountable, the intersection of fewer than `cf α` clubs in `α` is a club -/
+theorem ClubInOrd.sInter {f : M} (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hf : IsFunction f)
+    (hdom : dom f <ₒ cf α) (hC : ∀ S ∈ ran f, ClubInOrd S α) :
+    ClubInOrd (sInterInOrd (ran f) α) α := by
+  have hlim := nonZeroLimOrdinal_of_omega_olt_cf hα hcf
+  refine ⟨ClosedInOrd.sInter hα fun S hS ↦ (hC S hS).closedInOrd, ?_⟩
+  simp only [unboundedInOrd_iff hα]
+  intro γ hγ
+  have hval {ξ : M} (hξ : ξ ∈ dom f) : f ﹫ ξ ∈ ran f := (hf.mem_ran_iff _).mpr ⟨ξ, hξ, rfl⟩
+  -- the least element `η` of `f ﹫ ξ` above `x`
+  have hR (x : M) (hx : x <ₒ α) :
+      ∃ η <ₒ α, x <ₒ η ∧ ∀ S ∈ ran f, ∃ ξ ∈ S, x <ₒ ξ ∧ ξ ≤ₒ η := by
+    let H : ClassFunction M := fun ξ ↦ Class.omin fun η ↦ η ∈ α ∧ (x <ₒ η ∧ η ∈ f ﹫ ξ)
+    have : H.Sigma 1 Set.univ := by unfold H; infer_instance
+    have hH {ξ : M} (hξ : ξ ∈ dom f) : H ξ <ₒ α ∧ x <ₒ H ξ ∧ H ξ ∈ f ﹫ ξ := by
+      obtain ⟨η, hη, hle⟩ := (hC _ (hval hξ)).unboundedInOrd.exists_ole (hlim.succ_olt hx)
+      have hηα : η ∈ α := (hC _ (hval hξ)).subset hη
+      have hxη : x <ₒ η := by grind
+      have h := Class.omin_mem (A := fun η ↦ η ∈ α ∧ (x <ₒ η ∧ η ∈ f ﹫ ξ))
+        (ordinal_of_mem hα hηα) ⟨hηα, hxη, hη⟩
+      exact ⟨olt_of_mem hα h.left, h.right⟩
+    have hr := isSetRestrictedTo_of_sigma (G := H) (dom f)
+    have hF : H ↾₀ dom f !: dom f → α :=
+      isFunctionFromTo_toSetRestrictedTo hr fun ξ hξ ↦ (hH hξ).left.mem
+    have hsup := osup_ran_olt_of_olt_cf hα hdom hF
+    have hran : ∀ y ∈ ran (H ↾₀ dom f), Ordinal y := fun y hy ↦ ordinal_of_mem hα (hF.ran_subset hy)
+    have hsx : Ordinal (succ x) := by grind
+    refine ⟨omax₂ (succ x) (osup (ran (H ↾₀ dom f))),
+      (omax₂_olt_iff hsx (ordinal_osup hran)).mpr ⟨hlim.succ_olt hx, hsup⟩, ?_, fun S hS ↦ ?_⟩
+    · exact olt_of_olt_of_ole (by grind) (ole_omax₂_left hsx (ordinal_osup hran))
+    · rw [hf.mem_ran_iff] at hS
+      obtain ⟨ξ, hξ, rfl⟩ := hS
+      have hmem : H ξ ∈ ran (H ↾₀ dom f) := (mem_ran_toSetRestrictedTo_iff hr).mpr ⟨ξ, hξ, rfl⟩
+      exact ⟨H ξ, (hH hξ).right.right, (hH hξ).right.left,
+        ole_trans (ole_osup hran hmem) (ole_omax₂_right hsx (ordinal_osup hran))⟩
+  obtain ⟨lam, hlamα, hlamlim, hγlam, hclosed⟩ := exists_nonZeroLimOrdinal_iterate
+    (R := fun x η ↦ ∀ S ∈ ran f, ∃ ξ ∈ S, x <ₒ ξ ∧ ξ ≤ₒ η) hα hcf hR hγ
+  refine ⟨lam, mem_sInterInOrd_iff.mpr ⟨hlamα.mem, fun S hS ↦ ?_⟩, hγlam⟩
+  refine (hC S hS).closedInOrd.mem_of_isLimitPoint hα hlamα ⟨hlamlim, fun δ hδ ↦ ?_⟩
+  obtain ⟨x, -, hδx, η, hη, -, hη'⟩ := hclosed δ (olt_of_mem hlamlim.ordinal hδ)
+  obtain ⟨ξ, hξ, hxξ, hξη⟩ := hη' S hS
+  have hξlam : ξ <ₒ lam := olt_of_ole_of_olt hξη hη
+  simp only [mem_inter_iff]
+  exact ⟨ξ, ⟨hξ, hξlam.mem⟩, (olt_trans hδx hxξ).ole⟩
+
+/-- If `cf α` is uncountable, the intersection of two clubs in `α` is a club -/
+theorem ClubInOrd.inter (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hC : ClubInOrd C α)
+    (hD : ClubInOrd D α) : ClubInOrd (C ∩ D) α := by
+  refine ⟨hC.closedInOrd.inter hα hD.closedInOrd, ?_⟩
+  -- `C` and `D` are the values of `natRec C (fun _ ↦ D) ↾₀ ω`
+  let G : ClassFunction M := fun _ ↦ D
+  have hr := isSetRestrictedTo_of_sigma (G := natRec C G) ω
+  have hmem {y : M} : y ∈ ran (natRec C G ↾₀ ω) ↔ ∃ n ∈ (ω : M), natRec C G n = y :=
+    mem_ran_toSetRestrictedTo_iff hr
+  have hclub : ∀ S ∈ ran (natRec C G ↾₀ ω), ClubInOrd S α := by
+    simp only [hmem]
+    rintro S ⟨n, hn, rfl⟩
+    have h : natRec C G n = C ∨ natRec C G n = D :=
+      natRec_induction (A := fun y ↦ y = C ∨ y = D) (.inl rfl) (fun _ _ _ ↦ .inr rfl) hn
+    rcases h with h | h <;> rwa [h]
+  have hs := ClubInOrd.sInter hα hcf (isFunction_toSetRestrictedTo hr)
+    (by rwa [dom_toSetRestrictedTo hr]) hclub
+  refine hs.unboundedInOrd.mono fun x hx ↦ ?_
+  have hx' := (mem_sInterInOrd_iff.mp hx).right
+  simp only [mem_inter_iff]
+  refine ⟨hx' C (hmem.mpr ⟨∅, empty_mem_omega, natRec_empty C G⟩),
+    hx' D (hmem.mpr ⟨succ ∅, succ_mem_omega empty_mem_omega, ?_⟩)⟩
+  rw [natRec_succ _ _ ordinal_empty]
+
+/-- If `α` is an uncountable regular ordinal, the diagonal intersection of `α` clubs in `α` is a
+club -/
+theorem ClubInOrd.diagInter {f : M} (hα : Regular α) (hω : (ω : M) <ₒ α) (hf : IsFunction f)
+    (hdom : dom f = α) (hC : ∀ S ∈ ran f, ClubInOrd S α) :
+    ClubInOrd (diagInterInOrd f α) α := by
+  have hαo := hα.ordinal
+  have hcf : (ω : M) <ₒ cf α := by rwa [hα.cf_eq]
+  have hval {ξ : M} (hξ : ξ <ₒ α) : ClubInOrd (f ﹫ ξ) α :=
+    hC _ ((hf.mem_ran_iff _).mpr ⟨ξ, hdom ▸ hξ.mem, rfl⟩)
+  refine ⟨ClosedInOrd.diagInter hαo fun ξ hξ ↦ (hval hξ).closedInOrd, ?_⟩
+  simp only [unboundedInOrd_iff hαo]
+  intro γ hγ
+  -- each `x <ₒ α` has an element above it in the intersection of the `f ﹫ ξ` for `ξ <ₒ x`
+  have hR (x : M) (hx : x <ₒ α) : ∃ η <ₒ α, x <ₒ η ∧ ∀ ξ ∈ x, η ∈ f ﹫ ξ := by
+    have hsub : x ⊆ dom f := by
+      rw [hdom]
+      grind
+    have hclub := ClubInOrd.sInter hαo hcf (hf.restrict x)
+      (by rwa [dom_restrict_of_subset hf hsub, hα.cf_eq])
+      (by
+        intro S hS
+        rw [hf.mem_ran_restrict_iff hsub] at hS
+        obtain ⟨ξ, hξ, rfl⟩ := hS
+        exact hval (olt_trans (olt_of_mem hx.ordinal_left hξ) hx))
+    obtain ⟨η, hη, hle⟩ := hclub.unboundedInOrd.exists_ole
+      ((nonZeroLimOrdinal_of_omega_olt_cf hαo hcf).succ_olt hx)
+    have hη' := mem_sInterInOrd_iff.mp hη
+    refine ⟨η, olt_of_mem hαo hη'.left, by grind, fun ξ hξ ↦ hη'.right _ ?_⟩
+    exact (hf.mem_ran_restrict_iff hsub).mpr ⟨ξ, hξ, rfl⟩
+  obtain ⟨lam, hlamα, hlamlim, hγlam, hclosed⟩ := exists_nonZeroLimOrdinal_iterate
+    (R := fun x η ↦ ∀ ξ ∈ x, η ∈ f ﹫ ξ) hαo hcf hR hγ
+  refine ⟨lam, mem_diagInterInOrd_iff.mpr ⟨hlamα.mem, fun ξ hξ ↦ ?_⟩, hγlam⟩
+  have hξlam : ξ <ₒ lam := olt_of_mem hlamlim.ordinal hξ
+  refine (hval (olt_trans hξlam hlamα)).closedInOrd.mem_of_isLimitPoint hαo hlamα
+    ⟨hlamlim, fun δ hδ ↦ ?_⟩
+  -- `x` above `δ` and `ξ` has `η <ₒ lam` above it in `f ﹫ ξ`
+  have hδlam : δ <ₒ lam := olt_of_mem hlamlim.ordinal hδ
+  obtain ⟨x, -, hmaxx, η, hη, hxη, hηf⟩ := hclosed (omax₂ δ ξ)
+    ((omax₂_olt_iff hδlam.ordinal_left hξlam.ordinal_left).mpr ⟨hδlam, hξlam⟩)
+  have hδx : δ ≤ₒ omax₂ δ ξ := ole_omax₂_left hδlam.ordinal_left hξlam.ordinal_left
+  have hξx : ξ ≤ₒ omax₂ δ ξ := ole_omax₂_right hδlam.ordinal_left hξlam.ordinal_left
+  simp only [mem_inter_iff]
+  exact ⟨η, ⟨hηf ξ (olt_of_ole_of_olt hξx hmaxx).mem, hη.mem⟩,
+    (olt_trans (olt_of_ole_of_olt hδx hmaxx) hxη).ole⟩
 
 /-- If `cf α` is uncountable, every club in `α` is stationary -/
 theorem ClubInOrd.stationary (hα : Ordinal α) (hcf : (ω : M) <ₒ cf α) (hC : ClubInOrd C α) :
     StationaryInOrd C α := by
   refine ⟨hC.subset, fun D hD ↦ ?_⟩
-  have hlim : NonZeroLimOrdinal α := by
-    rcases hα.cases with rfl | ⟨β, hβ, rfl⟩ | hlim <;> grind
+  have hlim := nonZeroLimOrdinal_of_omega_olt_cf hα hcf
   obtain ⟨ξ, hξ, -⟩ := (hC.inter hα hcf hD).unboundedInOrd.exists_ole (olt_of_mem hα hlim.empty_mem)
   simp only [ne_empty_iff]
   exact ⟨ξ, hξ⟩

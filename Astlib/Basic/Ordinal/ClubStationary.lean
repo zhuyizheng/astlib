@@ -14,6 +14,10 @@ For a set `S` and an ordinal `α`, in models of `KP`:
   `limitPoints S` is the set of limit points of a set `S` of ordinals (`mem_limitPoints_iff`);
 * `ClosedInOrd S α`: `S ⊆ α` and `S` contains its limit points below `α`. The intersection of two
   closed sets is closed (`ClosedInOrd.inter`);
+* `sInterInOrd F α`: the intersection in `α` of the elements of `F`, closed if they all are
+  (`ClosedInOrd.sInter`);
+* `diagInterInOrd f α`: the diagonal intersection in `α` of the values of `f`, closed if they all
+  are (`ClosedInOrd.diagInter`);
 * `ClubInOrd S α`: `S` is closed and unbounded in `α`;
 * `StationaryInOrd S α`: `S ⊆ α` and `S` meets every club in `α`;
 * `next S x`: the least element of `S` above `x`, a `Σ₁` class function.
@@ -117,6 +121,95 @@ theorem ClosedInOrd.inter (hα : Ordinal α) (hS : ClosedInOrd S α) (hT : Close
   refine ⟨fun x hx ↦ by grind, fun γ hγ hlim ↦ ?_⟩
   simp only [mem_inter_iff]
   exact ⟨hS.right γ hγ (hlim.mono (by grind)), hT.right γ hγ (hlim.mono (by grind))⟩
+
+/-- The intersection in `α` of the elements of `F` -/
+noncomputable def sInterInOrd (F α : M) : M := α ∩₀ fun γ ↦ ∀ S ∈ F, γ ∈ S
+
+theorem mem_sInterInOrd_iff {F : M} : γ ∈ sInterInOrd F α ↔ γ ∈ α ∧ ∀ S ∈ F, γ ∈ S := by
+  simp [sInterInOrd]
+
+/-- The intersection of a set of closed sets is closed -/
+theorem ClosedInOrd.sInter {F : M} (hα : Ordinal α) (hF : ∀ S ∈ F, ClosedInOrd S α) :
+    ClosedInOrd (sInterInOrd F α) α := by
+  simp only [closedInOrd_iff hα]
+  refine ⟨fun x hx ↦ (mem_sInterInOrd_iff.mp hx).left, fun γ hγ hlim ↦ ?_⟩
+  refine mem_sInterInOrd_iff.mpr ⟨hγ.mem, fun S hS ↦ ?_⟩
+  exact (hF S hS).mem_of_isLimitPoint hα hγ
+    (hlim.mono fun x hx ↦ (mem_sInterInOrd_iff.mp hx).right S hS)
+
+/-- Membership in a value of a fixed function is `Δ₀` -/
+instance (f : M) : Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ ys 1 ∈ f ﹫ ys 0) Set.univ := by
+  let φ : L.DeltaZeroBoundedFormula 3 := (&0 ∈₀ &1).substBoundRud ![ᵣ1, (ᵣ2) ﹫ (ᵣ0)]
+  have h : (fun ys : Fin 2 → M ↦ ys 1 ∈ f ﹫ ys 0) = φ.toBoundedFormula.multiclass.slice ![f] := by
+    funext ys
+    simp only [φ, Multiclass.slice]
+    simp
+    rfl
+  rw [h]
+  infer_instance
+
+/-- Membership in the values of a fixed function at the elements of `x` is `Δ₀` -/
+instance (f : M) :
+    Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ ∀ ξ ∈ ys 0, ys 1 ∈ f ﹫ ξ) Set.univ := by
+  let φ : L.DeltaZeroBoundedFormula 3 := ∀₀∈ &0 ((&0 ∈₀ &1).substBoundRud ![ᵣ1, (ᵣ2) ﹫ (ᵣ3)])
+  have h : (fun ys : Fin 2 → M ↦ ∀ ξ ∈ ys 0, ys 1 ∈ f ﹫ ξ) =
+      φ.toBoundedFormula.multiclass.slice ![f] := by
+    funext ys
+    simp only [φ, Multiclass.slice]
+    simp
+    rfl
+  rw [h]
+  infer_instance
+
+/-- Each element of `F` meets the interval `(x, η]`: a `Δ₀` relation of `x` and `η` -/
+instance (F : M) : Multiclass.DeltaZero
+    (fun ys : Fin 2 → M ↦ ∀ S ∈ F, ∃ ξ ∈ S, ys 0 <ₒ ξ ∧ ξ ≤ₒ ys 1) Set.univ := by
+  have hA : Multiclass.DeltaZero
+      (fun zs : Fin 3 → M ↦ ∀ S ∈ zs 2, ∃ ξ ∈ S, zs 0 <ₒ ξ ∧ ξ ≤ₒ zs 1) Set.univ := inferInstance
+  have h : (fun ys : Fin 2 → M ↦ ∀ S ∈ F, ∃ ξ ∈ S, ys 0 <ₒ ξ ∧ ξ ≤ₒ ys 1) =
+      Multiclass.slice (n := 2)
+        (fun zs : Fin 3 → M ↦ ∀ S ∈ zs 2, ∃ ξ ∈ S, zs 0 <ₒ ξ ∧ ξ ≤ₒ zs 1) ![F] := by
+    funext ys
+    rfl
+  exact ⟨h ▸ hA.isDeltaZero.slice (by simp)⟩
+
+/-- The diagonal intersection is `Δ₀` -/
+instance (f : M) : Class.DeltaZero (fun γ : M ↦ ∀ ξ ∈ γ, γ ∈ f ﹫ ξ) Set.univ := by
+  let φ : L.DeltaZeroBoundedFormula 2 := ∀₀∈ &0 ((&0 ∈₀ &1).substBoundRud ![ᵣ0, (ᵣ1) ﹫ (ᵣ2)])
+  have h : (fun ys : Fin 1 → M ↦ ∀ ξ ∈ ys 0, ys 0 ∈ f ﹫ ξ) =
+      φ.toBoundedFormula.multiclass.slice ![f] := by
+    funext ys
+    simp only [φ, Multiclass.slice]
+    simp
+    rfl
+  have : Multiclass.DeltaZero (fun ys : Fin 1 → M ↦ ∀ ξ ∈ ys 0, ys 0 ∈ f ﹫ ξ) Set.univ :=
+    h ▸ inferInstance
+  infer_instance
+
+/-- The diagonal intersection in `α` of the values of `f`: the `γ <ₒ α` in `f ﹫ ξ` for all
+`ξ <ₒ γ` -/
+noncomputable def diagInterInOrd (f α : M) : M := α ∩₀ fun γ ↦ ∀ ξ ∈ γ, γ ∈ f ﹫ ξ
+
+theorem mem_diagInterInOrd_iff {f : M} : γ ∈ diagInterInOrd f α ↔ γ ∈ α ∧ ∀ ξ ∈ γ, γ ∈ f ﹫ ξ := by
+  simp [diagInterInOrd]
+
+/-- The diagonal intersection of closed sets is closed -/
+theorem ClosedInOrd.diagInter {f : M} (hα : Ordinal α) (hf : ∀ ξ <ₒ α, ClosedInOrd (f ﹫ ξ) α) :
+    ClosedInOrd (diagInterInOrd f α) α := by
+  simp only [closedInOrd_iff hα]
+  refine ⟨fun x hx ↦ (mem_diagInterInOrd_iff.mp hx).left, fun γ hγ hlim ↦ ?_⟩
+  refine mem_diagInterInOrd_iff.mpr ⟨hγ.mem, fun ξ hξ ↦ ?_⟩
+  have hξγ : ξ <ₒ γ := olt_of_mem hγ.ordinal_left hξ
+  refine (hf ξ (olt_trans hξγ hγ)).mem_of_isLimitPoint hα hγ ⟨hlim.left, fun δ hδ ↦ ?_⟩
+  -- an element of the diagonal intersection in `γ` above `δ` and `ξ` is in `f ﹫ ξ`
+  have hδγ : δ <ₒ γ := olt_of_mem hγ.ordinal_left hδ
+  have hmax : omax₂ δ (succ ξ) <ₒ γ :=
+    (omax₂_olt_iff hδγ.ordinal_left (by grind)).mpr ⟨hδγ, hlim.left.succ_olt hξγ⟩
+  obtain ⟨η, hη, hle⟩ := hlim.right.exists_ole hmax
+  simp only [mem_inter_iff] at hη ⊢
+  have hδη : δ ≤ₒ η := ole_trans (ole_omax₂_left hδγ.ordinal_left (by grind)) hle
+  have hξη : succ ξ ≤ₒ η := ole_trans (ole_omax₂_right hδγ.ordinal_left (by grind)) hle
+  exact ⟨η, ⟨(mem_diagInterInOrd_iff.mp hη.left).right ξ (by grind), hη.right⟩, hδη⟩
 
 end ClosedInOrd
 

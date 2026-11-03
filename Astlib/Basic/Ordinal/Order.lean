@@ -635,6 +635,22 @@ instance (S : M) {R : M → M → Prop}
   · subst hw
     exact ⟨hspec.left, hspec.right.left.left, hspec.right.left.right, hspec.right.right⟩
 
+omit [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] [Foundational M]
+  [ModelsKP M] in
+/-- The class of elements of a fixed set `S` in a `Δ₀` relation with `x` is definable -/
+theorem definable_mem_and_of_deltaZero {R : M → M → Prop}
+    [Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ R (ys 0) (ys 1)) Set.univ] (S x : M) :
+    Class.Definable (fun ξ ↦ ξ ∈ S ∧ R x ξ) Set.univ := by
+  -- swap the arguments of `R` and slice at `x`
+  have hA : Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ R (ys 0) (ys 1)) Set.univ := inferInstance
+  have h := (hA.isDeltaZero.remap ![(1 : Fin 2), 0]).slice (n := 1) (us := ![x]) (by simp)
+  have e : (fun ys : Fin 1 → M ↦ R x (ys 0)) =
+      ((Multiclass.remap (fun ys : Fin 2 → M ↦ R (ys 0) (ys 1)) ![1, 0]).slice ![x]) := by
+    funext ys
+    rfl
+  have : Multiclass.Definable (fun ys : Fin 1 → M ↦ R x (ys 0)) Set.univ := ⟨e ▸ h.isDefinable⟩
+  infer_instance
+
 /-- `supRange f` is `Σ₁` -/
 instance (f : M) : (supRange f).Sigma 1 Set.univ :=
   ClassFunction.Sigma.of_iff (F := fun xs ↦ ⋃₀ ran (f ↾ xs 0) = xs 1)
