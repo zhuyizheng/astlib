@@ -932,7 +932,7 @@ noncomputable def invMemGraph₀ : L.RudimentaryTerm 1 := (ᵣ0).iUnion ((ᵣ1).
 /-- `slice₀〘x, u〙₂` is the slice `{v | !(u, v) ∈ x}` of `x` at `u`, as a subset of `ran x` -/
 noncomputable def slice₀ : L.RudimentaryTerm 2 :=
   (ᵣ0).ran.iUnion
-    (({ᵣ2} : L.RudimentaryTerm 3).ifTrue ((&0 ∈₀ &1).substBoundRud ![ᵣ(ᵣ1, ᵣ2), ᵣ0]))
+    (({ᵣ2} : L.RudimentaryTerm 3).ifTrue ((ᵣ(ᵣ1, ᵣ2)).isMem (ᵣ0)))
 
 /-- `sliceSet₀〘x, y〙₂` is `{slice₀〘x, u〙₂ | u ∈ y}` -/
 noncomputable def sliceSet₀ : L.RudimentaryTerm 2 := (ᵣ1).iUnion {slice₀.substBoundRud ![ᵣ0, ᵣ2]}

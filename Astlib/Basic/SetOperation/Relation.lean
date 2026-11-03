@@ -286,7 +286,7 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.comp₀
     [L.ExtraConstantsUnaryRelationsOnly] : L.RudimentaryTerm 2 :=
   (ᵣ0).iUnion ((ᵣ1).iUnion (({ᵣ((ᵣ3).left, (ᵣ2).right)} : L.RudimentaryTerm 4).ifTrue
     ((ᵣ3).isOrderedPair ⊓ (ᵣ2).isOrderedPair ⊓
-      (&0 =₀ &1).substBoundRud (![(ᵣ3).right, (ᵣ2).left]))))
+      (ᵣ3).right.isEq (ᵣ2).left)))
 
 @[simp]
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.comp
@@ -641,7 +641,7 @@ def IsRelationOn (R a : M) := IsRelation R ∧ R ↾↾ a = R
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isRelationOn
     {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r s : L.RudimentaryTerm n) :
   L.DeltaZeroBoundedFormula n :=
-  (ᵣ0).isRelation ⊓ (&0 =₀ &1).substBoundRud ![ᵣ0 ↾↾ ᵣ1, ᵣ0] |>.substBoundRud ![r, s]
+  (ᵣ0).isRelation ⊓ (ᵣ0 ↾↾ ᵣ1).isEq (ᵣ0) |>.substBoundRud ![r, s]
 
 variable [RudClosed M] [Extensional M]
 
@@ -820,7 +820,7 @@ theorem Multiclass.ofRel_iff : Multiclass.ofRel R ![y, x] ↔ y [R] x := .rfl
 
 instance [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M] :
     (Multiclass.ofRel R).DeltaZero Set.univ := by
-  have : Multiclass.ofRel R = ((&0 ∈₀ &1).substBoundRud ![ᵣ(ᵣ0, ᵣ1), ᵣ2] :
+  have : Multiclass.ofRel R = ((ᵣ(ᵣ0, ᵣ1)).isMem (ᵣ2) :
       L.DeltaZeroBoundedFormula 3).toBoundedFormula.multiclass.slice ![R] := by
     funext xs
     simp [Multiclass.ofRel, append_right_eq_snoc, snoc_nat]

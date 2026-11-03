@@ -26,12 +26,12 @@ variable [ModelsKP M]
 def PullbackClass (τ R : M) : Class M := fun z ↦ (τ ﹫ left z) [R] (τ ﹫ right z)
 
 /-- `PullbackClass τ R` is defined by a `Δ₀` formula with parameters `τ` and `R` -/
-theorem pullbackClass_eq (τ R : M) : PullbackClass τ R = (((&0 ∈₀ &1).substBoundRud
-    ![ᵣ((ᵣ1) ﹫ (ᵣ0).left, (ᵣ1) ﹫ (ᵣ0).right), ᵣ2] : L.DeltaZeroBoundedFormula 3)
+theorem pullbackClass_eq (τ R : M) : PullbackClass τ R =
+    (((ᵣ((ᵣ1) ﹫ (ᵣ0).left, (ᵣ1) ﹫ (ᵣ0).right)).isMem (ᵣ2) : L.DeltaZeroBoundedFormula 3)
       |>.toBoundedFormula.multiclass.slice ![τ, R] : Class M) := by
   funext z
   rw [Multiclass.toClass_iff, Multiclass.slice, Fin.append_vec₁_vec₂, BoundedFormula.multiclass,
-    DeltaZeroBoundedFormula.realize_substBoundRud]
+    RudimentaryTerm.realize_isMem]
   simp [PullbackClass]
 
 instance (τ R : M) : (PullbackClass τ R).DeltaZero Set.univ := by

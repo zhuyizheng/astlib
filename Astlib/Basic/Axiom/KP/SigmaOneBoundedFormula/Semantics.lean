@@ -332,7 +332,7 @@ theorem isSetRestrictedTo_of_hasReplacement [Extensional M] [RudClosed M] {G : C
 /-- The graph `w = !(u, G u)` of a class function, as `∃ v, G u = v ∧ w = !(u, v)` -/
 noncomputable def ClassFunction.pairGraph (G : ClassFunction M) : Multiclass M 2 :=
   ((G : Multiclass M 2).remap ![0, 2] ⊓
-    ((&0 =₀ &1).substBoundRud ![ᵣ1, ᵣ(ᵣ0, ᵣ2)] :
+    ((ᵣ1).isEq (ᵣ(ᵣ0, ᵣ2)) :
       L.DeltaZeroBoundedFormula 3).toBoundedFormula.multiclass).ex
 
 instance (G : ClassFunction M) [G.Sigma 1 Set.univ] : G.pairGraph.Sigma 1 Set.univ := by

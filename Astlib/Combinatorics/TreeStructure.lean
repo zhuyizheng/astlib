@@ -9,8 +9,9 @@ import Astlib.Basic.Ordinal.Omega
 
 In models of `KP`:
 
-* `TreeStructure M` bundles the data `(A, d, C)` of a tree structure: the nodes `T.nd`, the depth
-  function `T.dep` and the children function `T.chd`;
+* `TreeStructure M` is `M`, viewed as tree structures `(A, d, C)` coded by the sets
+  `!(A, !(d, C))` (`TreeStructure.mk A d C`): the nodes `T.nd`, the depth function `T.dep` and the
+  children function `T.chd`;
 * `T.IsTreeStructure`: `d !: A → ω`, `C` is a function on `A` with `C ﹫ a ⊆ A`, children are
   one level deeper, and every node of positive depth is a child of a unique node;
 * `T.rt`: the roots, the nodes of depth `∅`;
@@ -29,15 +30,13 @@ variable {L : Language} {M : Type*} [L.MemStructure M]
 
 /-- `d ﹫ a = ∅` is `Δ₀` -/
 instance (d : M) : Class.DeltaZero (fun a : M ↦ d ﹫ a = ∅) Set.univ := by
-  let φ : L.DeltaZeroBoundedFormula 2 := (&0 =₀ &1).substBoundRud ![(ᵣ1) ﹫ (ᵣ0), ∅]
+  let φ : L.DeltaZeroBoundedFormula 2 := ((ᵣ1) ﹫ (ᵣ0)).isEq ∅
   have h : (fun ys : Fin 1 → M ↦ d ﹫ ys 0 = ∅) =
       φ.toBoundedFormula.multiclass.slice ![d] := by
     funext ys
-    simp only [Fin.isValue, Multiclass.slice, BoundedFormula.multiclass, Nat.succ_eq_add_one,
-      Nat.reduceAdd, Function.comp_apply, RudimentaryTerm.val,
-      DeltaZeroBoundedFormula.realize_substBoundRud, DeltaZeroBoundedFormula.toBoundedFormula,
-      BoundedFormula.realize'_bdEqual, Term.realize'_var', Matrix.cons_val_zero,
-      RudimentaryTerm.realize_substBoundRud, RudimentaryTerm.realize_val₀,
+    simp only [Fin.isValue, Multiclass.slice, BoundedFormula.multiclass, RudimentaryTerm.val,
+      Nat.succ_eq_add_one, Nat.reduceAdd, RudimentaryTerm.realize_isEq,
+      RudimentaryTerm.realize_substBoundRud, RudimentaryTerm.realize_val₀, Matrix.cons_val_zero,
       RudimentaryTerm.realize_basic, Matrix.cons_val_one, Matrix.cons_val_fin_one,
       RudimentaryTerm.realize_empty, eq_iff_iff, φ]
     rfl
@@ -48,41 +47,93 @@ instance (d : M) : Class.DeltaZero (fun a : M ↦ d ﹫ a = ∅) Set.univ := by
 /-- `left p ∈ C ﹫ right p` is `Δ₀` -/
 instance (C : M) : Class.DeltaZero (fun p : M ↦ left p ∈ C ﹫ right p) Set.univ := by
   let φ : L.DeltaZeroBoundedFormula 2 :=
-    (&0 ∈₀ &1).substBoundRud ![(ᵣ0).left, (ᵣ1) ﹫ (ᵣ0).right]
+    (ᵣ0).left.isMem ((ᵣ1) ﹫ (ᵣ0).right)
   have h : (fun ys : Fin 1 → M ↦ left (ys 0) ∈ C ﹫ right (ys 0)) =
       φ.toBoundedFormula.multiclass.slice ![C] := by
     funext ys
-    simp only [φ, Multiclass.slice, BoundedFormula.multiclass, eq_iff_iff]
-    rw [DeltaZeroBoundedFormula.realize_substBoundRud]
-    simp only [Fin.isValue, Nat.succ_eq_add_one, Nat.reduceAdd,
-      DeltaZeroBoundedFormula.toBoundedFormula, Function.comp_apply, RudimentaryTerm.left,
-      RudimentaryTerm.val, RudimentaryTerm.right, realize'_mem, Term.realize'_var',
-      Matrix.cons_val_one, Matrix.cons_val_fin_one, RudimentaryTerm.realize_substBoundRud,
+    simp only [Fin.isValue, Multiclass.slice, BoundedFormula.multiclass, RudimentaryTerm.left,
+      RudimentaryTerm.val, RudimentaryTerm.right, Nat.succ_eq_add_one, Nat.reduceAdd,
+      RudimentaryTerm.realize_isMem, RudimentaryTerm.realize_substBoundRud,
       RudimentaryTerm.realize_val₀, Matrix.cons_val_zero, RudimentaryTerm.realize_basic,
-      RudimentaryTerm.realize_right₀, RudimentaryTerm.realize_left₀]
+      Matrix.cons_val_one, Matrix.cons_val_fin_one, RudimentaryTerm.realize_right₀,
+      RudimentaryTerm.realize_left₀, eq_iff_iff, φ]
     rfl
   have : Multiclass.DeltaZero (fun ys : Fin 1 → M ↦ left (ys 0) ∈ C ﹫ right (ys 0))
       Set.univ :=
     h ▸ inferInstance
   infer_instance
 
-/-- The data `(A, d, C)` of a tree structure: the nodes `A`, the depth function `d` and the
-children function `C` -/
-@[ext]
-structure TreeStructure (M : Type*) where
-  /-- The set of nodes -/
-  nd : M
-  /-- The depth function -/
-  dep : M
-  /-- The children function -/
-  chd : M
+/-- A tree structure `(A, d, C)`, coded as the set `!(A, !(d, C))`: the nodes `A`, the depth
+function `d` and the children function `C` -/
+def TreeStructure (M : Type*) := M
 
 namespace TreeStructure
 
+/-- The tree structure `(A, d, C)` -/
+noncomputable def mk (A d C : M) : TreeStructure M := (!(A, !(d, C)) : M)
+
 variable (T : TreeStructure M)
+
+/-- The set coding a tree structure -/
+def toM : M := T
+
+/-- The tree structure coded by a set -/
+def ofM (x : M) : TreeStructure M := x
+
+omit [L.ExtraConstantsUnaryRelationsOnly] [Inhabited M] [ModelsKP M] in
+@[simp]
+theorem toM_ofM (x : M) : (ofM x).toM = x := rfl
+
+omit [L.ExtraConstantsUnaryRelationsOnly] [Inhabited M] [ModelsKP M] in
+@[simp]
+theorem ofM_toM : ofM T.toM = T := rfl
+
+/-- The set of nodes -/
+noncomputable def nd : M := left T.toM
+
+/-- The depth function -/
+noncomputable def dep : M := left (right T.toM)
+
+/-- The children function -/
+noncomputable def chd : M := right (right T.toM)
+
+section Mk
+
+variable (A d C : M)
+
+omit [L.ExtraConstantsUnaryRelationsOnly] [ModelsKP M] in
+@[simp]
+theorem toM_mk : (mk A d C).toM = !(A, !(d, C)) := rfl
+
+@[simp]
+theorem nd_mk : (mk A d C).nd = A := by
+  simp [nd]
+
+@[simp]
+theorem dep_mk : (mk A d C).dep = d := by
+  simp [dep]
+
+@[simp]
+theorem chd_mk : (mk A d C).chd = C := by
+  simp [chd]
+
+omit [L.ExtraConstantsUnaryRelationsOnly] [ModelsKP M] in
+theorem isOrderedPair_mk : IsOrderedPair (mk A d C).toM := ⟨A, !(d, C), rfl⟩
+
+theorem isOrderedPair_right_mk : IsOrderedPair (right (mk A d C).toM) := by
+  rw [toM_mk, right_orderedPair]
+  exact ⟨d, C, rfl⟩
+
+theorem mk_eq_mk_iff {A' d' C' : M} : mk A d C = mk A' d' C' ↔ A = A' ∧ d = d' ∧ C = C' := by
+  change (mk A d C).toM = (mk A' d' C').toM ↔ _
+  simp
+
+end Mk
 
 /-- `T = (A, d, C)` is a tree structure -/
 structure IsTreeStructure : Prop where
+  isOrderedPair : IsOrderedPair T.toM
+  isOrderedPair_right : IsOrderedPair (right T.toM)
   dep_fromTo : T.dep !: T.nd → (ω : M)
   isFunction_chd : IsFunction T.chd
   dom_chd : dom T.chd = T.nd
@@ -90,26 +141,42 @@ structure IsTreeStructure : Prop where
   dep_of_mem_chd : ∀ a ∈ T.nd, ∀ b ∈ T.chd ﹫ a, T.dep ﹫ b = succ (T.dep ﹫ a)
   existsUnique_prt : ∀ b ∈ T.nd, ∅ <ₒ T.dep ﹫ b → ∃! a, b ∈ T.chd ﹫ a
 
+/-- A tree structure is the triple of its components -/
+theorem IsTreeStructure.eq_mk {T : TreeStructure M} (hT : T.IsTreeStructure) :
+    T = TreeStructure.mk T.nd T.dep T.chd := by
+  obtain ⟨A, X, hAX⟩ := hT.isOrderedPair
+  have hX := hT.isOrderedPair_right
+  rw [hAX, right_orderedPair] at hX
+  obtain ⟨d, C, rfl⟩ := hX
+  change T.toM = (TreeStructure.mk T.nd T.dep T.chd).toM
+  simp [nd, dep, chd, hAX]
+
 /-- The empty tree structure `(∅, ∅, ∅)` -/
-noncomputable instance : EmptyCollection (TreeStructure M) := ⟨⟨∅, ∅, ∅⟩⟩
+noncomputable instance : EmptyCollection (TreeStructure M) := ⟨mk ∅ ∅ ∅⟩
 
 omit [L.ExtraConstantsUnaryRelationsOnly] [ModelsKP M] in
-@[simp]
-theorem nd_empty : (∅ : TreeStructure M).nd = ∅ := rfl
+theorem empty_eq_mk : (∅ : TreeStructure M) = mk ∅ ∅ ∅ := rfl
 
-omit [L.ExtraConstantsUnaryRelationsOnly] [ModelsKP M] in
 @[simp]
-theorem dep_empty : (∅ : TreeStructure M).dep = ∅ := rfl
+theorem nd_empty : (∅ : TreeStructure M).nd = ∅ := nd_mk ∅ ∅ ∅
 
-omit [L.ExtraConstantsUnaryRelationsOnly] [ModelsKP M] in
 @[simp]
-theorem chd_empty : (∅ : TreeStructure M).chd = ∅ := rfl
+theorem dep_empty : (∅ : TreeStructure M).dep = ∅ := dep_mk ∅ ∅ ∅
+
+@[simp]
+theorem chd_empty : (∅ : TreeStructure M).chd = ∅ := chd_mk ∅ ∅ ∅
 
 /-- The empty tree structure is a tree structure -/
 theorem isTreeStructure_empty : (∅ : TreeStructure M).IsTreeStructure where
-  dep_fromTo := isFunctionFromTo_empty ω
-  isFunction_chd := isFunction_empty
-  dom_chd := dom_empty
+  isOrderedPair := isOrderedPair_mk ∅ ∅ ∅
+  isOrderedPair_right := isOrderedPair_right_mk ∅ ∅ ∅
+  dep_fromTo := by
+    rw [dep_empty, nd_empty]
+    exact isFunctionFromTo_empty ω
+  isFunction_chd := by
+    rw [chd_empty]
+    exact isFunction_empty
+  dom_chd := by simp
   chd_subset := by simp
   dep_of_mem_chd := by simp
   existsUnique_prt := by simp
@@ -129,13 +196,13 @@ noncomputable def sblptn : M := ({T.rt} ∪ ran T.chd) \ {∅}
 
 /-- `T` with a new root `b`: `(A ∪ {b}, d_ins(b, ∅), C_ins(b, ∅))` -/
 noncomputable def irt (b : M) : TreeStructure M :=
-  ⟨insert b T.nd, update T.dep b ∅, update T.chd b ∅⟩
+  mk (insert b T.nd) (update T.dep b ∅) (update T.chd b ∅)
 
 /-- `T` with new children `B` of `a`:
 `(A ∪ B, d ∪ (B × {d(a) + 1}), C_mVal(a, C(a) ∪ B) ∪ (B × {∅}))` -/
 noncomputable def ichd (a B : M) : TreeStructure M :=
-  ⟨T.nd ∪ B, T.dep ∪ constFun B (succ (T.dep ﹫ a)),
-    update T.chd a (T.chd ﹫ a ∪ B) ∪ constFun B ∅⟩
+  mk (T.nd ∪ B) (T.dep ∪ constFun B (succ (T.dep ﹫ a)))
+    (update T.chd a (T.chd ﹫ a ∪ B) ∪ constFun B ∅)
 
 /-- `T` with a new child `b` of `a`: `T.ichd a {b}` -/
 noncomputable def ionechd (a b : M) : TreeStructure M := T.ichd a {b}
@@ -146,34 +213,30 @@ noncomputable instance (a : M) : Decidable (a ∈ T.rt) := Classical.propDecidab
 `(A ∪ {b}, d_ins(b, d(a)), C_iToVal(T.prt(a), b)_ins(b, ∅))` -/
 noncomputable def isbl (a b : M) : TreeStructure M :=
   if a ∈ T.rt then T.irt b
-  else ⟨insert b T.nd, update T.dep b (T.dep ﹫ a),
-    update (insertVal T.chd (T.prt ﹫ a) b) b ∅⟩
+  else mk (insert b T.nd) (update T.dep b (T.dep ﹫ a))
+    (update (insertVal T.chd (T.prt ﹫ a) b) b ∅)
 
 variable {T} {a b c e p s B : M}
 
-omit [ModelsKP M] in
 @[simp]
-theorem nd_irt : (T.irt b).nd = insert b T.nd := rfl
+theorem nd_irt : (T.irt b).nd = insert b T.nd := nd_mk _ _ _
 
-omit [ModelsKP M] in
 @[simp]
-theorem dep_irt : (T.irt b).dep = update T.dep b ∅ := rfl
+theorem dep_irt : (T.irt b).dep = update T.dep b ∅ := dep_mk _ _ _
 
-omit [ModelsKP M] in
 @[simp]
-theorem chd_irt : (T.irt b).chd = update T.chd b ∅ := rfl
+theorem chd_irt : (T.irt b).chd = update T.chd b ∅ := chd_mk _ _ _
 
-omit [ModelsKP M] in
 @[simp]
-theorem nd_ichd : (T.ichd a B).nd = T.nd ∪ B := rfl
+theorem nd_ichd : (T.ichd a B).nd = T.nd ∪ B := nd_mk _ _ _
 
-omit [ModelsKP M] in
 @[simp]
-theorem dep_ichd : (T.ichd a B).dep = T.dep ∪ constFun B (succ (T.dep ﹫ a)) := rfl
+theorem dep_ichd : (T.ichd a B).dep = T.dep ∪ constFun B (succ (T.dep ﹫ a)) :=
+  dep_mk _ _ _
 
-omit [ModelsKP M] in
 @[simp]
-theorem chd_ichd : (T.ichd a B).chd = update T.chd a (T.chd ﹫ a ∪ B) ∪ constFun B ∅ := rfl
+theorem chd_ichd : (T.ichd a B).chd = update T.chd a (T.chd ﹫ a ∪ B) ∪ constFun B ∅ :=
+  chd_mk _ _ _
 
 omit [ModelsKP M] in
 theorem isbl_of_mem_rt (ha : a ∈ T.rt) : T.isbl a b = T.irt b := if_pos ha
@@ -181,8 +244,8 @@ theorem isbl_of_mem_rt (ha : a ∈ T.rt) : T.isbl a b = T.irt b := if_pos ha
 omit [ModelsKP M] in
 theorem isbl_of_not_mem_rt (ha : a ∉ T.rt) :
     T.isbl a b =
-      ⟨insert b T.nd, update T.dep b (T.dep ﹫ a),
-        update (insertVal T.chd (T.prt ﹫ a) b) b ∅⟩ :=
+      mk (insert b T.nd) (update T.dep b (T.dep ﹫ a))
+        (update (insertVal T.chd (T.prt ﹫ a) b) b ∅) :=
   if_neg ha
 
 theorem singleton_inter_eq_empty (hb : b ∉ T.nd) : ({b} : M) ∩ T.nd = ∅ := by
@@ -225,6 +288,38 @@ theorem ran_prt_subset : ran T.prt ⊆ T.nd := by
   rw [mem_ran_iff] at ha
   grind [rel_prt_iff]
 
+/-- `IsTreeStructure` with all quantifiers bounded -/
+theorem isTreeStructure_iff [HasOmega M] :
+    T.IsTreeStructure ↔ IsOrderedPair T.toM ∧ IsOrderedPair (right T.toM) ∧
+      IsFunction T.dep ∧ dom T.dep = T.nd ∧ (∀ a ∈ T.nd, IsNat (T.dep ﹫ a)) ∧
+      IsFunction T.chd ∧ dom T.chd = T.nd ∧ (∀ a ∈ T.nd, ∀ b ∈ T.chd ﹫ a, b ∈ T.nd) ∧
+      (∀ a ∈ T.nd, ∀ b ∈ T.chd ﹫ a, T.dep ﹫ b = succ (T.dep ﹫ a)) ∧
+      ∀ b ∈ T.nd, ∅ ∈ T.dep ﹫ b →
+        ∃ a ∈ T.nd, b ∈ T.chd ﹫ a ∧ ∀ a' ∈ T.nd, b ∈ T.chd ﹫ a' → a' = a := by
+  constructor
+  · intro hT
+    refine ⟨hT.isOrderedPair, hT.isOrderedPair_right, hT.dep_fromTo.isFunction,
+      hT.dep_fromTo.dom_eq, fun a ha ↦ ?_, hT.isFunction_chd, hT.dom_chd,
+      fun a ha b hb ↦ hT.chd_subset a ha hb, hT.dep_of_mem_chd, fun b hb h0 ↦ ?_⟩
+    · rw [← mem_omega_iff]
+      exact hT.dep_fromTo.val_mem ha
+    have hnat : IsNat (T.dep ﹫ b) := by
+      rw [← mem_omega_iff]
+      exact hT.dep_fromTo.val_mem hb
+    obtain ⟨a, hab, huniq⟩ := hT.existsUnique_prt b hb ⟨ordinal_empty, hnat.ordinal, h0⟩
+    refine ⟨a, ?_, hab, fun a' _ h ↦ huniq a' h⟩
+    rw [← hT.dom_chd]
+    exact mem_dom_of_mem_val hab
+  · rintro ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10⟩
+    refine ⟨h1, h2, isFunctionFromTo_of_val h3 h4 fun a ha ↦ ?_, h6, h7,
+      fun a ha b hb ↦ h8 a ha b hb, h9, fun b hb hpos ↦ ?_⟩
+    · rw [mem_omega_iff]
+      exact h5 a ha
+    obtain ⟨a, -, hab, huniq⟩ := h10 b hb hpos.mem
+    refine ⟨a, hab, fun a' ha' ↦ huniq a' ?_ ha'⟩
+    rw [← h7]
+    exact mem_dom_of_mem_val ha'
+
 namespace IsTreeStructure
 
 variable (hT : T.IsTreeStructure)
@@ -262,25 +357,30 @@ theorem eq_empty_of_nd_eq_empty (hA : T.nd = ∅) : T = ∅ := by
   have hdep : T.dep !: ∅ → (ω : M) := hA ▸ hT.dep_fromTo
   have hchd := isFunctionFromTo_dom_ran hT.isFunction_chd
   rw [hT.dom_chd, hA] at hchd
-  exact TreeStructure.ext hA hdep.eq_empty_of_dom_empty hchd.eq_empty_of_dom_empty
+  rw [hT.eq_mk, hA, hdep.eq_empty_of_dom_empty, hchd.eq_empty_of_dom_empty]
+  rfl
 
 /-- A nonempty tree structure has a node -/
 theorem nd_ne_empty (hne : T ≠ ∅) : T.nd ≠ ∅ :=
   fun hA ↦ hne (hT.eq_empty_of_nd_eq_empty hA)
 
-theorem dep_irt_val_self : (T.irt b).dep ﹫ b = ∅ :=
-  val_update_self hT.dep_fromTo.isFunction b ∅
+theorem dep_irt_val_self : (T.irt b).dep ﹫ b = ∅ := by
+  rw [dep_irt]
+  exact val_update_self hT.dep_fromTo.isFunction b ∅
 
 theorem dep_irt_val_of_mem (hb : b ∉ T.nd) (ha : a ∈ T.nd) :
-    (T.irt b).dep ﹫ a = T.dep ﹫ a :=
-  val_update_of_ne hT.dep_fromTo.isFunction ∅ (by rwa [hT.dep_fromTo.dom_eq]) (by grind)
+    (T.irt b).dep ﹫ a = T.dep ﹫ a := by
+  rw [dep_irt]
+  exact val_update_of_ne hT.dep_fromTo.isFunction ∅ (by rwa [hT.dep_fromTo.dom_eq]) (by grind)
 
-theorem chd_irt_val_self : (T.irt b).chd ﹫ b = ∅ :=
-  val_update_self hT.isFunction_chd b ∅
+theorem chd_irt_val_self : (T.irt b).chd ﹫ b = ∅ := by
+  rw [chd_irt]
+  exact val_update_self hT.isFunction_chd b ∅
 
 theorem chd_irt_val_of_mem (hb : b ∉ T.nd) (ha : a ∈ T.nd) :
-    (T.irt b).chd ﹫ a = T.chd ﹫ a :=
-  val_update_of_ne hT.isFunction_chd ∅ (by rwa [hT.dom_chd]) (by grind)
+    (T.irt b).chd ﹫ a = T.chd ﹫ a := by
+  rw [chd_irt]
+  exact val_update_of_ne hT.isFunction_chd ∅ (by rwa [hT.dom_chd]) (by grind)
 
 theorem dom_chd_irt : dom (T.irt b).chd = insert b T.nd := by
   simp [hT.dom_chd]
@@ -296,16 +396,18 @@ theorem disjoint_dep_ichd (hB : B ∩ T.nd = ∅) (x : M) :
   rw [hT.dep_fromTo.dom_eq, dom_constFun]
   exact fun z hz hzB ↦ not_mem_nd_of_mem_new hB hzB hz
 
-theorem isFunction_dep_ichd (hB : B ∩ T.nd = ∅) : IsFunction (T.ichd a B).dep :=
-  hT.dep_fromTo.isFunction.union_of_disjoint (isFunction_constFun B (succ (T.dep ﹫ a)))
+theorem isFunction_dep_ichd (hB : B ∩ T.nd = ∅) : IsFunction (T.ichd a B).dep := by
+  rw [dep_ichd]
+  exact hT.dep_fromTo.isFunction.union_of_disjoint (isFunction_constFun B (succ (T.dep ﹫ a)))
     (hT.disjoint_dep_ichd hB (succ (T.dep ﹫ a)))
 
 theorem dom_dep_ichd : dom (T.ichd a B).dep = T.nd ∪ B := by
   simp [dom_union, hT.dep_fromTo.dom_eq]
 
 theorem dep_ichd_val_of_mem_nd (hB : B ∩ T.nd = ∅) (hc : c ∈ T.nd) :
-    (T.ichd a B).dep ﹫ c = T.dep ﹫ c :=
-  val_union_left hT.dep_fromTo.isFunction (isFunction_constFun B (succ (T.dep ﹫ a)))
+    (T.ichd a B).dep ﹫ c = T.dep ﹫ c := by
+  rw [dep_ichd]
+  exact val_union_left hT.dep_fromTo.isFunction (isFunction_constFun B (succ (T.dep ﹫ a)))
     (hT.disjoint_dep_ichd hB (succ (T.dep ﹫ a))) (by rwa [hT.dep_fromTo.dom_eq])
 
 theorem dep_ichd_val_of_mem_new (hB : B ∩ T.nd = ∅) (hc : c ∈ B) :
@@ -324,8 +426,9 @@ theorem disjoint_chd_ichd (ha : a ∈ T.nd) (hB : B ∩ T.nd = ∅) :
   · exact not_mem_nd_of_mem_new hB hzB hz
 
 theorem isFunction_chd_ichd (ha : a ∈ T.nd) (hB : B ∩ T.nd = ∅) :
-    IsFunction (T.ichd a B).chd :=
-  (hT.isFunction_chd.update a (T.chd ﹫ a ∪ B)).union_of_disjoint (isFunction_constFun B ∅)
+    IsFunction (T.ichd a B).chd := by
+  rw [chd_ichd]
+  exact (hT.isFunction_chd.update a (T.chd ﹫ a ∪ B)).union_of_disjoint (isFunction_constFun B ∅)
     (hT.disjoint_chd_ichd ha hB)
 
 theorem dom_chd_ichd (ha : a ∈ T.nd) : dom (T.ichd a B).chd = T.nd ∪ B := by
@@ -511,8 +614,11 @@ theorem rt_ne_empty (hne : T ≠ ∅) : T.rt ≠ ∅ := by
 
 /-- Inserting a new root `b ∉ T.nd` into a tree structure gives a tree structure -/
 theorem irt (hb : b ∉ T.nd) : (T.irt b).IsTreeStructure where
+  isOrderedPair := isOrderedPair_mk _ _ _
+  isOrderedPair_right := isOrderedPair_right_mk _ _ _
   dep_fromTo := by
-    refine isFunctionFromTo_of_val (hT.dep_fromTo.isFunction.update b ∅) ?_ fun a ha ↦ ?_
+    refine isFunctionFromTo_of_val
+      (by rw [dep_irt]; exact hT.dep_fromTo.isFunction.update b ∅) ?_ fun a ha ↦ ?_
     · simp [hT.dep_fromTo.dom_eq]
     rw [nd_irt, mem_insert_iff] at ha
     rcases ha with rfl | ha
@@ -520,8 +626,10 @@ theorem irt (hb : b ∉ T.nd) : (T.irt b).IsTreeStructure where
       exact empty_mem_omega
     rw [hT.dep_irt_val_of_mem hb ha]
     exact hT.dep_mem_omega ha
-  isFunction_chd := hT.isFunction_chd.update b ∅
-  dom_chd := hT.dom_chd_irt
+  isFunction_chd := by
+    rw [chd_irt]
+    exact hT.isFunction_chd.update b ∅
+  dom_chd := hT.dom_chd_irt.trans nd_irt.symm
   chd_subset := by
     intro a ha
     rw [nd_irt, mem_insert_iff] at ha
@@ -621,8 +729,11 @@ theorem nd_eq_empty_of_rt_eq_empty (hrt : T.rt = ∅) : T.nd = ∅ := by
 
 /-- Inserting new children `B` of a node `a` into a tree structure gives a tree structure -/
 theorem ichd (ha : a ∈ T.nd) (hB : B ∩ T.nd = ∅) : (T.ichd a B).IsTreeStructure where
+  isOrderedPair := isOrderedPair_mk _ _ _
+  isOrderedPair_right := isOrderedPair_right_mk _ _ _
   dep_fromTo := by
-    refine isFunctionFromTo_of_val (hT.isFunction_dep_ichd hB) hT.dom_dep_ichd fun c hc ↦ ?_
+    refine isFunctionFromTo_of_val (hT.isFunction_dep_ichd hB)
+      (hT.dom_dep_ichd.trans nd_ichd.symm) fun c hc ↦ ?_
     rw [nd_ichd, mem_union_iff] at hc
     rcases hc with hc | hc
     · rw [hT.dep_ichd_val_of_mem_nd hB hc]
@@ -630,7 +741,7 @@ theorem ichd (ha : a ∈ T.nd) (hB : B ∩ T.nd = ∅) : (T.ichd a B).IsTreeStru
     rw [hT.dep_ichd_val_of_mem_new hB hc]
     exact succ_mem_omega (hT.dep_mem_omega ha)
   isFunction_chd := hT.isFunction_chd_ichd ha hB
-  dom_chd := hT.dom_chd_ichd ha
+  dom_chd := (hT.dom_chd_ichd ha).trans nd_ichd.symm
   chd_subset := by
     intro c hc e he
     rw [hT.mem_chd_ichd_val_iff ha hB] at he
@@ -781,8 +892,8 @@ theorem isbl_eq_ionechd (ha : a ∈ T.nd \ T.rt) (hb : b ∉ T.nd) :
   have hpdom : T.prt ﹫ a ∈ dom T.chd := by rwa [hT.dom_chd]
   have hB := singleton_inter_eq_empty hb
   rw [mem_sdiff_iff] at ha
-  rw [isbl_of_not_mem_rt ha.right, TreeStructure.ionechd]
-  refine TreeStructure.ext ?_ ?_ ?_
+  rw [isbl_of_not_mem_rt ha.right, TreeStructure.ionechd, (hT.ichd hp hB).eq_mk, mk_eq_mk_iff]
+  refine ⟨?_, ?_, ?_⟩
   · ext z
     simp only [nd_ichd, mem_insert_iff, mem_union_iff, mem_singleton_iff]
     tauto
@@ -856,3 +967,327 @@ end IsTreeStructure
 end TreeStructure
 
 end FirstOrder.Language.MemStructure
+
+/-! ### `Δ₀` definitions -/
+
+namespace FirstOrder.Language
+
+open FirstOrder Language DeltaZeroBoundedFormula
+
+namespace RudimentaryTerm
+
+variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+
+/-- The nodes of the tree structure coded by `r` -/
+noncomputable def tsNd (r : L.RudimentaryTerm n) : L.RudimentaryTerm n := r.left
+
+/-- The depth function of the tree structure coded by `r` -/
+noncomputable def tsDep (r : L.RudimentaryTerm n) : L.RudimentaryTerm n := r.right.left
+
+/-- The children function of the tree structure coded by `r` -/
+noncomputable def tsChd (r : L.RudimentaryTerm n) : L.RudimentaryTerm n := r.right.right
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.tsNd.CharFree := by
+  unfold tsNd; infer_instance
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.tsDep.CharFree := by
+  unfold tsDep; infer_instance
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.tsChd.CharFree := by
+  unfold tsChd; infer_instance
+
+/-- `tsRt₀〘T〙₁` is the set of roots `{a ∈ T.nd | T.dep ﹫ a = ∅}` -/
+noncomputable def tsRt₀ : L.RudimentaryTerm 1 :=
+  (ᵣ0 : L.RudimentaryTerm 1).tsNd.iUnion
+    (({ᵣ1} : L.RudimentaryTerm 2).ifTrue (((ᵣ0 : L.RudimentaryTerm 2).tsDep ﹫ ᵣ1).isEq ∅))
+
+instance : (tsRt₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold tsRt₀; infer_instance
+
+/-- `tsPrt₀〘T〙₁` is the parent function `{p ∈ T.nd ×ˢ T.nd | left p ∈ T.chd ﹫ right p}` -/
+noncomputable def tsPrt₀ : L.RudimentaryTerm 1 :=
+  ((ᵣ0 : L.RudimentaryTerm 1).tsNd ×ˢ (ᵣ0 : L.RudimentaryTerm 1).tsNd).iUnion
+    (({ᵣ1} : L.RudimentaryTerm 2).ifTrue
+      ((ᵣ1 : L.RudimentaryTerm 2).left.isMem ((ᵣ0 : L.RudimentaryTerm 2).tsChd ﹫ (ᵣ1).right)))
+
+instance : (tsPrt₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold tsPrt₀; infer_instance
+
+/-- `tsSbl₀〘T〙₁` is the sibling function `T.chd !∘ T.prt ∪ T.rt ×ˢ {T.rt}` -/
+noncomputable def tsSbl₀ : L.RudimentaryTerm 1 :=
+  (ᵣ0 : L.RudimentaryTerm 1).tsChd.comp (tsPrt₀ : L.RudimentaryTerm 1) ∪
+    (tsRt₀ : L.RudimentaryTerm 1) ×ˢ ({tsRt₀} : L.RudimentaryTerm 1)
+
+instance : (tsSbl₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold tsSbl₀; infer_instance
+
+/-- `tsSblptn₀〘T〙₁` is the sibling partition `({T.rt} ∪ ran T.chd) \ {∅}` -/
+noncomputable def tsSblptn₀ : L.RudimentaryTerm 1 :=
+  (({(tsRt₀ : L.RudimentaryTerm 1)} : L.RudimentaryTerm 1) ∪
+    (ᵣ0 : L.RudimentaryTerm 1).tsChd.ran) \
+    ({∅} : L.RudimentaryTerm 1)
+
+instance : (tsSblptn₀ : L.RudimentaryTerm 1).CharFree := by
+  unfold tsSblptn₀; infer_instance
+
+/-- `isTreeStructure₀〘T〙` says that `T` is a tree structure, as in `isTreeStructure_iff` -/
+noncomputable def isTreeStructure₀ : L.DeltaZeroBoundedFormula 1 :=
+  (ᵣ0 : L.RudimentaryTerm 1).isOrderedPair ⊓ (ᵣ0 : L.RudimentaryTerm 1).right.isOrderedPair ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsDep.isFunction ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsDep.dom.isEq (ᵣ0).tsNd ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsNd.allMem ((ᵣ0 : L.RudimentaryTerm 2).tsDep ﹫ ᵣ1).isNat ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsChd.isFunction ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsChd.dom.isEq (ᵣ0).tsNd ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsNd.allMem
+      (((ᵣ0 : L.RudimentaryTerm 2).tsChd ﹫ ᵣ1).allMem
+        ((ᵣ2 : L.RudimentaryTerm 3).isMem (ᵣ0).tsNd)) ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsNd.allMem
+      (((ᵣ0 : L.RudimentaryTerm 2).tsChd ﹫ ᵣ1).allMem
+        (((ᵣ0 : L.RudimentaryTerm 3).tsDep ﹫ ᵣ2).isEq ((ᵣ0).tsDep ﹫ ᵣ1).succ)) ⊓
+    (ᵣ0 : L.RudimentaryTerm 1).tsNd.allMem
+      ((∅ : L.RudimentaryTerm 2).isMem ((ᵣ0 : L.RudimentaryTerm 2).tsDep ﹫ ᵣ1) ⟹
+        (ᵣ0 : L.RudimentaryTerm 2).tsNd.exMem
+          ((ᵣ1 : L.RudimentaryTerm 3).isMem ((ᵣ0).tsChd ﹫ ᵣ2) ⊓
+            (ᵣ0 : L.RudimentaryTerm 3).tsNd.allMem
+              ((ᵣ1 : L.RudimentaryTerm 4).isMem ((ᵣ0).tsChd ﹫ ᵣ3) ⟹ (ᵣ3).isEq (ᵣ2))))
+
+instance : (isTreeStructure₀ : L.DeltaZeroBoundedFormula 1).RelFree := by
+  unfold isTreeStructure₀; infer_instance
+
+/-- The roots of the tree structure coded by `r` -/
+noncomputable def tsRt (r : L.RudimentaryTerm n) : L.RudimentaryTerm n := tsRt₀.substBoundRud ![r]
+
+/-- The parent function of the tree structure coded by `r` -/
+noncomputable def tsPrt (r : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  tsPrt₀.substBoundRud ![r]
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.tsRt.CharFree := by
+  unfold tsRt; infer_instance
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.tsPrt.CharFree := by
+  unfold tsPrt; infer_instance
+
+/-- The sibling function of the tree structure coded by `r` -/
+noncomputable def tsSbl (r : L.RudimentaryTerm n) : L.RudimentaryTerm n := tsSbl₀.substBoundRud ![r]
+
+/-- The sibling partition of the tree structure coded by `r` -/
+noncomputable def tsSblptn (r : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  tsSblptn₀.substBoundRud ![r]
+
+/-- `r` codes a tree structure -/
+noncomputable def isTreeStructure (r : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
+  isTreeStructure₀.substBoundRud ![r]
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.tsSbl.CharFree := by
+  unfold tsSbl; infer_instance
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.tsSblptn.CharFree := by
+  unfold tsSblptn; infer_instance
+
+instance (r : L.RudimentaryTerm n) [r.CharFree] : r.isTreeStructure.RelFree := by
+  unfold isTreeStructure; infer_instance
+
+/-- The tree structure `(r, s, t)` -/
+noncomputable def tsMk (r s t : L.RudimentaryTerm n) : L.RudimentaryTerm n := ᵣ(r, ᵣ(s, t))
+
+instance (r s t : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] :
+    (tsMk r s t).CharFree := by
+  unfold tsMk; infer_instance
+
+/-- `tsIrt₀〘T, b〙₂` is `T.irt b` -/
+noncomputable def tsIrt₀ : L.RudimentaryTerm 2 :=
+  tsMk (insert (ᵣ1) (ᵣ0 : L.RudimentaryTerm 2).tsNd)
+    ((ᵣ0 : L.RudimentaryTerm 2).tsDep.update (ᵣ1) ∅)
+    ((ᵣ0 : L.RudimentaryTerm 2).tsChd.update (ᵣ1) ∅)
+
+instance : (tsIrt₀ : L.RudimentaryTerm 2).CharFree := by
+  unfold tsIrt₀; infer_instance
+
+/-- `tsIchd₀〘T, a, B〙₃` is `T.ichd a B` -/
+noncomputable def tsIchd₀ : L.RudimentaryTerm 3 :=
+  tsMk ((ᵣ0 : L.RudimentaryTerm 3).tsNd ∪ ᵣ2)
+    ((ᵣ0 : L.RudimentaryTerm 3).tsDep ∪
+      (ᵣ2 : L.RudimentaryTerm 3) ×ˢ ({((ᵣ0 : L.RudimentaryTerm 3).tsDep ﹫ ᵣ1).succ} :
+        L.RudimentaryTerm 3))
+    ((ᵣ0 : L.RudimentaryTerm 3).tsChd.update (ᵣ1) (((ᵣ0).tsChd ﹫ ᵣ1) ∪ ᵣ2) ∪
+      (ᵣ2 : L.RudimentaryTerm 3) ×ˢ ({∅} : L.RudimentaryTerm 3))
+
+instance : (tsIchd₀ : L.RudimentaryTerm 3).CharFree := by
+  unfold tsIchd₀; infer_instance
+
+/-- `tsIsbl₀〘T, a, b〙₃` is `T.isbl a b` -/
+noncomputable def tsIsbl₀ : L.RudimentaryTerm 3 :=
+  (tsIrt₀.substBoundRud ![ᵣ0, ᵣ2]).ifTrue ((ᵣ1 : L.RudimentaryTerm 3).isMem (ᵣ0).tsRt) ∪
+    (tsMk (insert (ᵣ2) (ᵣ0 : L.RudimentaryTerm 3).tsNd)
+      ((ᵣ0 : L.RudimentaryTerm 3).tsDep.update (ᵣ2) ((ᵣ0).tsDep ﹫ ᵣ1))
+      (((ᵣ0 : L.RudimentaryTerm 3).tsChd.insertVal ((ᵣ0).tsPrt ﹫ ᵣ1) (ᵣ2)).update (ᵣ2) ∅)).ifTrue
+      ∼((ᵣ1 : L.RudimentaryTerm 3).isMem (ᵣ0).tsRt)
+
+instance : (tsIsbl₀ : L.RudimentaryTerm 3).CharFree := by
+  unfold tsIsbl₀; infer_instance
+
+end RudimentaryTerm
+
+namespace MemStructure
+
+open RudimentaryTerm TreeStructure
+
+variable {L : Language} {M : Type*} [L.MemStructure M]
+  [L.ExtraConstantsUnaryRelationsOnly] [Inhabited M] [ModelsKP M] {n : ℕ}
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsNd (r : L.RudimentaryTerm n)
+    (xs : Fin n → M) : r.tsNd〘xs〙 = (ofM r〘xs〙).nd := by
+  simp [tsNd, TreeStructure.nd]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsDep (r : L.RudimentaryTerm n)
+    (xs : Fin n → M) : r.tsDep〘xs〙 = (ofM r〘xs〙).dep := by
+  simp [tsDep, TreeStructure.dep]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsChd (r : L.RudimentaryTerm n)
+    (xs : Fin n → M) : r.tsChd〘xs〙 = (ofM r〘xs〙).chd := by
+  simp [tsChd, TreeStructure.chd]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsRt₀ (xs : Fin 1 → M) :
+    tsRt₀〘xs〙 = (ofM (xs 0)).rt := by
+  ext z
+  simp [tsRt₀, mem_rt_iff, Fin.snoc_nat]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsPrt₀ (xs : Fin 1 → M) :
+    tsPrt₀〘xs〙 = (ofM (xs 0)).prt := by
+  ext z
+  simp only [tsPrt₀, Fin.isValue, sprod_def, singleton_def, RudimentaryTerm.left,
+    RudimentaryTerm.val, RudimentaryTerm.right, mem_realize_iUnion_iff,
+    RudimentaryTerm.realize_substBoundRud, realize_sprod₀, Matrix.cons_val_zero, realize_tsNd,
+    realize_basic, Matrix.cons_val_one, Matrix.cons_val_fin_one, mem_sprod_iff,
+    mem_realize_ifTrue_iff, Fin.snoc_nat, Fin.coe_ofNat_eq_mod, Nat.mod_succ, lt_self_iff_false,
+    ↓reduceDIte, realize_singleton₀, mem_singleton_iff, realize_isMem, realize_val₀, realize_tsChd,
+    Nat.zero_mod, Order.lt_one_iff, Fin.zero_eta, realize_right₀, realize_left₀, ↓existsAndEq,
+    and_true, right_orderedPair, left_orderedPair, mem_prt_iff]
+  constructor
+  · rintro ⟨u, v, ⟨hu, hv⟩, rfl, h⟩
+    exact ⟨⟨u, hu, v, hv, rfl⟩, by simpa using h⟩
+  · rintro ⟨⟨u, hu, v, hv, rfl⟩, h⟩
+    exact ⟨u, v, ⟨hu, hv⟩, rfl, by simpa using h⟩
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsSbl₀ (xs : Fin 1 → M) :
+    tsSbl₀〘xs〙 = (ofM (xs 0)).sbl := by
+  simp [tsSbl₀, TreeStructure.sbl, constFun]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsSblptn₀ (xs : Fin 1 → M) :
+    tsSblptn₀〘xs〙 = (ofM (xs 0)).sblptn := by
+  simp [tsSblptn₀, TreeStructure.sblptn]
+
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isTreeStructure₀ [HasOmega M]
+    (xs : Fin 1 → M) :
+    (isTreeStructure₀ : L.DeltaZeroBoundedFormula 1).toBoundedFormula 〘xs〙 ↔
+      (ofM (xs 0)).IsTreeStructure := by
+  rw [isTreeStructure_iff]
+  simp [isTreeStructure₀, and_assoc, Fin.snoc_nat]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsRt (r : L.RudimentaryTerm n)
+    [r.CharFree] (xs : Fin n → M) : r.tsRt〘xs〙 = (ofM r〘xs〙).rt := by
+  simp [tsRt]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsPrt (r : L.RudimentaryTerm n)
+    [r.CharFree] (xs : Fin n → M) : r.tsPrt〘xs〙 = (ofM r〘xs〙).prt := by
+  simp [tsPrt]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsSbl (r : L.RudimentaryTerm n)
+    [r.CharFree] (xs : Fin n → M) : r.tsSbl〘xs〙 = (ofM r〘xs〙).sbl := by
+  simp [tsSbl]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsSblptn (r : L.RudimentaryTerm n)
+    [r.CharFree] (xs : Fin n → M) : r.tsSblptn〘xs〙 = (ofM r〘xs〙).sblptn := by
+  simp [tsSblptn]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_isTreeStructure [HasOmega M]
+    (r : L.RudimentaryTerm n) [r.CharFree] (xs : Fin n → M) :
+    r.isTreeStructure.toBoundedFormula 〘xs〙 ↔ (ofM r〘xs〙).IsTreeStructure := by
+  rw [isTreeStructure, DeltaZeroBoundedFormula.realize_substBoundRud,
+    realize_isTreeStructure₀]
+  rfl
+
+omit [L.ExtraConstantsUnaryRelationsOnly] [ModelsKP M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsMk (r s t : L.RudimentaryTerm n)
+    (xs : Fin n → M) : (tsMk r s t)〘xs〙 = (TreeStructure.mk r〘xs〙 s〘xs〙 t〘xs〙).toM := by
+  simp [tsMk]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsIrt₀ (xs : Fin 2 → M) :
+    tsIrt₀〘xs〙 = ((ofM (xs 0)).irt (xs 1)).toM := by
+  simp [tsIrt₀, TreeStructure.irt]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsIchd₀ (xs : Fin 3 → M) :
+    tsIchd₀〘xs〙 = ((ofM (xs 0)).ichd (xs 1) (xs 2)).toM := by
+  simp [tsIchd₀, TreeStructure.ichd, constFun]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_tsIsbl₀ (xs : Fin 3 → M) :
+    tsIsbl₀〘xs〙 = ((ofM (xs 0)).isbl (xs 1) (xs 2)).toM := by
+  by_cases h : xs 1 ∈ (ofM (xs 0)).rt
+  · simp [tsIsbl₀, TreeStructure.isbl_of_mem_rt h, h]
+  · ext z
+    simp [tsIsbl₀, TreeStructure.isbl_of_not_mem_rt h, h,
+      DeltaZeroBoundedFormula.toBoundedFormula_not]
+
+instance : ClassFunction.DeltaZero (fun x : M ↦ (ofM x).nd) Set.univ :=
+  ClassFunction.deltaZero_of_eq (ᵣ0 : L.RudimentaryTerm 1).tsNd fun _ ↦ by simp
+
+instance : ClassFunction.DeltaZero (fun x : M ↦ (ofM x).dep) Set.univ :=
+  ClassFunction.deltaZero_of_eq (ᵣ0 : L.RudimentaryTerm 1).tsDep fun _ ↦ by simp
+
+instance : ClassFunction.DeltaZero (fun x : M ↦ (ofM x).chd) Set.univ :=
+  ClassFunction.deltaZero_of_eq (ᵣ0 : L.RudimentaryTerm 1).tsChd fun _ ↦ by simp
+
+instance : ClassFunction.DeltaZero (fun x : M ↦ (ofM x).rt) Set.univ :=
+  ClassFunction.deltaZero_of_eq tsRt₀ fun _ ↦ by simp
+
+instance : ClassFunction.DeltaZero (fun x : M ↦ (ofM x).prt) Set.univ :=
+  ClassFunction.deltaZero_of_eq tsPrt₀ fun _ ↦ by simp
+
+instance : ClassFunction.DeltaZero (fun x : M ↦ (ofM x).sbl) Set.univ :=
+  ClassFunction.deltaZero_of_eq tsSbl₀ fun _ ↦ by simp
+
+instance : ClassFunction.DeltaZero (fun x : M ↦ (ofM x).sblptn) Set.univ :=
+  ClassFunction.deltaZero_of_eq tsSblptn₀ fun _ ↦ by simp
+
+instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ ((ofM (ys 0)).irt (ys 1)).toM)
+    Set.univ :=
+  MulticlassFunction.deltaZero_of_eq tsIrt₀ fun _ ↦ by simp
+
+instance : MulticlassFunction.DeltaZero
+    (fun ys : Fin 3 → M ↦ ((ofM (ys 0)).ichd (ys 1) (ys 2)).toM) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq tsIchd₀ fun _ ↦ by simp
+
+instance : MulticlassFunction.DeltaZero
+    (fun ys : Fin 3 → M ↦ ((ofM (ys 0)).isbl (ys 1) (ys 2)).toM) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq tsIsbl₀ fun _ ↦ by simp
+
+/-- Being a tree structure is `Δ₀` -/
+instance [HasOmega M] : Class.DeltaZero (fun x : M ↦ (ofM x).IsTreeStructure) Set.univ := by
+  have h : (fun x : M ↦ (ofM x).IsTreeStructure) =
+      Multiclass.toClass
+        (isTreeStructure₀ : L.DeltaZeroBoundedFormula 1).toBoundedFormula.multiclass := by
+    funext x
+    rw [Multiclass.toClass_iff, BoundedFormula.multiclass, realize_isTreeStructure₀]
+    rfl
+  rw [h]
+  infer_instance
+
+end MemStructure
+
+end FirstOrder.Language

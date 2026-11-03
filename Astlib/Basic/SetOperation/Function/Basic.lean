@@ -35,8 +35,8 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isFunction
   {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n) :
   L.DeltaZeroBoundedFormula n :=
   ((ᵣ0).isRelation ⊓ ∀₀∈ &0 ∀₀∈ &0
-    ((&0 =₀ &1).substBoundRud ![(ᵣ1).left, (ᵣ2).left] ⟹
-    (&0 =₀ &1).substBoundRud ![(ᵣ1).right, (ᵣ2).right])) |>.substBoundRud ![r]
+    ((ᵣ1).left.isEq (ᵣ2).left ⟹
+    (ᵣ1).right.isEq (ᵣ2).right)) |>.substBoundRud ![r]
 
 instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r : L.RudimentaryTerm n)
   [r.CharFree] : r.isFunction.RelFree := by
@@ -100,7 +100,7 @@ theorem IsFunction.sdiff
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.val₀
     {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] : L.RudimentaryTerm 2 :=
   (ᵣ0).iUnion ((ᵣ2).right.ifTrue
-    ((ᵣ2).isOrderedPair ⊓ (&0 =₀ &1).substBoundRud ![(ᵣ2).left, ᵣ1]))
+    ((ᵣ2).isOrderedPair ⊓ (ᵣ2).left.isEq (ᵣ1)))
 
 @[simp]
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.val
@@ -150,7 +150,7 @@ theorem IsFunction.rel_iff_val_eq
     realize_isOrderedPair, Matrix.cons_val_one, Matrix.cons_val_fin_one,
     DeltaZeroBoundedFormula.realize_substBoundRud, toBoundedFormula,
     BoundedFormula.realize'_bdEqual, Term.realize'_var', Nat.one_mod,
-    Order.lt_two_iff, Std.le_refl, mk_one]
+    Order.lt_two_iff, Std.le_refl, mk_one, RudimentaryTerm.realize_isEq]
   constructor
   · rintro ⟨w, hw₁, hw₂, ⟨x', y', rfl⟩, hw₃⟩
     simp only [right_orderedPair, left_orderedPair] at hw₂ hw₃
@@ -187,7 +187,8 @@ theorem mem_dom_of_mem_val {f x y : M} (h : y ∈ f ﹫ x) : x ∈ dom f := by
     RudimentaryTerm.realize_substBoundRud, Matrix.cons_val_fin_one, Matrix.cons_val,
     realize_right₀, toBoundedFormula_inf, BoundedFormula.realize'_inf, realize_isOrderedPair,
     DeltaZeroBoundedFormula.realize_substBoundRud, toBoundedFormula,
-    BoundedFormula.realize'_bdEqual, Term.realize'_var', realize_left₀, Matrix.cons_val_one] at h
+    BoundedFormula.realize'_bdEqual, Term.realize'_var', realize_left₀, Matrix.cons_val_one,
+    RudimentaryTerm.realize_isEq] at h
   obtain ⟨w, hw, -, ⟨u, v, rfl⟩, rfl⟩ := h
   rw [mem_dom_iff]
   exact ⟨v, by simpa using hw⟩
@@ -212,6 +213,22 @@ theorem IsFunction.ext {f g : M} (hf : IsFunction f) (hg : IsFunction g)
 theorem IsFunction.eq_iff {f g : M} (hf : IsFunction f) (hg : IsFunction g) :
     f = g ↔ dom f = dom g ∧ ∀ x ∈ dom f, f ﹫ x = g ﹫ x := by
   grind
+
+/-- Outside the domain, the value is `∅` -/
+theorem val_eq_empty_of_not_mem_dom {f x : M} (hx : x ∉ dom f) : f ﹫ x = ∅ := by
+  ext z
+  simp only [val, RudimentaryTerm.val₀, Fin.isValue, Nat.reduceAdd, RudimentaryTerm.right,
+    RudimentaryTerm.left, RudimentaryTerm.mem_realize_iUnion_iff, RudimentaryTerm.realize_basic,
+    Matrix.cons_val_zero, Matrix.Fin.snoc_vecCons, Matrix.Fin.snoc_vecEmpty,
+    RudimentaryTerm.mem_realize_ifTrue_iff, RudimentaryTerm.realize_substBoundRud,
+    Matrix.cons_val_fin_one, Matrix.cons_val, RudimentaryTerm.realize_right₀,
+    DeltaZeroBoundedFormula.toBoundedFormula_inf, BoundedFormula.realize'_inf,
+    RudimentaryTerm.realize_isOrderedPair, RudimentaryTerm.realize_isEq,
+    RudimentaryTerm.realize_left₀, Matrix.cons_val_one, notin_empty, iff_false, not_exists,
+    not_and]
+  rintro w hw - ⟨a, b, rfl⟩ rfl
+  rw [mem_dom_iff, left_orderedPair] at hx
+  exact hx ⟨b, hw⟩
 
 @[grind =]
 theorem IsFunction.mem_dom_iff {f : M} (x : M) (hf : IsFunction f) :

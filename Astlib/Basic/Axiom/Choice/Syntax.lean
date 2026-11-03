@@ -28,10 +28,10 @@ variable {L : FirstOrder.Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnl
 noncomputable def isChoiceFunctionOfIsFunction : L.DeltaZeroBoundedFormula 2 :=
   -- `[F, f]`
   (ᵣ0).isFunction ⟹
-    ((ᵣ1).isFunction ⊓ (&0 =₀ &1).substBoundRud ![(ᵣ1).dom, (ᵣ0).dom] ⊓
+    ((ᵣ1).isFunction ⊓ (ᵣ1).dom.isEq (ᵣ0).dom ⊓
       -- `[d, F, f]` with `d = dom F`; for `x ∈ d`, `F ﹫ x ≠ ∅ → f ﹫ x ∈ F ﹫ x`
       (∀₀∈ &0 ((∃₀∈ &0 ⊤ : L.DeltaZeroBoundedFormula 1).substBoundRud ![(ᵣ1) ﹫ (ᵣ3)] ⟹
-        (&0 ∈₀ &1).substBoundRud ![(ᵣ2) ﹫ (ᵣ3), (ᵣ1) ﹫ (ᵣ3)]) :
+        ((ᵣ2) ﹫ (ᵣ3)).isMem ((ᵣ1) ﹫ (ᵣ3))) :
         L.DeltaZeroBoundedFormula 3).substBoundRud ![(ᵣ0).dom, ᵣ0, ᵣ1])
 
 /-- The axiom of choice: every function `F` has a choice function, picking an element of each
@@ -47,7 +47,7 @@ theorem ZF_subset_ZFC : (ZF : L.Theory) ⊆ ZFC := Set.subset_union_left
 /-- The axiom of countable choice: every function `F` with `dom F = ω` has a choice function -/
 noncomputable def countableChoiceAxiom : L.Sentence :=
   -- `[F, w]` with `w = ω = dom F`, and `[F, f]`
-  ∀' ((∃' ((ᵣ1).isOmega ⊓ (&0 =₀ &1).substBoundRud ![(ᵣ0).dom, ᵣ1] :
+  ∀' ((∃' ((ᵣ1).isOmega ⊓ (ᵣ0).dom.isEq (ᵣ1) :
     L.DeltaZeroBoundedFormula 2).toBoundedFormula) ⟹
       ∃' (isChoiceFunctionOfIsFunction : L.DeltaZeroBoundedFormula 2).toBoundedFormula)
 
@@ -60,11 +60,11 @@ theorem ZF_subset_ZFCC : (ZF : L.Theory) ⊆ ZFCC := Set.subset_union_left
 `a`, then there is a sequence `f !: ω → a` with `f ﹫ n [R] f ﹫ succ n` -/
 noncomputable def dependentChoiceAxiom : L.Sentence :=
   -- `[a, R]`: `a ≠ ∅` and every `x ∈ a` has some `y ∈ a` with `x [R] y`
-  ∀' ∀' (((∃₀∈ &0 ⊤) ⊓ ∀₀∈ &0 ∃₀∈ &0 (&0 ∈₀ &1).substBoundRud ![ᵣ(ᵣ2, ᵣ3), ᵣ1] :
+  ∀' ∀' (((∃₀∈ &0 ⊤) ⊓ ∀₀∈ &0 ∃₀∈ &0 (ᵣ(ᵣ2, ᵣ3)).isMem (ᵣ1) :
     L.DeltaZeroBoundedFormula 2).toBoundedFormula ⟹
       -- `[a, R, f, w]`: if `w = ω`, then `f !: w → a` and `f ﹫ n [R] f ﹫ succ n` for `n ∈ w`
       ∃' ∀' ((ᵣ3).isOmega ⟹ ((ᵣ2).isFunctionFromTo (ᵣ3) (ᵣ0) ⊓
-        ∀₀∈ &3 (&0 ∈₀ &1).substBoundRud ![ᵣ((ᵣ2) ﹫ (ᵣ4), (ᵣ2) ﹫ (ᵣ4).succ), ᵣ1]) :
+        ∀₀∈ &3 (ᵣ((ᵣ2) ﹫ (ᵣ4), (ᵣ2) ﹫ (ᵣ4).succ)).isMem (ᵣ1)) :
           L.DeltaZeroBoundedFormula 4).toBoundedFormula)
 
 /-- The theory `ZF` with dependent choice -/

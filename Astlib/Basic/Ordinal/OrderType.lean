@@ -28,7 +28,7 @@ namespace FirstOrder.Language
 /-- `memRelOn₀〘S〙` is `{z ∈ S ×ˢ S | left z ∈ right z}` -/
 noncomputable def RudimentaryTerm.memRelOn₀ {L : Language} [L.HasMem]
     [L.ExtraConstantsUnaryRelationsOnly] : L.RudimentaryTerm 1 :=
-  ((&0 ∈₀ &1).substBoundRud ![(ᵣ0).left, (ᵣ0).right] :
+  ((ᵣ0).left.isMem (ᵣ0).right :
     L.DeltaZeroBoundedFormula 1).comprehensionRudimentaryTerm.substBoundRud
     ![(ᵣ0 : L.RudimentaryTerm 1) ×ˢ (ᵣ0 : L.RudimentaryTerm 1)]
 

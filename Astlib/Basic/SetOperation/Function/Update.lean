@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
 import Astlib.Basic.SetOperation.Function.Restrict
+import Astlib.Basic.SetOperation.Foundational
 /-!
 # Modifying functions
 
@@ -15,7 +16,8 @@ Pointwise modifications of functions:
 * `moveKey f x y`: `f` with the key `x` moved to `y`;
 * `insertVal f x y`: `f` with `y` added to the value at `x`;
 * `mvalIns f a b c`: `f` with the value at `a` replaced by `update (f ﹫ a) b c`;
-* `mkeyIns f a b`: `f` with the key `a` moved to `insert b a`.
+* `mkeyIns f a b`: `f` with the key `a` moved to `insert b a`;
+* `cc f a = update f (dom f) a`: the sequence `f` with `a` appended.
 -/
 
 open Fin FirstOrder Language MemStructure RudimentaryTerm DeltaZeroBoundedFormula
@@ -552,6 +554,28 @@ instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] :
     (mkeyIns₀ : L.RudimentaryTerm 3).CharFree := by
   unfold mkeyIns₀; infer_instance
 
+/-- The rudimentary term for `mvalIns r s t u` -/
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.mvalIns
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s t u : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  mvalIns₀.substBoundRud ![r, s, t, u]
+
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s t u : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] [u.CharFree] :
+    (r.mvalIns s t u).CharFree := by
+  unfold RudimentaryTerm.mvalIns; infer_instance
+
+/-- The rudimentary term for `mkeyIns r s t` -/
+noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.mkeyIns
+    {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s t : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  mkeyIns₀.substBoundRud ![r, s, t]
+
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s t : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] :
+    (r.mkeyIns s t).CharFree := by
+  unfold RudimentaryTerm.mkeyIns; infer_instance
+
 /-- `f_{mVal.ins}(a, b, c)`: `f` with the value at `a` replaced by `(f ﹫ a)_{ins}(b, c)` -/
 noncomputable def mvalIns (f a b c : M) : M := mvalIns₀〘![f, a, b, c]〙
 
@@ -559,6 +583,18 @@ instance : MulticlassFunction.DeltaZero
     (fun ys : Fin 4 → M ↦ mvalIns (ys 0) (ys 1) (ys 2) (ys 3)) Set.univ :=
   MulticlassFunction.deltaZero_of_eq mvalIns₀ fun ys ↦ by
     rw [mvalIns, show ![ys 0, ys 1, ys 2, ys 3] = ys by ext i; fin_cases i <;> rfl]
+
+omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mvalIns₀ (xs : Fin 4 → M) :
+    mvalIns₀〘xs〙 = mvalIns (xs 0) (xs 1) (xs 2) (xs 3) := by
+  rw [mvalIns, show ![xs 0, xs 1, xs 2, xs 3] = xs by ext i; fin_cases i <;> rfl]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mvalIns {n : ℕ}
+    (r s t u : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] [u.CharFree]
+    (xs : Fin n → M) : (r.mvalIns s t u)〘xs〙 = MemStructure.mvalIns r〘xs〙 s〘xs〙 t〘xs〙 u〘xs〙 := by
+  simp [RudimentaryTerm.mvalIns]
 
 omit [RudClosed M] in
 theorem mvalIns_eq (f a b c : M) : mvalIns f a b c = update f a (update (f ﹫ a) b c) := by
@@ -573,9 +609,48 @@ instance : MulticlassFunction.DeltaZero (fun ys : Fin 3 → M ↦ mkeyIns (ys 0)
     rw [mkeyIns, show ![ys 0, ys 1, ys 2] = ys by ext i; fin_cases i <;> rfl]
 
 omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mkeyIns₀ (xs : Fin 3 → M) :
+    mkeyIns₀〘xs〙 = mkeyIns (xs 0) (xs 1) (xs 2) := by
+  rw [mkeyIns, show ![xs 0, xs 1, xs 2] = xs by ext i; fin_cases i <;> rfl]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mkeyIns {n : ℕ}
+    (r s t : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree]
+    (xs : Fin n → M) : (r.mkeyIns s t)〘xs〙 = MemStructure.mkeyIns r〘xs〙 s〘xs〙 t〘xs〙 := by
+  simp [RudimentaryTerm.mkeyIns]
+
+omit [RudClosed M] in
 theorem mkeyIns_eq (f a b : M) : mkeyIns f a b = moveKey f a (insert b a) := by
   simp [mkeyIns, mkeyIns₀]
 
 end Composite
+
+section Concatenate
+
+variable [Extensional M] [RudClosed M] [L.ExtraConstantsUnaryRelationsOnly] {f i : M}
+
+/-- `f_{cc}(a) = f_{ins}(dom f, a)`: the sequence `f` with `a` appended -/
+noncomputable def cc (f a : M) : M := update f (dom f) a
+
+instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ cc (ys 0) (ys 1)) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ ((ᵣ0).update (ᵣ0).dom (ᵣ1)) fun _ _ ↦ by simp [cc]
+
+theorem IsFunction.cc (hf : IsFunction f) (a : M) : IsFunction (cc f a) :=
+  hf.update (dom f) a
+
+@[simp]
+theorem dom_cc (f a : M) : dom (cc f a) = succ (dom f) := by
+  simp [cc, succ]
+
+theorem cc_val_self (hf : IsFunction f) (a : M) : cc f a ﹫ dom f = a :=
+  val_update_self hf (dom f) a
+
+theorem cc_val_of_mem [Foundational M] (hf : IsFunction f) (a : M) (hi : i ∈ dom f) :
+    cc f a ﹫ i = f ﹫ i :=
+  val_update_of_ne hf a hi fun h ↦ notMem_self (x := i) (by rwa [← h] at hi)
+
+end Concatenate
+
 
 end FirstOrder.Language.MemStructure

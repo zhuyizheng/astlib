@@ -377,3 +377,72 @@ end NatCast
 end MemStructure
 
 end FirstOrder.Language
+
+/-! ### Natural numbers as rudimentary terms -/
+
+namespace FirstOrder.Language
+
+namespace RudimentaryTerm
+
+variable {L : Language} [L.HasMem] {n : ℕ} [NeZero n]
+
+/-- The rudimentary term for the natural number `k` -/
+noncomputable def natCast : ℕ → L.RudimentaryTerm n
+  | 0 => ∅
+  | k + 1 => (natCast k).succ
+
+instance (k : ℕ) : (natCast k : L.RudimentaryTerm n).CharFree := by
+  induction k with
+  | zero => unfold natCast; infer_instance
+  | succ k ih => unfold natCast; infer_instance
+
+end RudimentaryTerm
+
+namespace MemStructure
+
+variable {L : Language} {M : Type*} [L.MemStructure M] [Inhabited M]
+  [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M]
+
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_natCast {n : ℕ} [NeZero n] (k : ℕ)
+    (xs : Fin n → M) : (RudimentaryTerm.natCast k : L.RudimentaryTerm n)〘xs〙 = (k : M) := by
+  induction k with
+  | zero => simp [RudimentaryTerm.natCast]
+  | succ k ih => simp [RudimentaryTerm.natCast, ih]
+
+end MemStructure
+
+end FirstOrder.Language
+
+namespace FirstOrder.Language.MemStructure
+
+variable {L : Language} {M : Type*} [L.MemStructure M] [Inhabited M]
+  [L.ExtraConstantsUnaryRelationsOnly] [RudClosed M] [Extensional M] [Foundational M]
+
+/-- The function `{(i, c i) | i < k}` on the natural number `k`, built by concatenation -/
+noncomputable def seqOf (c : ℕ → M) : ℕ → M
+  | 0 => ∅
+  | k + 1 => cc (seqOf c k) (c k)
+
+theorem isFunction_seqOf (c : ℕ → M) (k : ℕ) : IsFunction (seqOf c k) := by
+  induction k with
+  | zero => exact isFunction_empty
+  | succ k ih => exact ih.cc (c k)
+
+omit [Foundational M] in
+@[simp]
+theorem dom_seqOf (c : ℕ → M) (k : ℕ) : dom (seqOf c k) = (k : M) := by
+  induction k with
+  | zero => simp [seqOf]
+  | succ k ih => simp [seqOf, ih]
+
+theorem seqOf_val (c : ℕ → M) {j k : ℕ} (hjk : j < k) : seqOf c k ﹫ (j : M) = c j := by
+  induction k with
+  | zero => omega
+  | succ k ih =>
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hjk with hjk | rfl
+    · rw [seqOf, cc_val_of_mem (isFunction_seqOf c k) (c k) (by simpa using hjk), ih hjk]
+    · have h := cc_val_self (isFunction_seqOf c j) (c j)
+      rwa [dom_seqOf] at h
+
+end FirstOrder.Language.MemStructure

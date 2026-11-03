@@ -365,6 +365,22 @@ noncomputable def mvalMvalIlf₀ : L.RudimentaryTerm 5 :=
 instance : (mvalMvalIlf₀ : L.RudimentaryTerm 5).CharFree := by
   unfold mvalMvalIlf₀; infer_instance
 
+/-- The rudimentary term for `mvalMvalIrm r s t u` -/
+noncomputable def mvalMvalIrm (r s t u : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  mvalMvalIrm₀.substBoundRud ![r, s, t, u]
+
+instance (r s t u : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] [u.CharFree] :
+    (mvalMvalIrm r s t u).CharFree := by
+  unfold mvalMvalIrm; infer_instance
+
+/-- The rudimentary term for `mvalMvalIlf r s t u v` -/
+noncomputable def mvalMvalIlf (r s t u v : L.RudimentaryTerm n) : L.RudimentaryTerm n :=
+  mvalMvalIlf₀.substBoundRud ![r, s, t, u, v]
+
+instance (r s t u v : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] [u.CharFree]
+    [v.CharFree] : (mvalMvalIlf r s t u v).CharFree := by
+  unfold mvalMvalIlf; infer_instance
+
 end RudimentaryTerm
 
 namespace MemStructure
@@ -508,6 +524,21 @@ instance : MulticlassFunction.DeltaZero
     rw [mvalMvalIrm, show ![ys 0, ys 1, ys 2, ys 3] = ys by ext i; fin_cases i <;> rfl]
 
 omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mvalMvalIrm₀ (xs : Fin 4 → M) :
+    mvalMvalIrm₀〘xs〙 = mvalMvalIrm (xs 0) (xs 1) (xs 2) (xs 3) := by
+  rw [mvalMvalIrm, show ![xs 0, xs 1, xs 2, xs 3] = xs by ext i; fin_cases i <;> rfl]
+
+omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mvalMvalIrm
+    (r s t u : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] [u.CharFree]
+    (xs : Fin n → M) :
+    (RudimentaryTerm.mvalMvalIrm r s t u)〘xs〙 =
+      MemStructure.mvalMvalIrm r〘xs〙 s〘xs〙 t〘xs〙 u〘xs〙 := by
+  simp [RudimentaryTerm.mvalMvalIrm]
+
+omit [RudClosed M] in
 theorem mvalMvalIrm_eq (f a c e : M) :
     mvalMvalIrm f a c e = update f a (mvalIrm (f ﹫ a) c e) := by
   simp [mvalMvalIrm, mvalMvalIrm₀, RudimentaryTerm.mvalIrm]
@@ -540,9 +571,42 @@ instance : MulticlassFunction.DeltaZero
     rw [mvalMvalIlf, show ![ys 0, ys 1, ys 2, ys 3, ys 4] = ys by ext i; fin_cases i <;> rfl]
 
 omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mvalMvalIlf₀ (xs : Fin 5 → M) :
+    mvalMvalIlf₀〘xs〙 = mvalMvalIlf (xs 0) (xs 1) (xs 2) (xs 3) (xs 4) := by
+  rw [mvalMvalIlf, show ![xs 0, xs 1, xs 2, xs 3, xs 4] = xs by ext i; fin_cases i <;> rfl]
+
+omit [RudClosed M] in
+@[simp]
+theorem _root_.FirstOrder.Language.RudimentaryTerm.realize_mvalMvalIlf
+    (r s t u v : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] [u.CharFree]
+    [v.CharFree] (xs : Fin n → M) :
+    (RudimentaryTerm.mvalMvalIlf r s t u v)〘xs〙 =
+      MemStructure.mvalMvalIlf r〘xs〙 s〘xs〙 t〘xs〙 u〘xs〙 v〘xs〙 := by
+  simp [RudimentaryTerm.mvalMvalIlf]
+
+omit [RudClosed M] in
 theorem mvalMvalIlf_eq (f a c d e : M) :
     mvalMvalIlf f a c d e = update f a (mvalIlf (f ﹫ a) c d e) := by
   simp [mvalMvalIlf, mvalMvalIlf₀, RudimentaryTerm.mvalIlf]
+
+/-- `r` is the smallest element of the strictly linearly ordered set `B` -/
+def IsLeastLos (B r : M) : Prop := r ∈ losSet B ∧ ∀ y ∈ losSet B, ¬y [losOdr B] r
+
+instance : Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ IsLeastLos (ys 0) (ys 1)) Set.univ := by
+  let φ : L.DeltaZeroBoundedFormula 2 := (ᵣ1 : L.RudimentaryTerm 2).isMem (ᵣ0).left ⊓
+    (ᵣ0 : L.RudimentaryTerm 2).left.allMem
+      ∼((ᵣ0 : L.RudimentaryTerm 3).right.hasMemOrderedPair (ᵣ2) (ᵣ1))
+  have h : (fun ys : Fin 2 → M ↦ IsLeastLos (ys 0) (ys 1)) = φ.toBoundedFormula.multiclass := by
+    funext ys
+    simp [φ, IsLeastLos, losSet, losOdr, BoundedFormula.multiclass, Fin.snoc_nat]
+  rw [h]
+  infer_instance
+
+omit [L.ExtraConstantsUnaryRelationsOnly] in
+/-- The only element of `({b}, ∅)` is its least element -/
+theorem isLeastLos_singleton (b : M) : IsLeastLos !(({b} : M), ∅) b := by
+  simp [IsLeastLos, losSet_orderedPair, losOdr_orderedPair]
 
 end MemStructure
 

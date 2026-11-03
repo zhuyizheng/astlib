@@ -33,7 +33,7 @@ notation:50 f " !: " a:50 " → " b:50 => IsFunctionFromTo f a b
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isFunctionFromTo
     {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r s t : L.RudimentaryTerm n) :
     L.DeltaZeroBoundedFormula n :=
-  r.isFunction ⊓ (&0 =₀ &1).substBoundRud ![r.dom, s] ⊓ (&0 ⊆₀ &1).substBoundRud ![r.ran, t]
+  r.isFunction ⊓ r.dom.isEq s ⊓ (&0 ⊆₀ &1).substBoundRud ![r.ran, t]
 
 instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
     (r s t : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] :
@@ -179,7 +179,7 @@ noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isInjectionFromTo
     L.DeltaZeroBoundedFormula n :=
   -- `[f, a, b]`
   ((ᵣ0).isFunctionFromTo (ᵣ1) (ᵣ2) ⊓
-    ∀₀∈ &1 ∀₀∈ &1 ((&0 =₀ &1).substBoundRud ![(ᵣ0) ﹫ (ᵣ3), (ᵣ0) ﹫ (ᵣ4)] ⟹ &3 =₀ &4) :
+    ∀₀∈ &1 ∀₀∈ &1 (((ᵣ0) ﹫ (ᵣ3)).isEq ((ᵣ0) ﹫ (ᵣ4)) ⟹ &3 =₀ &4) :
       L.DeltaZeroBoundedFormula 3).substBoundRud ![r, s, t]
 
 instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
@@ -274,7 +274,7 @@ notation:50 f " !: " a:50 " ↠ " b:50 => IsSurjectionFromTo f a b
 noncomputable def _root_.FirstOrder.Language.RudimentaryTerm.isSurjectionFromTo
     {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] (r s t : L.RudimentaryTerm n) :
     L.DeltaZeroBoundedFormula n :=
-  r.isFunctionFromTo s t ⊓ (&0 =₀ &1).substBoundRud ![r.ran, t]
+  r.isFunctionFromTo s t ⊓ r.ran.isEq t
 
 instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly]
     (r s t : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] [t.CharFree] :

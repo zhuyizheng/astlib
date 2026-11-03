@@ -139,7 +139,7 @@ theorem ClosedInOrd.sInter {F : M} (hα : Ordinal α) (hF : ∀ S ∈ F, ClosedI
 
 /-- Membership in a value of a fixed function is `Δ₀` -/
 instance (f : M) : Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ ys 1 ∈ f ﹫ ys 0) Set.univ := by
-  let φ : L.DeltaZeroBoundedFormula 3 := (&0 ∈₀ &1).substBoundRud ![ᵣ1, (ᵣ2) ﹫ (ᵣ0)]
+  let φ : L.DeltaZeroBoundedFormula 3 := (ᵣ1).isMem ((ᵣ2) ﹫ (ᵣ0))
   have h : (fun ys : Fin 2 → M ↦ ys 1 ∈ f ﹫ ys 0) = φ.toBoundedFormula.multiclass.slice ![f] := by
     funext ys
     simp only [φ, Multiclass.slice]
@@ -151,7 +151,7 @@ instance (f : M) : Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ ys 1 ∈ f ﹫
 /-- Membership in the values of a fixed function at the elements of `x` is `Δ₀` -/
 instance (f : M) :
     Multiclass.DeltaZero (fun ys : Fin 2 → M ↦ ∀ ξ ∈ ys 0, ys 1 ∈ f ﹫ ξ) Set.univ := by
-  let φ : L.DeltaZeroBoundedFormula 3 := ∀₀∈ &0 ((&0 ∈₀ &1).substBoundRud ![ᵣ1, (ᵣ2) ﹫ (ᵣ3)])
+  let φ : L.DeltaZeroBoundedFormula 3 := ∀₀∈ &0 ((ᵣ1).isMem ((ᵣ2) ﹫ (ᵣ3)))
   have h : (fun ys : Fin 2 → M ↦ ∀ ξ ∈ ys 0, ys 1 ∈ f ﹫ ξ) =
       φ.toBoundedFormula.multiclass.slice ![f] := by
     funext ys
@@ -175,7 +175,7 @@ instance (F : M) : Multiclass.DeltaZero
 
 /-- The diagonal intersection is `Δ₀` -/
 instance (f : M) : Class.DeltaZero (fun γ : M ↦ ∀ ξ ∈ γ, γ ∈ f ﹫ ξ) Set.univ := by
-  let φ : L.DeltaZeroBoundedFormula 2 := ∀₀∈ &0 ((&0 ∈₀ &1).substBoundRud ![ᵣ0, (ᵣ1) ﹫ (ᵣ2)])
+  let φ : L.DeltaZeroBoundedFormula 2 := ∀₀∈ &0 ((ᵣ0).isMem ((ᵣ1) ﹫ (ᵣ2)))
   have h : (fun ys : Fin 1 → M ↦ ∀ ξ ∈ ys 0, ys 0 ∈ f ﹫ ξ) =
       φ.toBoundedFormula.multiclass.slice ![f] := by
     funext ys

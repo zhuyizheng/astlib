@@ -332,7 +332,7 @@ variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ
 /-- `hasMemOrderedPair r s t` means `!(s, t) ∈ r`, i.e. `s [r] t` -/
 noncomputable def hasMemOrderedPair (r s t : L.RudimentaryTerm n) :
     L.DeltaZeroBoundedFormula n :=
-  (&0 ∈₀ &1).substBoundRud ![ᵣ(s, t), r]
+  (ᵣ(s, t)).isMem r
 
 noncomputable def isReflOn (r s : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
   (∀₀∈ &1 (ᵣ0).hasMemOrderedPair (ᵣ2) (ᵣ2)).substBoundRud ![r, s]
@@ -401,7 +401,7 @@ instance : (r.isTotalOn s).RelFree := by
 noncomputable def lexProd₀ : L.RudimentaryTerm 4 :=
   let ab : L.RudimentaryTerm 4 := (ᵣ2 : L.RudimentaryTerm 4) ×ˢ (ᵣ3 : L.RudimentaryTerm 4)
   ((ᵣ1).hasMemOrderedPair (ᵣ0).left.left (ᵣ0).right.left ⊔
-      ((&0 =₀ &1).substBoundRud ![(ᵣ0).left.left, (ᵣ0).right.left] ⊓
+      ((ᵣ0).left.left.isEq (ᵣ0).right.left ⊓
         (ᵣ2).hasMemOrderedPair (ᵣ0).left.right (ᵣ0).right.right) :
       L.DeltaZeroBoundedFormula 3).comprehensionRudimentaryTerm.substBoundRud
     ![ᵣ0, ᵣ1, ab ×ˢ ab]

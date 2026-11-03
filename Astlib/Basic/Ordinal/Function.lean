@@ -48,11 +48,11 @@ theorem leastPreimage_eq_empty {y : M} (h : ∀ x ∈ β, f ﹫ x ≠ y) : least
 
 theorem sigma_leastPreimage (hβ : Ordinal β) : (leastPreimage f β).Sigma 1 Set.univ := by
   -- `[y, w, β, f]`: `w` is the least `x ∈ β` with `f ﹫ x = y` if there is one, else `∅`
-  let χ : L.DeltaZeroBoundedFormula 4 := ∃₀∈ &2 ((&0 =₀ &1).substBoundRud ![(ᵣ3) ﹫ (ᵣ4), ᵣ0])
+  let χ : L.DeltaZeroBoundedFormula 4 := ∃₀∈ &2 (((ᵣ3) ﹫ (ᵣ4)).isEq (ᵣ0))
   let φ : L.DeltaZeroBoundedFormula 4 :=
-    (&1 ∈₀ &2 ⊓ (&0 =₀ &1).substBoundRud ![(ᵣ3) ﹫ (ᵣ1), ᵣ0] ⊓
-      ∀₀∈ &1 ∼((&0 =₀ &1).substBoundRud ![(ᵣ3) ﹫ (ᵣ4), ᵣ0])) ⊔
-    (∼χ ⊓ (&0 =₀ &1).substBoundRud ![ᵣ1, ∅])
+    (&1 ∈₀ &2 ⊓ ((ᵣ3) ﹫ (ᵣ1)).isEq (ᵣ0) ⊓
+      ∀₀∈ &1 ∼(((ᵣ3) ﹫ (ᵣ4)).isEq (ᵣ0))) ⊔
+    (∼χ ⊓ (ᵣ1).isEq ∅)
   refine ClassFunction.Sigma.of_iff (F := φ.toBoundedFormula.multiclass.slice ![β, f])
     fun y w ↦ ?_
   suffices leastPreimage f β y = w ↔

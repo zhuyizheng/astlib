@@ -362,4 +362,40 @@ end MemStructure
 
 
 
+namespace RudimentaryTerm
+
+/-- `r = s` as a `Δ₀` formula -/
+noncomputable def isEq {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
+  (&0 =₀ &1).substBoundRud ![r, s]
+
+/-- `r ∈ s` as a `Δ₀` formula -/
+noncomputable def isMem {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
+  (&0 ∈₀ &1).substBoundRud ![r, s]
+
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] : (r.isEq s).RelFree := by
+  unfold isEq; infer_instance
+
+instance {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ}
+    (r s : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] : (r.isMem s).RelFree := by
+  unfold isMem; infer_instance
+
+variable [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [RudClosed M] {n : ℕ}
+
+@[simp]
+theorem realize_isEq (r s : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] (xs : Fin n → M) :
+    (r.isEq s).toBoundedFormula 〘xs〙 ↔ r〘xs〙 = s〘xs〙 := by
+  rw [isEq, DeltaZeroBoundedFormula.realize_substBoundRud]
+  simp
+
+@[simp]
+theorem realize_isMem (r s : L.RudimentaryTerm n) [r.CharFree] [s.CharFree] (xs : Fin n → M) :
+    (r.isMem s).toBoundedFormula 〘xs〙 ↔ r〘xs〙 ∈ s〘xs〙 := by
+  rw [isMem, DeltaZeroBoundedFormula.realize_substBoundRud]
+  simp
+
+end RudimentaryTerm
+
 end FirstOrder.Language

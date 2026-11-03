@@ -855,6 +855,15 @@ instance [Nonempty M] {k : ℕ} [NeZero k] {G : M → M → M}
   inferInstanceAs (MulticlassFunction.Sigma
     (MulticlassFunction.comp (fun ys : Fin 2 → M ↦ G (ys 0) (ys 1)) ![t₁, t₂]) k P)
 
+/-- A ternary `Σₖ` function applied to `Σₖ` terms is a `Σₖ` term -/
+instance [Nonempty M] {k : ℕ} [NeZero k] {G : M → M → M → M}
+    [MulticlassFunction.Sigma (fun ys : Fin 3 → M ↦ G (ys 0) (ys 1) (ys 2)) k P]
+    {t₁ t₂ t₃ : (Fin n → M) → M} [MulticlassFunction.Sigma t₁ k P]
+    [MulticlassFunction.Sigma t₂ k P] [MulticlassFunction.Sigma t₃ k P] :
+    MulticlassFunction.Sigma (fun xs ↦ G (t₁ xs) (t₂ xs) (t₃ xs)) k P :=
+  inferInstanceAs (MulticlassFunction.Sigma
+    (MulticlassFunction.comp (fun ys : Fin 3 → M ↦ G (ys 0) (ys 1) (ys 2)) ![t₁, t₂, t₃]) k P)
+
 end MulticlassFunction
 
 namespace Multiclass
@@ -963,6 +972,23 @@ instance [Nonempty M] {R : M → M → M → Prop}
     intro i
     fin_cases i <;> simpa
   have h : (fun xs ↦ R (t₁ xs) (t₂ xs) (t₃ xs)) = R'.subst ![t₁, t₂, t₃] := by
+    funext xs
+    simp [Multiclass.subst, R']
+  rw [h, Multiclass.subst_eq_ex']
+  infer_instance
+
+/-- A definable quaternary relation applied to `Σ₁` terms is definable -/
+instance [Nonempty M] {R : M → M → M → M → Prop}
+    [hR : Multiclass.Definable (fun ys : Fin 4 → M ↦ R (ys 0) (ys 1) (ys 2) (ys 3)) P]
+    {t₁ t₂ t₃ t₄ : (Fin n → M) → M} [MulticlassFunction.Sigma t₁ 1 P]
+    [MulticlassFunction.Sigma t₂ 1 P] [MulticlassFunction.Sigma t₃ 1 P]
+    [MulticlassFunction.Sigma t₄ 1 P] :
+    Multiclass.Definable (fun xs ↦ R (t₁ xs) (t₂ xs) (t₃ xs) (t₄ xs)) P := by
+  let R' : Multiclass M 4 := fun ys ↦ R (ys 0) (ys 1) (ys 2) (ys 3)
+  have : ∀ i, MulticlassFunction.Sigma (![t₁, t₂, t₃, t₄] i) 1 P := by
+    intro i
+    fin_cases i <;> simpa
+  have h : (fun xs ↦ R (t₁ xs) (t₂ xs) (t₃ xs) (t₄ xs)) = R'.subst ![t₁, t₂, t₃, t₄] := by
     funext xs
     simp [Multiclass.subst, R']
   rw [h, Multiclass.subst_eq_ex']

@@ -40,6 +40,19 @@ theorem realize_isOrderedPair (r : L.RudimentaryTerm n) [r.CharFree] (xs : Fin n
 
 end RudimentaryTerm
 
+namespace MemStructure
+
+/-- Being an ordered pair is `Δ₀` -/
+instance : Multiclass.DeltaZero (fun ys : Fin 1 → M ↦ IsOrderedPair (ys 0)) Set.univ := by
+  have h : (fun ys : Fin 1 → M ↦ IsOrderedPair (ys 0)) =
+      (ᵣ0 : L.RudimentaryTerm 1).isOrderedPair.toBoundedFormula.multiclass := by
+    funext ys
+    simp [BoundedFormula.multiclass]
+  rw [h]
+  infer_instance
+
+end MemStructure
+
 noncomputable def RudimentaryTerm.left₀ {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] :
   L.RudimentaryTerm 1 :=
   ᵣ⋃₀ (∃₀∈ &2 ((&0 =₀ &1).substBoundRud ![ᵣ1, ᵣ(ᵣ0, ᵣ3)])

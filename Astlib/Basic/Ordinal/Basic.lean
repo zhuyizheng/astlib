@@ -27,7 +27,7 @@ instance (t : L.RudimentaryTerm n) [t.CharFree] :
   unfold isOrdinal; infer_instance
 
 noncomputable def isZero (t : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
-  (&0 =₀ &1).substBoundRud ![ᵣ0, ∅] |>.substBoundRud ![t]
+  (ᵣ0).isEq ∅ |>.substBoundRud ![t]
 
 noncomputable def isSuccOrdinal (t : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
   (ᵣ0).isOrdinal ⊓ ∃₀∈ &0 (&1 =₀ &2).substBoundRud ![ᵣ0, ᵣ0, (ᵣ1).succ] |>.substBoundRud ![t]
@@ -55,7 +55,7 @@ instance (t : L.RudimentaryTerm n) [t.CharFree] :
 
 
 
-  -- (&0 =₀ &1).substBoundRud ![ᵣ0, ∅] |>.substBound ![t]
+  -- (ᵣ0).isEq ∅ |>.substBound ![t]
 
 
 -- def allTrans₀ {L : Language} [L.HasMem] (t : L.Term' n) : L.DeltaZeroBoundedFormula n :=

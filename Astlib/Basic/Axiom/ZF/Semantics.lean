@@ -203,9 +203,9 @@ variable {L : Language} [L.HasMem] [L.ExtraConstantsUnaryRelationsOnly] {n : ℕ
 `g ﹫ succ m = ⋃₀ (g ﹫ m)` for `m ∈ k` -/
 noncomputable def isIterUnion (x g k : L.RudimentaryTerm n) : L.DeltaZeroBoundedFormula n :=
   -- `[x, g, k]`
-  ((ᵣ1).isFunction ⊓ (&0 =₀ &1).substBoundRud ![(ᵣ1).dom, (ᵣ2).succ] ⊓
-    (&0 =₀ &1).substBoundRud ![(ᵣ1) ﹫ ∅, ᵣ0] ⊓
-    ∀₀∈ &2 ((&0 =₀ &1).substBoundRud ![(ᵣ1) ﹫ (ᵣ3).succ, ᵣ⋃₀ ((ᵣ1) ﹫ (ᵣ3))]) :
+  ((ᵣ1).isFunction ⊓ (ᵣ1).dom.isEq (ᵣ2).succ ⊓
+    ((ᵣ1) ﹫ ∅).isEq (ᵣ0) ⊓
+    ∀₀∈ &2 (((ᵣ1) ﹫ (ᵣ3).succ).isEq (ᵣ⋃₀ ((ᵣ1) ﹫ (ᵣ3)))) :
       L.DeltaZeroBoundedFormula 3).substBoundRud ![x, g, k]
 
 instance (x g k : L.RudimentaryTerm n) [x.CharFree] [g.CharFree] [k.CharFree] :
@@ -255,7 +255,7 @@ theorem IsIterUnion.val_eq_val (hg : IsIterUnion x g k) (hg' : IsIterUnion x g' 
     g ﹫ m = g' ﹫ m := by
   -- `[m, g, g', d]`: `m ∈ d → g ﹫ m = g' ﹫ m`
   let φ : L.DeltaZeroBoundedFormula 4 :=
-    &0 ∈₀ &3 ⟹ (&0 =₀ &1).substBoundRud ![(ᵣ1) ﹫ (ᵣ0), (ᵣ2) ﹫ (ᵣ0)]
+    &0 ∈₀ &3 ⟹ ((ᵣ1) ﹫ (ᵣ0)).isEq ((ᵣ2) ﹫ (ᵣ0))
   let A : Class M := φ.toBoundedFormula.multiclass.slice ![g, g', succ k ∩ succ k']
   have hA (m : M) : A m ↔ (m ∈ succ k ∩ succ k' → g ﹫ m = g' ﹫ m) := by
     simp [A, φ, append_left_eq_cons]
@@ -324,7 +324,7 @@ variable (x) in
 /-- The relation `v = ⋃ⁿ x`, i.e. `v = g ﹫ n` for an approximation `g` of length `n` -/
 noncomputable def iterUnionVal : Multiclass M 2 :=
   -- `[n, v, g, x]`
-  ((isIterUnion (ᵣ3) (ᵣ2) (ᵣ0) ⊓ (&0 =₀ &1).substBoundRud ![ᵣ1, (ᵣ2) ﹫ (ᵣ0)] :
+  ((isIterUnion (ᵣ3) (ᵣ2) (ᵣ0) ⊓ (ᵣ1).isEq ((ᵣ2) ﹫ (ᵣ0)) :
     L.DeltaZeroBoundedFormula 4).toBoundedFormula.multiclass.slice ![x]).ex
 
 theorem iterUnionVal_iff (n v : M) :
@@ -567,17 +567,17 @@ instance [s.Definable Set.univ] [l.Definable Set.univ] :
     (ordRecursionStep' z s l).Definable Set.univ := by
   -- `[g, v, z, u, w, t]`: `w = g ﹫ ⋃₀ dom g`, `u = s w`, `t = l g`, and `v` is given by the
   -- three cases
-  let ψ : Multiclass M 6 := ((&0 =₀ &1).substBoundRud ![ᵣ4, (ᵣ0) ﹫ (ᵣ⋃₀ (ᵣ0).dom)] :
+  let ψ : Multiclass M 6 := ((ᵣ4).isEq ((ᵣ0) ﹫ (ᵣ⋃₀ (ᵣ0).dom)) :
     L.DeltaZeroBoundedFormula 6).toBoundedFormula.multiclass
   have hψ (xs : Fin 6 → M) : ψ xs ↔ xs 4 = xs 0 ﹫ ⋃₀ dom (xs 0) := by
     simp only [ψ, BoundedFormula.multiclass, DeltaZeroBoundedFormula.realize_substBoundRud]
     simp
-  let A : Multiclass M 6 := (((&0 =₀ &1).substBoundRud ![(ᵣ0).dom, ∅] ⊓
-      (&0 =₀ &1).substBoundRud ![ᵣ1, ᵣ2]) ⊔
-    (∼((&0 =₀ &1).substBoundRud ![(ᵣ0).dom, ∅]) ⊓ (ᵣ0).dom.isSuccOrdinal ⊓
-      (&0 =₀ &1).substBoundRud ![ᵣ1, ᵣ3]) ⊔
-    (∼((&0 =₀ &1).substBoundRud ![(ᵣ0).dom, ∅]) ⊓ ∼(ᵣ0).dom.isSuccOrdinal ⊓
-      (&0 =₀ &1).substBoundRud ![ᵣ1, ᵣ5]) :
+  let A : Multiclass M 6 := (((ᵣ0).dom.isEq ∅ ⊓
+      (ᵣ1).isEq (ᵣ2)) ⊔
+    (∼((ᵣ0).dom.isEq ∅) ⊓ (ᵣ0).dom.isSuccOrdinal ⊓
+      (ᵣ1).isEq (ᵣ3)) ⊔
+    (∼((ᵣ0).dom.isEq ∅) ⊓ ∼(ᵣ0).dom.isSuccOrdinal ⊓
+      (ᵣ1).isEq (ᵣ5)) :
       L.DeltaZeroBoundedFormula 6).toBoundedFormula.multiclass ⊓ ψ ⊓
     (s : Multiclass M 2).remap ![4, 3] ⊓ (l : Multiclass M 2).remap ![0, 5]
   refine ClassFunction.Definable.of_iff (F := A.ex.ex.ex.slice ![z]) fun g v ↦ ?_

@@ -20,6 +20,7 @@ import Astlib.Basic.Ordinal.Basic
 import Astlib.Basic.Ordinal.ClubStationary
 import Astlib.Basic.Ordinal.Function
 import Astlib.Basic.Ordinal.Mul
+import Astlib.Basic.Ordinal.Nat
 import Astlib.Basic.Ordinal.Omega
 import Astlib.Basic.Ordinal.Order
 import Astlib.Basic.Ordinal.OrderType
@@ -68,6 +69,9 @@ import Astlib.Basic.SetOperation.Subset
 import Astlib.Basic.SetOperation.Union
 import Astlib.Basic.Transitive.Basic
 import Astlib.Basic.Transitive.TransitiveClosure
+import Astlib.Basic.VonNeumannHierarchy
+import Astlib.Combinatorics.ClassificationIdentifier.Basic
+import Astlib.Combinatorics.ClassificationIdentifier.Defs
 import Astlib.Combinatorics.SLOTreeStructure
 import Astlib.Combinatorics.TreeStructure
 import Astlib.Mathlib.Fin.Basic

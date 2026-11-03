@@ -43,6 +43,11 @@ instance : (Finite : Class M).Definable Set.univ := by
   unfold Finite
   infer_instance
 
+/-- Finiteness is `Σ₁`, so it composes with `Σ₁` class functions -/
+instance : Multiclass.Sigma 1 (fun ys : Fin 1 → M ↦ Finite (ys 0)) Set.univ := by
+  unfold Finite
+  infer_instance
+
 omit [HasOmega M] in
 /-- Natural numbers are finite -/
 @[grind .]

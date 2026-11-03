@@ -893,6 +893,9 @@ class Definable (F : ClassFunction M) (P : Set M) : Prop extends
 instance {F : ClassFunction M} [hF : F.Sigma 1 P] : F.Definable P where
   DefinableMulticlassFunction := by infer_instance
 
+instance {F : ClassFunction M} [hF : F.Pi 1 P] : F.Definable P where
+  DefinableMulticlassFunction := by infer_instance
+
 instance {F : ClassFunction M} [F.DeltaZero P] : (F : Multiclass M 2).DeltaZero P := by
   rw [← cast_cast]
   infer_instance
@@ -964,6 +967,11 @@ instance {G : MulticlassFunction M n} [G.Sigma k P] : ∀ i, (![G] i).Sigma k P 
 
 instance {G₁ G₂ : MulticlassFunction M n} [G₁.Sigma k P] [G₂.Sigma k P] :
     ∀ i, (![G₁, G₂] i).Sigma k P := by
+  intro i
+  fin_cases i <;> simpa
+
+instance {G₁ G₂ G₃ : MulticlassFunction M n} [G₁.Sigma k P] [G₂.Sigma k P] [G₃.Sigma k P] :
+    ∀ i, (![G₁, G₂, G₃] i).Sigma k P := by
   intro i
   fin_cases i <;> simpa
 
