@@ -22,6 +22,8 @@ In models of `KP`:
 * `T.IsEmbedding T' π`: `π` is an embedding of `T` into `T'`, an injection of the nodes
   preserving the depth and the parent relation, and `T.IsIsomorphism T' π`: `π` is a surjective
   embedding;
+* `T.map π`: the image of `T` under `π`; `T.iprt a m`, the `m`-th iterated parent of `a`, and
+  `T.anc a k`, the ancestor of `a` of depth `k`; `ofRt A`, the tree structure with the roots `A`;
 * `T.sngIso T'`: the unique isomorphism of tree structures with a single node.
 -/
 
@@ -1006,6 +1008,21 @@ theorem not_rel_prt_of_nd_eq_singleton (hnd : T.nd = {b}) (a a' : M) : ¬a [T.pr
 
 end IsTreeStructure
 
+/-- `T_map(π)`: the image of `T` under `π`, with nodes `π '' A`, depth `d ∘ π⁻¹` and children
+`b ↦ π '' C(π⁻¹(b))`; a copy of `T` if `π` is injective on `A` -/
+noncomputable def map (T : TreeStructure M) (π : M) : TreeStructure M :=
+  mk (π '' T.nd) (T.dep !∘ π⁻¹) ((fun b ↦ π '' (T.chd ﹫ (π⁻¹ ﹫ b))) ↾₀ (π '' T.nd))
+
+/-- `T_iprt(a, m)`: the `m`-th iterated parent of `a` -/
+noncomputable def iprt (T : TreeStructure M) (a m : M) : M := natRec a (fun b ↦ T.prt ﹫ b) m
+
+/-- `T_anc(a, k)`: the ancestor of `a` of depth `k` -/
+noncomputable def anc [HasOmega M] (T : TreeStructure M) (a k : M) : M :=
+  ⋃₀ (T.nd ∩₀ fun b ↦ T.dep ﹫ b = k ∧ ∃ m ∈ (ω : M), T.iprt a m = b)
+
+/-- `ofRt(A)`: the tree structure whose nodes `A` are all roots -/
+noncomputable def ofRt (A : M) : TreeStructure M := mk A (constFun A ∅) (constFun A ∅)
+
 /-- `π` is an embedding of the tree structure `T` into `T'`: an injection of the nodes that
 preserves the depth and the parent relation -/
 structure IsEmbedding (T T' : TreeStructure M) (π : M) : Prop where
@@ -1025,7 +1042,7 @@ variable [HasOmega M] {T T' : TreeStructure M} {π : M} (hT : T.IsTreeStructure)
   (hT' : T'.IsTreeStructure) (he : T.IsEmbedding T' π)
 include hT hT' he
 
-omit hT hT' in
+omit [HasOmega M] hT hT' in
 /-- An embedding sends roots exactly to roots -/
 theorem mem_rt_iff (ha : a ∈ T.nd) : π ﹫ a ∈ T'.rt ↔ a ∈ T.rt := by
   rw [TreeStructure.mem_rt_iff, TreeStructure.mem_rt_iff, he.dep_val ha]

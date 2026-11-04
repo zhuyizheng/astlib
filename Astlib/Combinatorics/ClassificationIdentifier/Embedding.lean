@@ -11,7 +11,8 @@ import Astlib.Combinatorics.ClassificationIdentifier.Basic
   `Q` that preserves the identifier `uc` of every node (and ignores the labels);
   `IsOtciIsomorphism P Q π`: moreover `π` is onto the nodes of `Q`.
 * `IsAotciEmbedding n P Q π`: `π` is a function on `n + 1` whose value at `i` is an embedding of the
-  tree `P(i)` into `Q(i)`; `IsAotciIsomorphism n P Q π`: each `π(i)` is an isomorphism.
+  tree `P(i)` into `Q(i)`; `IsAotciIsomorphism n P Q π`: each `π(i)` is an isomorphism;
+  `aotciEmbSet n P Q`: the set of these embeddings.
 
 For semi-linearly ordered tree structures preserving `uc`, the split of the siblings into linearly
 ordered sets is preserved automatically, since it is given by `left a ﹫ ∅ = aoc (uc a)`
@@ -54,6 +55,10 @@ structure IsAotciIsomorphism (n P Q π : M) : Prop where
   isFunction : IsFunction π
   dom_eq : dom π = succ n
   isOtciIsomorphism {i : M} (hi : i ∈ succ n) : IsOtciIsomorphism (P ﹫ i) (Q ﹫ i) (π ﹫ i)
+
+/-- The set of the embeddings of the array `P` into `Q` of trees of levels up to `n` -/
+noncomputable def aotciEmbSet (n P Q : M) : M :=
+  𝒫 (succ n ×ˢ 𝒫 (ndUnion (ran P) ×ˢ ndUnion (ran Q))) ∩₀ IsAotciEmbedding n P Q
 
 omit [ModelsKP M] in
 /-- An isomorphism of trees is one of semi-linearly ordered tree structures -/

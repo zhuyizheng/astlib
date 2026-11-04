@@ -21,7 +21,10 @@ In models of `KP`:
   `S.rtlos = F ﹫ S.rt`, `S.chdlos = F !∘ S.chd` (on the nodes with children) and
   `S.sbllos = F !∘ S.sbl` (on `S.nd`), and `S.ndlos a`, the linearly ordered set containing the
   node `a`;
+* `S.sblOdr`, the sibling order, and `ofRtLos D B`, the structure whose nodes are all roots forming
+  the single linearly ordered set `B` with key `D`;
 * the empty semi-linearly ordered tree structure `∅ = (∅, ∅)`;
+* `S.map π`: the image of `S` under `π`;
 * `S.IsEmbedding S' π`: `π` is an embedding of the tree structures that preserves the split of the
   siblings into linearly ordered sets and their orders, and `S.IsIsomorphism S' π`: `π` is a
   surjective embedding;
@@ -301,6 +304,10 @@ noncomputable def sbllos : M := S.losfn !∘ S.sbl
 `left c ﹫ ∅ = left a ﹫ ∅` -/
 noncomputable def ndlos (a : M) : M := (S.sbllos ﹫ a) ﹫ (left a ﹫ ∅)
 
+/-- The sibling order: `a` is below `b` if both lie in the same linearly ordered set, with `a`
+before `b` -/
+noncomputable def sblOdr : M := ⋃₀ ran ((fun a ↦ losOdr (S.ndlos a)) ↾₀ S.nd)
+
 noncomputable instance : Decidable (S.rt = ∅) := Classical.propDecidable _
 
 noncomputable instance (D : M) : Decidable (D ∈ dom S.rtlos) := Classical.propDecidable _
@@ -340,6 +347,11 @@ noncomputable instance (C : M) : Decidable (C = ∅) := Classical.propDecidable 
 its own singleton linearly ordered set -/
 noncomputable def asnchd (a C : M) : SLOTreeStructure M :=
   if C = ∅ then S else mk (S.ts.ichd a C) (update S.losfn C (sngLosFn C))
+
+/-- `ofRtLos(D, B)`: the semi-linearly ordered tree structure whose nodes `B_set` are all roots,
+forming the single linearly ordered set `B` with key `D` -/
+noncomputable def ofRtLos (D B : M) : SLOTreeStructure M :=
+  mk (TreeStructure.ofRt (losSet B)) (singletonFun (losSet B) (singletonFun D B))
 
 /-- The empty semi-linearly ordered tree structure `(∅, ∅)` -/
 noncomputable instance : EmptyCollection (SLOTreeStructure M) := ⟨mk ∅ ∅⟩
@@ -393,6 +405,31 @@ theorem nd_subset_nd_asnchd (S : SLOTreeStructure M) (a C : M) : S.nd ⊆ (S.asn
   · change S.ts.nd ⊆ (mk (S.ts.ichd a C) _).ts.nd
     rw [ts_mk, TreeStructure.nd_ichd]
     exact left_subset_union (x := S.ts.nd) (y := C)
+
+theorem nd_asnchd (S : SLOTreeStructure M) (a C : M) : (S.asnchd a C).nd = S.nd ∪ C := by
+  unfold asnchd
+  split_ifs with hC
+  · rw [hC, union_empty]
+  · change (mk (S.ts.ichd a C) _).ts.nd = _
+    rw [ts_mk, TreeStructure.nd_ichd]
+
+/-- The children of `a` in `S_asnchd(a, C)` are `C` if `a` has no children in `S` and the children
+function of `S_asnchd(a, C)` is a function -/
+theorem chd_asnchd_val_self {S : SLOTreeStructure M} {a C : M}
+    (hf : IsFunction (S.asnchd a C).chd) (hCa : S.chd ﹫ a = ∅) :
+    (S.asnchd a C).chd ﹫ a = C := by
+  unfold asnchd at hf ⊢
+  split_ifs at hf ⊢ with hC
+  · rw [hC, hCa]
+  change IsFunction (mk (S.ts.ichd a C) _).ts.chd at hf
+  change (mk (S.ts.ichd a C) _).ts.chd ﹫ a = C
+  rw [ts_mk] at hf ⊢
+  have hrel : a [(S.ts.ichd a C).chd] (S.ts.chd ﹫ a ∪ C) := by
+    rw [TreeStructure.chd_ichd, mem_union_iff, update_eq, mem_insert_iff]
+    exact .inl (.inl rfl)
+  rw [hf.val_eq_of_rel hrel]
+  change S.chd ﹫ a ∪ C = C
+  rw [hCa, empty_union]
 
 theorem rt_empty : (∅ : SLOTreeStructure M).rt = ∅ := by
   rw [rt, ts_empty, TreeStructure.rt_empty]
@@ -540,6 +577,16 @@ theorem mem_losSet_ndlos (ha : a ∈ S.nd) : a ∈ losSet (S.ndlos a) := by
     exact ⟨a, hT.mem_sbl_val_self ha, rfl⟩
   rw [ndlos, hS.sbllos_val ha, hS.mem_losSet_iff hX hD]
   exact ⟨hT.mem_sbl_val_self ha, rfl⟩
+
+/-- The linearly ordered set of a node consists of its siblings with the same key -/
+theorem mem_losSet_ndlos_iff (ha : a ∈ S.nd) (b : M) :
+    b ∈ losSet (S.ndlos a) ↔ b ∈ S.sbl ﹫ a ∧ left b ﹫ ∅ = left a ﹫ ∅ := by
+  have hT := hS.isTreeStructure
+  have hX := hT.sbl_val_mem_sblptn ha
+  have hD : left a ﹫ ∅ ∈ dom (S.losfn ﹫ (S.sbl ﹫ a)) := by
+    rw [hS.mem_dom_losfn_val_iff hX]
+    exact ⟨a, hT.mem_sbl_val_self ha, rfl⟩
+  rw [ndlos, hS.sbllos_val ha, hS.mem_losSet_iff hX hD]
 
 /-- Two nodes lie in the same linearly ordered set if and only if they are siblings with the same
 first value `left a ﹫ ∅` -/
@@ -696,6 +743,70 @@ theorem eq_empty_irmrt {b : M} (hnd : S.nd = {b}) : S = (∅ : SLOTreeStructure 
       exact (hL.irrefl b hz).elim
     rw [hA, hR]
   rw [hS.eq_mk, hts, hlosfn, empty_irmrt]
+
+omit [HasOmega M] in
+/-- Assigning new children does not change the roots -/
+theorem rt_asnchd {C : M} (hCA : C ∩ S.nd = ∅) : (S.asnchd a C).rt = S.rt := by
+  unfold asnchd
+  split_ifs
+  · rfl
+  · change (SLOTreeStructure.mk (S.ts.ichd a C) _).ts.rt = S.ts.rt
+    rw [ts_mk, hS.isTreeStructure.rt_ichd hCA]
+
+omit [HasOmega M] in
+/-- The new children have no children -/
+theorem chd_asnchd_val_of_mem_new {C c : M} (ha : a ∈ S.nd) (hCA : C ∩ S.nd = ∅) (hc : c ∈ C) :
+    (S.asnchd a C).chd ﹫ c = ∅ := by
+  unfold asnchd
+  split_ifs with hC
+  · rw [hC] at hc
+    simp at hc
+  · change (SLOTreeStructure.mk (S.ts.ichd a C) _).ts.chd ﹫ c = ∅
+    rw [ts_mk, hS.isTreeStructure.chd_ichd_val_of_mem_new ha hCA hc]
+
+omit [HasOmega M] in
+/-- Two semi-linearly ordered tree structures with the same tree structure are equal if siblings
+have distinct keys `left a ﹫ ∅` -/
+theorem eq_of_ts_eq {S' : SLOTreeStructure M} (hS' : S'.IsSLOTreeStructure) (hts : S.ts = S'.ts)
+    (hinj : ∀ X ∈ S.sblptn, ∀ a ∈ X, ∀ c ∈ X, left a ﹫ ∅ = left c ﹫ ∅ → a = c) : S = S' := by
+  have hsbl : S'.sblptn = S.sblptn := by rw [sblptn, sblptn, hts]
+  suffices hF : S.losfn = S'.losfn by rw [hS.eq_mk, hS'.eq_mk, hts, hF]
+  refine hS.isFunction_losfn.ext hS'.isFunction_losfn (by rw [hS.dom_losfn, hS'.dom_losfn, hsbl])
+    fun X hX ↦ ?_
+  rw [hS.dom_losfn] at hX
+  have hX' : X ∈ S'.sblptn := by rwa [hsbl]
+  have hdom : dom (S.losfn ﹫ X) = dom (S'.losfn ﹫ X) := by
+    ext D
+    rw [hS.mem_dom_losfn_val_iff hX, hS'.mem_dom_losfn_val_iff hX']
+  refine (hS.isFunction_losfn_val hX).ext (hS'.isFunction_losfn_val hX') hdom fun D hD ↦ ?_
+  have hD' : D ∈ dom (S'.losfn ﹫ X) := by rwa [← hdom]
+  obtain ⟨a, haX, rfl⟩ := (hS.mem_dom_losfn_val_iff hX _).mp hD
+  -- both linearly ordered sets are `!({a}, ∅)`
+  have hlos (B : M) (hB : IsStrictLinearOrderedSet B)
+      (hset : ∀ c, c ∈ losSet B ↔ c ∈ X ∧ left c ﹫ ∅ = left a ﹫ ∅) : B = !(({a} : M), ∅) := by
+    have hset' (c : M) : c ∈ losSet B ↔ c = a := by
+      rw [hset]
+      constructor
+      · exact fun h ↦ hinj X hX c h.left a haX h.right
+      · rintro rfl
+        exact ⟨haX, rfl⟩
+    obtain ⟨A, R, rfl⟩ := hB.isOrderedPair
+    rw [isStrictLinearOrderedSet_orderedPair_iff] at hB
+    simp only [losSet_orderedPair] at hset'
+    have hA : A = {a} := by
+      ext c
+      rw [hset', mem_singleton_iff]
+    have hR : R = ∅ := by
+      ext z
+      refine ⟨fun hz ↦ ?_, by simp⟩
+      obtain ⟨x, y, rfl⟩ := hB.isRelationOn.left hz
+      have hx := (hset' x).mp (hB.mem_left hz)
+      have hy := (hset' y).mp (hB.mem_right hz)
+      rw [hx, hy] at hz
+      exact (hB.irrefl a hz).elim
+    rw [hA, hR]
+  rw [hlos _ (hS.isStrictLinearOrderedSet hX hD) (hS.mem_losSet_iff hX hD),
+    hlos _ (hS'.isStrictLinearOrderedSet hX' hD') (hS'.mem_losSet_iff hX' hD')]
 
 section Insert
 
@@ -917,9 +1028,122 @@ theorem asnchd {C : M} (ha : a ∈ S.nd) (hCa : S.chd ﹫ a = ∅)
     exact TreeStructure.IsTreeStructure.not_mem_nd_of_mem_new hCA hc
       (hT.subset_nd_of_mem_sblptn h hc)
 
+/-- A semi-linearly ordered tree structure whose nodes are a root `b` and its children `C`, with
+distinct keys `left c ﹫ ∅`, is `(∅_irmrt(b))_asnchd(b, C)` -/
+theorem eq_asnchd_empty_irmrt {C : M} (hrt : S.rt = {b}) (hnd : S.nd = insert b C)
+    (hchd : S.chd ﹫ b = C) (hinj : ∀ x ∈ C, ∀ y ∈ C, x ≠ y → left x ﹫ ∅ ≠ left y ﹫ ∅) :
+    S = ((∅ : SLOTreeStructure M).irmrt b).asnchd b C := by
+  have hT := hS.isTreeStructure
+  have hnd' : S.ts.nd = insert b C := hnd
+  have hchd' : S.ts.chd ﹫ b = C := hchd
+  have hbrt : b ∈ S.ts.rt := by
+    change b ∈ S.rt
+    rw [hrt]
+    exact mem_singleton b
+  have hb : b ∈ S.ts.nd := by
+    rw [hnd']
+    exact mem_insert b C
+  have hdepb : S.ts.dep ﹫ b = ∅ := (TreeStructure.mem_rt_iff.mp hbrt).right
+  have hbC : b ∉ C := by
+    intro h
+    have h' := hT.dep_of_mem_chd b hb b (by rwa [hchd'])
+    rw [hdepb] at h'
+    exact succ_ne_empty _ h'.symm
+  by_cases hC : C = ∅
+  · rw [SLOTreeStructure.asnchd, if_pos hC]
+    refine hS.eq_empty_irmrt ?_
+    rw [hnd, hC, insert_empty_eq_singleton]
+  have hCnd {c : M} (hc : c ∈ C) : c ∈ S.ts.nd := by
+    rw [hnd']
+    exact subset_insert (x := b) C hc
+  -- the structure `(∅_irmrt(b))_asnchd(b, C)`
+  have hS₀ : ((∅ : SLOTreeStructure M).irmrt b).IsSLOTreeStructure :=
+    IsSLOTreeStructure.irmrt isSLOTreeStructure_empty (hS.isOrderedPair hb) (by simp [nd_empty])
+      (hS.isFunction_left hb) (hS.dom_left_mem hb)
+  have hCA : C ∩ ((∅ : SLOTreeStructure M).irmrt b).nd = ∅ := by
+    rw [nd_empty_irmrt]
+    ext c
+    rw [mem_inter_iff, mem_singleton_iff]
+    refine ⟨fun ⟨hc, hcb⟩ ↦ (hbC (hcb ▸ hc)).elim, by simp⟩
+  have hS' := hS₀.asnchd (by rw [nd_empty_irmrt]; exact mem_singleton b) (chd_empty_irmrt_val b b)
+    (fun x hx ↦ ⟨hS.isOrderedPair (hCnd hx), hS.isFunction_left (hCnd hx),
+      hS.dom_left_mem (hCnd hx)⟩) hCA hinj
+  -- the tree structure of `(∅_irmrt(b))_asnchd(b, C)`
+  have hT₀ := TreeStructure.isTreeStructure_empty.irt (M := M) (b := b) (by simp)
+  have hb₀ : b ∈ ((∅ : TreeStructure M).irt b).nd := by
+    rw [TreeStructure.nd_irt]
+    exact mem_insert b _
+  have hCA₀ : C ∩ ((∅ : TreeStructure M).irt b).nd = ∅ := by
+    rw [← ts_empty, ← ts_irmrt]
+    exact hCA
+  have hT' := hT₀.ichd hb₀ hCA₀
+  have hts' : (((∅ : SLOTreeStructure M).irmrt b).asnchd b C).ts =
+      ((∅ : TreeStructure M).irt b).ichd b C := by
+    rw [SLOTreeStructure.asnchd, if_neg hC, ts_mk, ts_irmrt, ts_empty]
+  -- the nodes in `C` have no children in `S`
+  have hchdC {x : M} (hx : x ∈ C) : S.ts.chd ﹫ x = ∅ := by
+    ext e
+    refine ⟨fun he ↦ ?_, by simp⟩
+    exfalso
+    have he' := hT.chd_subset x (hCnd hx) he
+    rw [hnd', mem_insert_iff] at he'
+    rcases he' with rfl | he'
+    · have h := hT.dep_of_mem_chd x (hCnd hx) e he
+      rw [hdepb] at h
+      exact succ_ne_empty _ h.symm
+    · have h₁ : e [S.ts.prt] x := (hT.rel_prt_iff_mem_chd (hCnd hx)).mpr he
+      have h₂ : e [S.ts.prt] b := (hT.rel_prt_iff_mem_chd hb).mpr (by rwa [hchd'])
+      have hxb : x = b :=
+        (hT.isFunction_prt.val_eq_of_rel h₁).symm.trans (hT.isFunction_prt.val_eq_of_rel h₂)
+      exact hbC (hxb ▸ hx)
+  have hdom : dom S.ts.dep = dom (((∅ : TreeStructure M).irt b).ichd b C).dep := by
+    rw [hT.dep_fromTo.dom_eq, hT'.dep_fromTo.dom_eq, hnd', TreeStructure.nd_ichd,
+      TreeStructure.nd_irt, TreeStructure.nd_empty, insert_empty_eq_singleton, insert_eq]
+  have hts : S.ts = (((∅ : SLOTreeStructure M).irmrt b).asnchd b C).ts := by
+    rw [hts', hT.eq_mk, hT'.eq_mk, TreeStructure.mk_eq_mk_iff]
+    refine ⟨?_, ?_, ?_⟩
+    · rw [hnd', TreeStructure.nd_ichd, TreeStructure.nd_irt, TreeStructure.nd_empty,
+        insert_empty_eq_singleton, insert_eq]
+    · refine hT.dep_fromTo.isFunction.ext hT'.dep_fromTo.isFunction hdom fun x hx ↦ ?_
+      rw [hT.dep_fromTo.dom_eq, hnd', mem_insert_iff] at hx
+      rcases hx with rfl | hx
+      · rw [hdepb, hT₀.dep_ichd_val_of_mem_nd hCA₀ hb₀,
+          TreeStructure.isTreeStructure_empty.dep_irt_val_self]
+      · rw [hT.dep_of_mem_chd _ hb x (by rwa [hchd']), hdepb,
+          hT₀.dep_ichd_val_of_mem_new hCA₀ hx, TreeStructure.isTreeStructure_empty.dep_irt_val_self]
+    · refine hT.isFunction_chd.ext hT'.isFunction_chd ?_ fun x hx ↦ ?_
+      · rw [hT.dom_chd, hT'.dom_chd, ← hT.dep_fromTo.dom_eq, hdom, hT'.dep_fromTo.dom_eq]
+      rw [hT.dom_chd, hnd', mem_insert_iff] at hx
+      rcases hx with rfl | hx
+      · rw [hchd', hT₀.chd_ichd_val_self hb₀ hCA₀,
+          TreeStructure.isTreeStructure_empty.chd_irt_val_self, empty_union]
+      · rw [hchdC hx, hT₀.chd_ichd_val_of_mem_new hb₀ hCA₀ hx]
+  refine hS.eq_of_ts_eq hS' hts fun X hX a ha c hc hac ↦ ?_
+  rw [sblptn, TreeStructure.mem_sblptn_iff] at hX
+  obtain ⟨hX | hX, hXne⟩ := hX
+  · have hrt' : S.ts.rt = {b} := hrt
+    rw [hX, hrt', mem_singleton_iff] at ha hc
+    rw [ha, hc]
+  · rw [hT.isFunction_chd.mem_ran_iff, hT.dom_chd] at hX
+    obtain ⟨x, hx, rfl⟩ := hX
+    rw [hnd', mem_insert_iff] at hx
+    rcases hx with rfl | hx
+    · rw [hchd'] at ha hc
+      by_contra hne
+      exact hinj a ha c hc hne hac
+    · rw [hchdC hx] at hXne
+      exact (hXne rfl).elim
+
 end Insert
 
 end IsSLOTreeStructure
+
+/-- `S_map(π)`: the image of `S` under `π`, with tree structure `S.ts.map π` and the linearly
+ordered set of the siblings `X` with key `D` being the image under `π` of that of `π⁻¹ '' X`; a
+copy of `S` if `π` is injective on the nodes and preserves `left a ﹫ ∅` -/
+noncomputable def map (π : M) : SLOTreeStructure M :=
+  mk (S.ts.map π) ((fun X ↦ (fun D ↦ losImg π ((S.losfn ﹫ (π⁻¹ '' X)) ﹫ D)) ↾₀
+    dom (S.losfn ﹫ (π⁻¹ '' X))) ↾₀ (S.ts.map π).sblptn)
 
 /-- `π` is an embedding of the semi-linearly ordered tree structure `S` into `S'`: an embedding of
 the tree structures such that two nodes lie in the same linearly ordered set if and only if their
@@ -1346,8 +1570,32 @@ open SLOTreeStructure in
 noncomputable def chdlosOf (P p : M) : M := (ofM P).chdlos ﹫ p
 
 open SLOTreeStructure in
+/-- `P_dep(p)` -/
+noncomputable def depOf (P p : M) : M := (ofM P).dep ﹫ p
+
+open SLOTreeStructure in
+/-- `P_anc(p, k)`: the ancestor of `p` of depth `k` -/
+noncomputable def ancOf [HasOmega M] (P p k : M) : M := (ofM P).ts.anc p k
+
+open SLOTreeStructure in
+/-- `P_ndlos(p)` -/
+noncomputable def ndlosOf (P p : M) : M := (ofM P).ndlos p
+
+open SLOTreeStructure in
+/-- `P_sblodr`: the sibling order -/
+noncomputable def sblOdrOf (P : M) : M := (ofM P).sblOdr
+
+open SLOTreeStructure in
+/-- `ofRtLos(D, B)` -/
+noncomputable def rtLosSLOT (D B : M) : M := (ofRtLos D B).toM
+
+open SLOTreeStructure in
 /-- `P_irmrt(b)` -/
 noncomputable def irmrtOf (P b : M) : M := ((ofM P).irmrt b).toM
+
+open SLOTreeStructure in
+/-- `P_map(π)` -/
+noncomputable def mapOf (P π : M) : M := ((ofM P).map π).toM
 
 open SLOTreeStructure in
 /-- `P_irmchd(a, b)` -/

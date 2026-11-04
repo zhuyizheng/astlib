@@ -11,6 +11,7 @@ import Astlib.Basic.Cardinal.Cofinality
 import Astlib.Basic.Cardinal.Countable
 import Astlib.Basic.Cardinal.Finite
 import Astlib.Basic.Order.Basic
+import Astlib.Basic.Order.BrouwerKleene
 import Astlib.Basic.Order.Pullback
 import Astlib.Basic.Order.StrictLinearOrder
 import Astlib.Basic.Order.StrictWellFounded
@@ -69,10 +70,15 @@ import Astlib.Basic.SetOperation.Subset
 import Astlib.Basic.SetOperation.Union
 import Astlib.Basic.Transitive.Basic
 import Astlib.Basic.Transitive.TransitiveClosure
+import Astlib.Basic.HereditarilyFinite
 import Astlib.Basic.VonNeumannHierarchy
 import Astlib.Combinatorics.ClassificationIdentifier.Basic
 import Astlib.Combinatorics.ClassificationIdentifier.Defs
 import Astlib.Combinatorics.ClassificationIdentifier.Embedding
+import Astlib.Combinatorics.ClassificationIdentifier.HereditarilyFinite
+import Astlib.Combinatorics.ClassificationIdentifier.LevelOne
+import Astlib.Combinatorics.ClassificationIdentifier.LevelTwo
+import Astlib.Combinatorics.ClassificationIdentifier.Trivial
 import Astlib.Combinatorics.SLOTreeStructure
 import Astlib.Combinatorics.TreeStructure
 import Astlib.Mathlib.Fin.Basic

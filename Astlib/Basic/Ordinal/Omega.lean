@@ -372,6 +372,19 @@ theorem natCast_mem_natCast_iff {j k : ℕ} : (j : M) ∈ (k : M) ↔ j < k := b
   | zero => simp
   | succ k ih => simp [ih, le_iff_eq_or_lt]
 
+omit [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [Foundational M] in
+/-- The elements of a natural number `m` are the natural numbers below `m` -/
+theorem exists_eq_natCast_of_mem_natCast {x : M} {m : ℕ} (hx : x ∈ (m : M)) :
+    ∃ k < m, x = k := by
+  induction m with
+  | zero => simp at hx
+  | succ m ih =>
+    rw [natCast_succ] at hx
+    rcases mem_or_eq_of_mem_succ hx with hx | rfl
+    · obtain ⟨k, hk, rfl⟩ := ih hx
+      exact ⟨k, by omega, rfl⟩
+    · exact ⟨m, by omega, rfl⟩
+
 end NatCast
 
 end MemStructure

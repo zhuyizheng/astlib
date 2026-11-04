@@ -420,6 +420,10 @@ instance : (losSet : ClassFunction M).DeltaZero Set.univ :=
 instance : (losOdr : ClassFunction M).DeltaZero Set.univ :=
   ClassFunction.deltaZero_of_eq right₀ fun _ ↦ by simp [losOdr]
 
+/-- `π[B]`: the image `!(π '' A, π ∘ R ∘ π⁻¹)` of the strictly linearly ordered set `B = !(A, R)`
+under `π` -/
+noncomputable def losImg (π B : M) : M := !(π '' losSet B, π !∘ losOdr B !∘ π⁻¹)
+
 /-- `B_irm(b)`: `B = !(A, R)` with `b` added as a maximum, `!(A ∪ {b}, R ∪ A ×ˢ {b})` -/
 noncomputable def losIrm (B b : M) : M := losIrm₀〘B, b〙₂
 

@@ -101,6 +101,10 @@ theorem mem_orderedPair_iff (x y z : M) :
     z ∈ !(x, y) ↔ (z = unorderedPair x x ∨ z = unorderedPair x y) := by
   grind
 
+@[simp]
+theorem orderedPair_ne_empty [Extensional M] (x y : M) : !(x, y) ≠ ∅ := by
+  simp [ne_empty_iff]
+
 theorem eq_orderedPair_iff [Extensional M] (x y z : M) :
     z = orderedPair x y ↔
       (∀ w ∈ z, w = unorderedPair x x ∨ w = unorderedPair x y) ∧

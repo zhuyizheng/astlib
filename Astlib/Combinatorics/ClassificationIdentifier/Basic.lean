@@ -13,7 +13,7 @@ The lemmas `mem_otci_empty_iff`, `mem_otci_iff_of_ne_empty`, `mem_finotci_iff`, 
 `ClassificationIdentifier.Defs` by their conditions, where the levels below `n` are read off
 `ciRec ↾₀ n` (`levComp_ciRec_restrict`).
 
-For every `n ∈ ω`, `trvuoci_n` has a unique element (`existsUnique_mem_trvuoci`).
+`ext_0 = ∅` (`ciExt_empty`).
 -/
 
 open FirstOrder Language MemStructure
@@ -590,15 +590,56 @@ theorem mem_ciExt_iff : z ∈ ciExt n ↔ ∃ P ∈ stduoci n, ∃ Q ∈ stduoci
     rw [left_orderedPair, right_orderedPair]
     exact ⟨⟨P, hP, Q, hQ, rfl⟩, h⟩
 
+/-- `ext_0 = ∅` -/
+theorem ciExt_empty : ciExt (∅ : M) = ∅ := by
+  rw [empty_iff]
+  intro z hz
+  rw [mem_ciExt_iff] at hz
+  obtain ⟨P, hP, Q, -, -, hctp, -, -, hlfrt, hlfsbl, hdn⟩ := hz
+  rw [mem_stduoci_iff, mem_uoci_iff_of_mem_omega empty_mem_omega] at hP
+  obtain ⟨⟨-, hdom, -, -, -, -, hdom3, hucf⟩, -⟩ := hP
+  have hne3 : dom P ≠ ((3 : ℕ) : M) := by
+    intro h
+    rcases hdom3.mp h with ⟨-, hodd⟩ | hct
+    · exact not_isOdd_empty hodd
+    · exact ct_ne_dct (hct ▸ hctp)
+  have hmem (k : ℕ) (hk : k < 5) : (k : M) ∈ dom P := by
+    rcases hdom with h | h | h
+    · exact (hne3 h).elim
+    · rw [h]
+      exact natCast_mem_natCast_of_lt hk
+    · rw [h]
+      exact natCast_mem_natCast_of_lt (by omega)
+  obtain ⟨-, hlvl, -, -, hdr, -, -⟩ := hucf (hmem 3 (by omega))
+  have hnot (x : M) : x ∉ ucflvl P := by
+    rcases mem_or_eq_of_mem_succ hlvl with h | h
+    · simp at h
+    rw [h]
+    simp
+  rcases hdr with hlf | hdn'
+  · by_cases hrt : IsEven (ucflvl P) ∧ ucfdcn P ∈ rtOf (aoc P ﹫ ucflvl P)
+    · exact hnot _ (hlfrt ⟨hmem 4 (by omega), hlf, hrt⟩).left
+    · exact hnot _ (hlfsbl ⟨hmem 4 (by omega), hlf, hrt⟩).left
+  · exact hnot _ (hdn hdn').left
+
+omit [Extensional M] in
+theorem natCast_one_ne_empty : ((1 : ℕ) : M) ≠ ∅ := by
+  rw [← natCast_zero, Ne, natCast_inj]
+  omega
+
+omit [ModelsZF M] in
+theorem sUnion_natCast_one : ⋃₀ ((1 : ℕ) : M) = ∅ := by
+  rw [natCast_succ, natCast_zero, sUnion_succ isTransitive_empty]
+
+omit [L.ExtraConstantsUnaryRelationsOnly] [Extensional M] [ModelsZF M] in
+theorem empty_mem_natCast_one : (∅ : M) ∈ ((1 : ℕ) : M) :=
+  natCast_mem_natCast_of_lt (j := 0) (by omega)
+
 end Recursion
 
-section Trivial
+section SingleNode
 
-/-! ### Trivial `uoci`'s
-
-For every `n ∈ ω`, `trvuoci_n` has a unique element (`existsUnique_mem_trvuoci`): the function
-`{(0, A), (1, ∅), (2, c)}`, where `A(j)` is the tree with the single node `(U_{j-1}, ∅)` (with
-`U_{-1} = otci0Uc`) and `c` is `ct` or `dct` as `n` is even or odd. -/
+/-! ### Trees with a single node -/
 
 variable [ModelsZF M] {A B c j m n p q r P Q R T U : M}
 
@@ -626,47 +667,6 @@ theorem eq_irmrtOf_emptySLOT {b : M} (hT : IsSLOT T) (hnd : ndOf T = {b}) :
   congrArg SLOTreeStructure.toM
     (SLOTreeStructure.IsSLOTreeStructure.eq_empty_irmrt (S := SLOTreeStructure.ofM T) hT hnd)
 
-section Step
-
-variable (hj : j ∈ (ω : M)) (ih : ∀ m ∈ j, TrvGood m)
-include hj ih
-
-omit [RudClosed M] [Extensional M] in
-theorem IsTrvRoot.eq (hr : IsTrvRoot j r) {r' : M} (hr' : IsTrvRoot j r') : r = r' := by
-  rcases hr with ⟨rfl, rfl⟩ | ⟨hj0, hr⟩
-  · rcases hr' with ⟨-, rfl⟩ | ⟨hj0, -⟩
-    · rfl
-    · exact (hj0 rfl).elim
-  rcases hr' with ⟨rfl, -⟩ | ⟨-, hr'⟩
-  · exact (hj0 rfl).elim
-  obtain ⟨-, hmj, -⟩ := sUnion_mem_of_ne_empty hj hj0
-  obtain ⟨U, hU, -⟩ := ih _ hmj
-  rw [(hU r).mp hr, (hU r').mp hr']
-
-theorem IsTrvRoot.props (hr : IsTrvRoot j r) :
-    IsFunction r ∧ dom r = ((3 : ℕ) : M) ∧ (IsEven j → ctp r = dct) ∧ (IsOdd j → ctp r = ct) := by
-  rcases hr with ⟨rfl, rfl⟩ | ⟨hj0, hr⟩
-  · refine ⟨isFunction_ciTriple _ _ _, dom_ciTriple _ _ _, fun _ ↦ ctp_ciTriple _ _ _,
-      fun h ↦ (not_isOdd_empty h).elim⟩
-  obtain ⟨hmω, hmj, hjm⟩ := sUnion_mem_of_ne_empty hj hj0
-  obtain ⟨U, hU, hUf, hUdom, -, -, hUev, hUodd, -⟩ := ih _ hmj
-  rw [(hU r).mp hr]
-  refine ⟨hUf, hUdom, fun hje ↦ hUodd ?_, fun hjo ↦ hUev ?_⟩
-  · rwa [hjm, isEven_succ_iff hmω] at hje
-  · rwa [hjm, isOdd_succ_iff hmω] at hjo
-
-end Step
-
-theorem IsTrvArray.eq (hn : n ∈ (ω : M)) (ih : ∀ m ∈ n, TrvGood m) (hA : IsTrvArray n A)
-    (hB : IsTrvArray n B) : A = B := by
-  obtain ⟨hAf, hAdom, hAval⟩ := hA
-  obtain ⟨hBf, hBdom, hBval⟩ := hB
-  refine hAf.ext hBf (hAdom.trans hBdom.symm) fun j hj ↦ ?_
-  rw [hAdom] at hj
-  obtain ⟨r, hr, hAr⟩ := hAval j hj
-  obtain ⟨r', hr', hBr⟩ := hBval j hj
-  rw [hAr, hBr, hr.eq (mem_omega_of_mem_succ hn hj) (forall_mem_of_mem_succ hn ih hj) hr']
-
 omit [RudClosed M] [Extensional M] in
 theorem rtOf_trvTree (r : M) : rtOf (trvTree r) = {!(r, ∅)} := rtOf_irmrtOf_emptySLOT _
 
@@ -676,426 +676,7 @@ theorem ndOf_trvTree (r : M) : ndOf (trvTree r) = {!(r, ∅)} := ndOf_irmrtOf_em
 omit [RudClosed M] [Extensional M] in
 theorem chdOf_trvTree (r p : M) : chdOf (trvTree r) p = ∅ := chdOf_irmrtOf_emptySLOT _ _
 
-section Tree
-
-variable (hj : j ∈ (ω : M)) (ih : ∀ m ∈ j, TrvGood m)
-include hj ih
-
-/-- The trees in `trvotci_j` whose roots have label `∅` are the trees `trvTree r` -/
-theorem exists_eq_trvTree (hT : T ∈ trvotci j) (hlbl : ∀ p ∈ rtOf T, lbl p = ∅) :
-    ∃ r, IsTrvRoot j r ∧ T = trvTree r := by
-  rw [mem_trvotci_iff, mem_finotci_iff] at hT
-  obtain ⟨⟨hTo, -⟩, hev, hodd⟩ := hT
-  by_cases hj0 : j = ∅
-  · subst hj0
-    rw [mem_otci_empty_iff] at hTo
-    obtain ⟨p, -, rfl⟩ := hTo
-    have hp := hlbl !(otci0Uc, p) (by rw [rtOf_irmrtOf_emptySLOT]; exact mem_singleton _)
-    rw [lbl_orderedPair] at hp
-    subst hp
-    exact ⟨otci0Uc, Or.inl ⟨rfl, rfl⟩, rfl⟩
-  obtain ⟨hmω, hmj, hjm⟩ := sUnion_mem_of_ne_empty hj hj0
-  obtain ⟨U, hU, hUf, hUdom, hUsig, hUarr, hUev, -, hUext, hUstd⟩ := ih _ hmj
-  have ihm : ∀ m ∈ ⋃₀ j, TrvGood m := fun m hm ↦
-    ih m ((ordinal_of_mem ordinal_omega hj).transitive _ hmj hm)
-  rw [mem_otci_iff_of_ne_empty hj0] at hTo
-  obtain ⟨hTslot, hnodes, hevc, hoddc, hchdc⟩ := hTo
-  have hstd : stduociL (ciRec ↾₀ j) (⋃₀ j) = stduoci (⋃₀ j) := stduociL_ciRec_restrict hmj
-  have htrvu : trvuociL (ciRec ↾₀ j) (⋃₀ j) = trvuoci (⋃₀ j) := trvuociL_ciRec_restrict hmj
-  have htrva : trvaotciL (ciRec ↾₀ j) (⋃₀ j) = trvaotci (⋃₀ j) := trvaotciL_ciRec_restrict hmj
-  have hext : extL (ciRec ↾₀ j) (⋃₀ j) = ciExt (⋃₀ j) := extL_ciRec_restrict hmj
-  rw [hstd] at hnodes
-  rw [htrvu] at hevc hoddc
-  rw [htrva] at hoddc
-  rw [hext] at hchdc
-  -- the roots have `uc = U`
-  have hrtU : ∀ p ∈ rtOf T, uc p = U := by
-    intro p hp
-    rcases isEven_or_isOdd hj with hje | hjo
-    · exact (hU _).mp ((hevc hje).right p hp)
-    have hmev : IsEven (⋃₀ j) := by rwa [hjm, isOdd_succ_iff hmω] at hjo
-    have hpstd := (hnodes p (mem_ndOf_of_mem_rtOf hp)).left
-    obtain ⟨hparr, hpsig⟩ := hUstd _ hpstd ((hoddc hjo).right p hp).left
-    have hpct := hodd hjo p (mem_ndOf_of_mem_rtOf hp)
-    have hpuoci := (mem_stduoci_iff.mp hpstd).left
-    rw [mem_uoci_iff_of_mem_omega hmω] at hpuoci
-    obtain ⟨hpf, -, -, -, -, -, hdom3, -⟩ := hpuoci
-    rw [eq_ciTriple hpf (hdom3.mpr (.inr hpct)), eq_ciTriple hUf hUdom,
-      hparr.eq hmω ihm hUarr, hpsig, hUsig, hpct, hUev hmev]
-  -- no node has children
-  have hchd : ∀ p ∈ ndOf T, chdOf T p = ∅ := by
-    intro p hp
-    by_contra hne
-    obtain ⟨q, hq⟩ := (ne_empty_iff _).mp hne
-    obtain ⟨q', hq', -⟩ := ((hchdc p hp).left (aoc (uc q))).mp ⟨q, hq, rfl⟩
-    obtain ⟨P', -, Q', -, hPQ, hPQext⟩ := mem_ciExt_iff.mp hq'
-    rw [orderedPair_eq_orderedPair_iff] at hPQ
-    have hdct : ctp (uc p) = dct := by
-      rw [hPQ.left]
-      exact hPQext.left
-    rcases isEven_or_isOdd hj with hje | hjo
-    · rw [hrtU p ((hev hje p hp).mp hdct)] at hq'
-      exact hUext q' hq'
-    · exact ct_ne_dct ((hodd hjo p hp).symm.trans hdct)
-  have hS : (SLOTreeStructure.ofM T).IsSLOTreeStructure := hTslot
-  -- every node is a root
-  have hndrt : ∀ p ∈ ndOf T, p ∈ rtOf T := by
-    intro p hp
-    by_contra hpr
-    have hpd : p ∈ (SLOTreeStructure.ofM T).ts.nd \ (SLOTreeStructure.ofM T).ts.rt := by
-      rw [mem_sdiff_iff]
-      exact ⟨hp, hpr⟩
-    have hmem := hS.isTreeStructure.mem_chd_prt_val hpd
-    have h0 : chdOf T ((SLOTreeStructure.ofM T).ts.prt ﹫ p) = ∅ :=
-      hchd _ (hS.isTreeStructure.prt_val_mem_nd hpd)
-    rw [chdOf] at h0
-    rw [SLOTreeStructure.chd] at h0
-    rw [h0] at hmem
-    simp at hmem
-  -- the nodes are `(U, ∅)`
-  have hpair : ∀ p ∈ ndOf T, p = !(U, ∅) := by
-    intro p hp
-    have hpr := hndrt p hp
-    obtain ⟨u, l, rfl⟩ := hS.isOrderedPair hp
-    have hu := hrtU _ hpr
-    have hl := hlbl _ hpr
-    rw [uc_orderedPair] at hu
-    rw [lbl_orderedPair] at hl
-    rw [hu, hl]
-  obtain ⟨r₀, hr₀⟩ : ∃ r₀, r₀ ∈ rtOf T := by
-    rcases isEven_or_isOdd hj with hje | hjo
-    · obtain ⟨r₀, hr₀⟩ := (hevc hje).left
-      exact ⟨r₀, by rw [hr₀]; exact mem_singleton _⟩
-    · obtain ⟨q, hq, -⟩ := (hoddc hjo).left
-      exact ⟨q, hq⟩
-  have hnd : ndOf T = {!(U, ∅)} := by
-    ext p
-    rw [mem_singleton_iff]
-    refine ⟨hpair p, ?_⟩
-    rintro rfl
-    rw [← hpair r₀ (mem_ndOf_of_mem_rtOf hr₀)]
-    exact mem_ndOf_of_mem_rtOf hr₀
-  exact ⟨U, Or.inr ⟨hj0, (hU U).mpr rfl⟩, eq_irmrtOf_emptySLOT hTslot hnd⟩
-
-/-- The trees `trvTree r` are in `trvotci_j` -/
-theorem trvTree_mem_trvotci (hr : IsTrvRoot j r) : trvTree r ∈ trvotci j := by
-  obtain ⟨hrf, hrdom, hrev, hrodd⟩ := hr.props hj ih
-  have hslot : IsSLOT (trvTree r) := isSLOT_trvTree hrf hrdom
-  have hV : (∅ : M) ∈ 𝕍 (ω : M) := by
-    have h := vonNeumann_mem_vonNeumann (M := M) ⟨ordinal_empty, ordinal_omega, empty_mem_omega⟩
-    rwa [vonNeumann_empty] at h
-  rw [mem_trvotci_iff, mem_finotci_iff, ndOf_trvTree]
-  refine ⟨⟨?_, finite_singleton _⟩, fun hje p hp ↦ ?_, fun hjo p hp ↦ ?_⟩
-  rotate_left
-  · rw [ndOf_trvTree, mem_singleton_iff] at hp
-    rw [hp, rtOf_trvTree, uc_orderedPair, hrev hje]
-    simp
-  · rw [ndOf_trvTree, mem_singleton_iff] at hp
-    rw [hp, uc_orderedPair, hrodd hjo]
-  by_cases hj0 : j = ∅
-  · subst hj0
-    rcases hr with ⟨-, rfl⟩ | ⟨hj0, -⟩
-    · rw [mem_otci_empty_iff]
-      exact ⟨∅, hV, rfl⟩
-    · exact (hj0 rfl).elim
-  obtain ⟨hmω, hmj, hjm⟩ := sUnion_mem_of_ne_empty hj hj0
-  have hrt : r ∈ trvuoci (⋃₀ j) := by
-    rcases hr with ⟨h, -⟩ | ⟨-, h⟩
-    · exact (hj0 h).elim
-    · exact h
-  obtain ⟨U, hU, -, -, -, -, -, -, hUext, -⟩ := ih _ hmj
-  have hrU := (hU r).mp hrt
-  rw [mem_trvuoci_iff] at hrt
-  obtain ⟨hrstd, hraoc, -⟩ := hrt
-  rw [mem_otci_iff_of_ne_empty hj0]
-  have hstd : stduociL (ciRec ↾₀ j) (⋃₀ j) = stduoci (⋃₀ j) := stduociL_ciRec_restrict hmj
-  have htrvu : trvuociL (ciRec ↾₀ j) (⋃₀ j) = trvuoci (⋃₀ j) := trvuociL_ciRec_restrict hmj
-  have htrva : trvaotciL (ciRec ↾₀ j) (⋃₀ j) = trvaotci (⋃₀ j) := trvaotciL_ciRec_restrict hmj
-  have hext : extL (ciRec ↾₀ j) (⋃₀ j) = ciExt (⋃₀ j) := extL_ciRec_restrict hmj
-  unfold OtciCond
-  rw [hstd, htrvu, htrva, hext, ndOf_trvTree, rtOf_trvTree]
-  have hnoext : ∀ q, !(r, q) ∉ ciExt (⋃₀ j) := by
-    rw [hrU]
-    exact hUext
-  have hrtrv : r ∈ trvuoci (⋃₀ j) := by
-    rw [hU]
-    exact hrU
-  refine ⟨hslot, fun p hp ↦ ?_, fun _ ↦ ⟨⟨_, rfl⟩, fun p hp ↦ ?_⟩,
-    fun hjo ↦ ⟨⟨_, mem_singleton _, ?_⟩, fun p hp ↦ ?_⟩, fun p hp ↦ ?_⟩
-  · rw [mem_singleton_iff] at hp
-    rw [hp, uc_orderedPair, lbl_orderedPair]
-    exact ⟨hrstd, hV⟩
-  · rw [mem_singleton_iff] at hp
-    rwa [hp, uc_orderedPair]
-  · rwa [uc_orderedPair]
-  · rw [mem_singleton_iff] at hp
-    have hrtlos : rtlosOf (trvTree r) = singletonFun (left !(r, ∅) ﹫ ∅) !({!(r, ∅)}, ∅) :=
-      SLOTreeStructure.rtlos_empty_irmrt _
-    have haoc : aoc r = left !(r, ∅) ﹫ ∅ := by
-      rw [left_orderedPair, aoc, natCast_zero]
-    rw [hp, uc_orderedPair, hrtlos, haoc, singletonFun_val, hrodd hjo]
-    rw [← haoc]
-    exact ⟨hraoc, iff_of_true (isLeastLos_singleton _) rfl⟩
-  · rw [mem_singleton_iff] at hp
-    rw [hp, uc_orderedPair, chdOf_trvTree]
-    refine ⟨fun D ↦ ?_, fun q hq ↦ (hnoext q hq).elim⟩
-    constructor
-    · rintro ⟨q, hq, -⟩
-      simp at hq
-    · rintro ⟨q, hq, -⟩
-      exact (hnoext q hq).elim
-
-end Tree
-
-/-- The step of the induction: `trvuoci_n` has a unique element if every level below does -/
-theorem trvGood_of_forall (hn : n ∈ (ω : M)) (ih : ∀ m ∈ n, TrvGood m) : TrvGood n := by
-  -- the array of trivial trees
-  obtain ⟨A, hA⟩ : ∃ A, IsTrvArray n A := by
-    by_cases hn0 : n = ∅
-    · subst hn0
-      refine ⟨cc ∅ (trvTree otci0Uc), isFunction_empty.cc _, by rw [dom_cc, dom_empty],
-        fun j hj ↦ ⟨otci0Uc, ?_, ?_⟩⟩ <;> rw [mem_succ_iff] at hj <;>
-        rcases hj with rfl | hj
-      · exact .inl ⟨rfl, rfl⟩
-      · simp at hj
-      · have h := cc_val_self isFunction_empty (trvTree (otci0Uc : M))
-        rwa [dom_empty] at h
-      · simp at hj
-    obtain ⟨-, hmn, hnm⟩ := sUnion_mem_of_ne_empty hn hn0
-    obtain ⟨U, hU, -, -, -, ⟨hAf, hAdom, hAval⟩, -⟩ := ih _ hmn
-    have hAdom' : dom (aoc U) = n := by rw [hAdom, ← hnm]
-    refine ⟨cc (aoc U) (trvTree U), hAf.cc _, by rw [dom_cc, hAdom'], fun j hj ↦ ?_⟩
-    rcases mem_or_eq_of_mem_succ hj with hj | hjn
-    · obtain ⟨r, hr, hval⟩ := hAval j (by rwa [← hnm])
-      exact ⟨r, hr, by rw [cc_val_of_mem hAf _ (by rwa [hAdom']), hval]⟩
-    · refine ⟨U, .inr ⟨hjn ▸ hn0, ?_⟩, ?_⟩
-      · rw [hjn, hU]
-      · rw [hjn, ← hAdom', cc_val_self hAf]
-  obtain ⟨hAf, hAdom, hAval⟩ := hA
-  have hAtrv : ∀ j ∈ succ n, A ﹫ j ∈ trvotci j := by
-    intro j hj
-    obtain ⟨r, hr, hval⟩ := hAval j hj
-    rw [hval]
-    exact trvTree_mem_trvotci (mem_omega_of_mem_succ hn hj) (forall_mem_of_mem_succ hn ih hj) hr
-  have hAotci : ∀ j ∈ succ n, A ﹫ j ∈ otci j := fun j hj ↦
-    (mem_finotci_iff.mp (mem_trvotci_iff.mp (hAtrv j hj)).left).left
-  have hAfin : ∀ j ∈ succ n, A ﹫ j ∈ finotci j := fun j hj ↦
-    (mem_trvotci_iff.mp (hAtrv j hj)).left
-  have hAaotci : A ∈ aotci n := by
-    rw [mem_aotci_iff]
-    refine ⟨hAf, hAdom, fun i hi ↦ ?_, hAotci n (mem_succ_self n)⟩
-    rw [otciL_ciRec_restrict hi]
-    exact hAotci i (mem_succ_of_mem hi)
-  have hAfinaotci : A ∈ finaotci n := mem_finaotci_iff.mpr ⟨hAaotci, hAfin⟩
-  have hAtrvaotci : A ∈ trvaotci n := mem_trvaotci_iff.mpr ⟨hAaotci, hAtrv⟩
-  -- the arrays of the standard `uoci`'s with trivial arrays
-  have hstd : ∀ R ∈ stduoci n, aoc R ∈ trvaotci n → IsTrvArray n (aoc R) ∧ sig R = ∅ := by
-    intro R hR hRarr
-    rw [mem_trvaotci_iff] at hRarr
-    obtain ⟨hRaotci, hRtrv⟩ := hRarr
-    obtain ⟨hRf, hRdom, -⟩ := mem_aotci_iff.mp hRaotci
-    rw [mem_stduoci_iff] at hR
-    obtain ⟨hRuoci, hRstd⟩ := hR
-    have hRtree : ∀ j ∈ succ n, ∃ r, IsTrvRoot j r ∧ aoc R ﹫ j = trvTree r := by
-      intro j hj
-      have hjω := mem_omega_of_mem_succ hn hj
-      refine exists_eq_trvTree hjω (forall_mem_of_mem_succ hn ih hj) (hRtrv j hj) fun p hp ↦ ?_
-      have hpn := mem_ndOf_of_mem_rtOf hp
-      obtain ⟨ha, -, hc⟩ := hRstd j hj p hpn
-      rcases isEven_or_isOdd hjω with hje | hjo
-      · exact ha ⟨hje, hp⟩
-      · exact (hc ((mem_trvotci_iff.mp (hRtrv j hj)).right.right hjo p hpn)).left hp
-    refine ⟨⟨hRf, hRdom, hRtree⟩, ?_⟩
-    rw [mem_uoci_iff_of_mem_omega hn] at hRuoci
-    obtain ⟨-, -, -, ⟨hsigf, -, -, hsig⟩, -⟩ := hRuoci
-    refine hsigf.isRelation.eq_empty_of_dom_eq_empty ?_
-    ext i
-    refine ⟨fun hi ↦ ?_, by simp⟩
-    exfalso
-    obtain ⟨-, hlvl, heven, hodd, hctp⟩ := hsig i hi
-    have hlω := mem_omega_of_mem_succ hn hlvl
-    obtain ⟨r, hr, htree⟩ := hRtree _ hlvl
-    obtain ⟨-, -, -, hrodd⟩ := hr.props hlω (forall_mem_of_mem_succ hn ih hlvl)
-    rw [htree] at heven hodd
-    rcases isEven_or_isOdd hlω with hle | hlo
-    · rcases heven hle !(r, ∅) (by rw [rtOf_trvTree]; exact mem_singleton _) with h | ⟨j, -, -, h⟩
-      all_goals
-        rw [chdOf_trvTree] at h
-        simp at h
-    · rcases hodd hlo with h | ⟨j, -, -, h⟩
-      · rw [rtOf_trvTree, mem_singleton_iff] at h
-        rw [h, uc_orderedPair, hrodd hlo] at hctp
-        exact ct_ne_dct hctp
-      · rw [chdOf_trvTree] at h
-        simp at h
-  -- the trivial `uoci`
-  obtain ⟨c, hcev, hcodd⟩ : ∃ c : M, (IsEven n → c = ct) ∧ (IsOdd n → c = dct) := by
-    rcases isEven_or_isOdd hn with h | h
-    · exact ⟨ct, fun _ ↦ rfl, fun h' ↦ (h.not_isOdd h').elim⟩
-    · exact ⟨dct, fun h' ↦ (h.not_isEven h').elim, fun _ ↦ rfl⟩
-  have hUuoci : ciTriple A ∅ c ∈ uoci n := by
-    rw [mem_uoci_iff_of_mem_omega hn]
-    unfold UociCond
-    refine ⟨isFunction_ciTriple _ _ _, .inl (dom_ciTriple _ _ _), ?_, ?_, ?_, ?_, ?_, ?_⟩
-    · rw [aoc_ciTriple]
-      exact hAfinaotci
-    · rw [sig_ciTriple, dom_empty]
-      exact ⟨isFunction_empty, by simp, empty_mem_omega, by simp⟩
-    · rw [ctp_ciTriple]
-      rcases isEven_or_isOdd hn with h | h
-      · exact .inl (hcev h)
-      · exact .inr (hcodd h)
-    · rw [ctp_ciTriple]
-      exact fun h ↦ hcodd h.right
-    · rw [sig_ciTriple, ctp_ciTriple]
-      refine iff_of_true (dom_ciTriple _ _ _) ?_
-      rcases isEven_or_isOdd hn with h | h
-      · exact .inr (hcev h)
-      · exact .inl ⟨rfl, h⟩
-    · rw [dom_ciTriple, natCast_mem_natCast_iff]
-      omega
-  have hUstd : StduociCond n (ciTriple A ∅ c) := by
-    intro i hi p hp
-    obtain ⟨r, hr, htree⟩ := hAval i hi
-    obtain ⟨-, -, -, hrodd⟩ := hr.props (mem_omega_of_mem_succ hn hi)
-      (forall_mem_of_mem_succ hn ih hi)
-    rw [aoc_ciTriple, htree, ndOf_trvTree, mem_singleton_iff] at hp
-    rw [aoc_ciTriple, htree, rtOf_trvTree, hp, uc_orderedPair, lbl_orderedPair]
-    refine ⟨fun _ ↦ rfl, fun ⟨hdct, hne⟩ ↦ ?_,
-      fun _ ↦ ⟨fun _ ↦ rfl, fun h ↦ (h (mem_singleton _)).elim⟩⟩
-    exfalso
-    rcases isEven_or_isOdd (mem_omega_of_mem_succ hn hi) with h | h
-    · exact hne ⟨h, mem_singleton _⟩
-    · exact ct_ne_dct ((hrodd h).symm.trans hdct)
-  have hUtrv : ciTriple A ∅ c ∈ trvuoci n := by
-    rw [mem_trvuoci_iff, mem_stduoci_iff]
-    refine ⟨⟨hUuoci, hUstd⟩, by rwa [aoc_ciTriple], fun h ↦ ?_, fun h ↦ ?_⟩ <;> rw [ctp_ciTriple]
-    · exact hcev h
-    · exact hcodd h
-  refine ⟨ciTriple A ∅ c, fun P ↦ ⟨fun hP ↦ ?_, ?_⟩, isFunction_ciTriple _ _ _, dom_ciTriple _ _ _,
-    sig_ciTriple _ _ _, by rw [aoc_ciTriple]; exact ⟨hAf, hAdom, hAval⟩,
-    fun h ↦ by rw [ctp_ciTriple]; exact hcev h, fun h ↦ by rw [ctp_ciTriple]; exact hcodd h,
-    fun Q hQ ↦ ?_, hstd⟩
-  rotate_left
-  · rintro rfl
-    exact hUtrv
-  · -- no extension of the trivial `uoci`
-    obtain ⟨P', -, Q', hQ', hPQ, hext⟩ := mem_ciExt_iff.mp hQ
-    rw [orderedPair_eq_orderedPair_iff] at hPQ
-    obtain ⟨rfl, rfl⟩ := hPQ
-    obtain ⟨hdct, -, hrt, -⟩ := hext
-    rw [ctp_ciTriple] at hdct
-    have hno : IsOdd n := by
-      rcases isEven_or_isOdd hn with h | h
-      · exact (ct_ne_dct ((hcev h).symm.trans hdct)).elim
-      · exact h
-    obtain ⟨hres, R, -, B, -, haocQ, hsigQ⟩ := hrt ⟨sig_ciTriple _ _ _, hno⟩
-    have hn0 : n ≠ ∅ := fun h ↦ not_isOdd_empty (h ▸ hno)
-    have h0n : ∅ ∈ n := empty_mem_of_ordinal_of_ne_empty (ordinal_of_mem ordinal_omega hn) hn0
-    have hQuoci := (mem_stduoci_iff.mp hQ').left
-    rw [mem_uoci_iff_of_mem_omega hn] at hQuoci
-    obtain ⟨hQf, hQdom, -, ⟨-, -, -, hsig⟩, -⟩ := hQuoci
-    have h0Q : (∅ : M) ∈ dom Q := by
-      rcases hQdom with h | h | h <;> rw [h, ← natCast_zero, natCast_mem_natCast_iff] <;> omega
-    have haoc : aoc Q = A := by
-      have h : (ciTriple A ∅ c ↾ n) ﹫ ∅ = (Q ↾ n) ﹫ ∅ := by rw [hres]
-      have h0U : (∅ : M) ∈ dom (ciTriple A ∅ c) := by
-        rw [dom_ciTriple, ← natCast_zero, natCast_mem_natCast_iff]
-        omega
-      rw [val_restrict _ (isFunction_ciTriple _ _ _) h0n h0U, val_restrict _ hQf h0n h0Q] at h
-      rw [aoc, natCast_zero, ← h]
-      exact aoc_ciTriple _ _ _
-    rw [haoc, aoc_ciTriple] at haocQ
-    obtain ⟨r, hr, htree⟩ := hAval n (mem_succ_self n)
-    obtain ⟨-, -, -, hrodd⟩ := hr.props hn ih
-    have hmem : !(R, ∅) ∈ ndOf (A ﹫ n) := by
-      rw [haocQ]
-      refine SLOTreeStructure.nd_subset_nd_asnchd _ _ _ ?_
-      change _ ∈ ((SLOTreeStructure.ofM (A ﹫ n)).irmrt !(R, ∅)).nd
-      rw [SLOTreeStructure.nd_irmrt]
-      exact mem_insert _ _
-    rw [htree, ndOf_trvTree, mem_singleton_iff, orderedPair_eq_orderedPair_iff] at hmem
-    have h0sig : (∅ : M) ∈ dom (sig Q) := by
-      rw [hsigQ, dom_cc, dom_empty]
-      exact mem_succ_self _
-    have hctp := (hsig ∅ h0sig).right.right.right.right
-    have hdcn : sigdcn Q ∅ = !(R, ∅) := by
-      have h := cc_val_self isFunction_empty !(n, !(R, ∅))
-      rw [dom_empty] at h
-      rw [sigdcn, hsigQ, h, dcn_orderedPair]
-    rw [hdcn, uc_orderedPair, hmem.left, hrodd hno] at hctp
-    exact ct_ne_dct hctp
-  -- uniqueness
-  rw [mem_trvuoci_iff] at hP
-  obtain ⟨hPstd, hParr, hPev, hPodd⟩ := hP
-  obtain ⟨hParr', hPsig⟩ := hstd P hPstd hParr
-  have hPuoci := (mem_stduoci_iff.mp hPstd).left
-  rw [mem_uoci_iff_of_mem_omega hn] at hPuoci
-  obtain ⟨hPf, -, -, -, -, -, hdom3, -⟩ := hPuoci
-  have hPdom : dom P = ((3 : ℕ) : M) := by
-    refine hdom3.mpr ?_
-    rcases isEven_or_isOdd hn with h | h
-    · exact .inr (hPev h)
-    · exact .inl ⟨hPsig, h⟩
-  have hPctp : ctp P = c := by
-    rcases isEven_or_isOdd hn with h | h
-    · rw [hPev h, hcev h]
-    · rw [hPodd h, hcodd h]
-  rw [eq_ciTriple hPf hPdom, hParr'.eq hn ih ⟨hAf, hAdom, hAval⟩, hPsig, hPctp]
-
-theorem trvGood (hn : n ∈ (ω : M)) : TrvGood n :=
-  induction_of_modelsZF (A := fun x ↦ x ∈ (ω : M) → TrvGood x)
-    (fun _ ih hx ↦ trvGood_of_forall hx fun m hm ↦ ih m hm (ordinal_omega.transitive _ hx hm))
-    n hn
-
-/-- For every `n ∈ ω`, there is a unique trivial level-`n` `uoci` -/
-theorem existsUnique_mem_trvuoci (hn : n ∈ (ω : M)) : ∃! P, P ∈ trvuoci n := by
-  obtain ⟨U, hU, -⟩ := trvGood hn
-  exact ⟨U, (hU U).mpr rfl, fun P hP ↦ (hU P).mp hP⟩
-
-/-- `trvuoci_n = {trvU n}` -/
-theorem trvuoci_eq_singleton (hn : n ∈ (ω : M)) : trvuoci n = {trvU n} := by
-  obtain ⟨U, hU, -⟩ := trvGood hn
-  have htrv : trvuoci n = {U} := by
-    ext P
-    rw [mem_singleton_iff, hU]
-  rw [trvU, htrv, sUnion_singleton]
-
-theorem mem_trvuoci_iff_eq_trvU (hn : n ∈ (ω : M)) : P ∈ trvuoci n ↔ P = trvU n := by
-  rw [trvuoci_eq_singleton hn, mem_singleton_iff]
-
-theorem trvU_mem_trvuoci (hn : n ∈ (ω : M)) : trvU n ∈ trvuoci n :=
-  (mem_trvuoci_iff_eq_trvU hn).mpr rfl
-
-theorem isTrvUoci_trvU (hn : n ∈ (ω : M)) : IsTrvUoci n (trvU n) := by
-  obtain ⟨U, hU, hUtrv⟩ := trvGood hn
-  rwa [← (mem_trvuoci_iff_eq_trvU hn).mp ((hU U).mpr rfl)]
-
-theorem isFunction_trvU (hn : n ∈ (ω : M)) : IsFunction (trvU n) :=
-  (isTrvUoci_trvU hn).left
-
-theorem dom_trvU (hn : n ∈ (ω : M)) : dom (trvU n) = ((3 : ℕ) : M) :=
-  (isTrvUoci_trvU hn).right.left
-
-theorem sig_trvU (hn : n ∈ (ω : M)) : sig (trvU n) = ∅ :=
-  (isTrvUoci_trvU hn).right.right.left
-
-theorem isTrvArray_aoc_trvU (hn : n ∈ (ω : M)) : IsTrvArray n (aoc (trvU n)) :=
-  (isTrvUoci_trvU hn).right.right.right.left
-
-theorem ctp_trvU_of_isEven (hn : n ∈ (ω : M)) (he : IsEven n) : ctp (trvU n) = ct :=
-  (isTrvUoci_trvU hn).right.right.right.right.left he
-
-theorem ctp_trvU_of_isOdd (hn : n ∈ (ω : M)) (ho : IsOdd n) : ctp (trvU n) = dct :=
-  (isTrvUoci_trvU hn).right.right.right.right.right.left ho
-
-/-- `trvU n = {(0, A), (1, ∅), (2, c)}` -/
-theorem trvU_eq_ciTriple (hn : n ∈ (ω : M)) :
-    trvU n = ciTriple (aoc (trvU n)) ∅ (ctp (trvU n)) := by
-  rw [← sig_trvU hn]
-  exact eq_ciTriple (isFunction_trvU hn) (dom_trvU hn)
-
-end Trivial
+end SingleNode
 
 end MemStructure
 
