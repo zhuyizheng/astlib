@@ -13,7 +13,9 @@ The lemmas `mem_otci_empty_iff`, `mem_otci_iff_of_ne_empty`, `mem_finotci_iff`, 
 `ClassificationIdentifier.Defs` by their conditions, where the levels below `n` are read off
 `ciRec ↾₀ n` (`levComp_ciRec_restrict`).
 
-`ext_0 = ∅` (`ciExt_empty`).
+`ext_0 = ∅` (`ciExt_empty`). A standard `uoci` has its signature determined by its array
+(`sig_eq_of_aoc_eq`), so a continuous standard `uoci` is determined by its array
+(`eq_of_aoc_eq_of_ctp_eq_ct`).
 -/
 
 open FirstOrder Language MemStructure
@@ -337,7 +339,7 @@ theorem exists_mem_rtOf_of_mem_otci (hP : P ∈ otci n) (hn : IsEven n) : ∃ r,
       TreeStructure.isTreeStructure_empty.rt_irt (by simp)]
     exact mem_insert _ _
   rw [mem_otci_iff_of_ne_empty hn'] at hP
-  obtain ⟨r, hr⟩ := (hP.right.right.left hn).left
+  obtain ⟨r, hr⟩ := hP.right.right.right.left hn
   refine ⟨r, ?_⟩
   rw [hr]
   exact mem_singleton _
@@ -573,9 +575,9 @@ theorem mem_stduoci_iff : P ∈ stduoci n ↔ P ∈ uoci n ∧ StduociCond n P :
     dom_ciRec_restrict]
 
 /-- `trvuoci_n` -/
-theorem mem_trvuoci_iff : P ∈ trvuoci n ↔ P ∈ stduoci n ∧ TrvuociCond n (trvaotci n) P := by
+theorem mem_trvuoci_iff : P ∈ trvuoci n ↔ P ∈ stduoci n ∧ TrvuociCond (trvaotci n) P := by
   rw [← trvuociS_ciRec_restrict, trvuociS, mem_comprehension_iff, stduociS_ciRec_restrict,
-    trvaotciS_ciRec_restrict, dom_ciRec_restrict]
+    trvaotciS_ciRec_restrict]
 
 /-- `ext_n`: the pairs `(P, Q)` of elements of `stduoci_n` satisfying `ExtCond` -/
 theorem mem_ciExt_iff : z ∈ ciExt n ↔ ∃ P ∈ stduoci n, ∃ Q ∈ stduoci n,
@@ -677,6 +679,157 @@ omit [RudClosed M] [Extensional M] in
 theorem chdOf_trvTree (r p : M) : chdOf (trvTree r) p = ∅ := chdOf_irmrtOf_emptySLOT _ _
 
 end SingleNode
+
+section General
+
+variable [ModelsZF M] {A B b c d j k m n p q r x y P Q R T U X : M}
+
+/-! ### Extensions and standard `uoci`'s -/
+
+/-- The pairs in `ext_n` consist of standard `uoci`'s, the first discontinuous and the second
+continuous -/
+theorem mem_ciExt_props (h : !(P, Q) ∈ ciExt n) :
+    P ∈ stduoci n ∧ Q ∈ stduoci n ∧ ctp P = dct ∧ ctp Q = ct := by
+  obtain ⟨P', hP', Q', hQ', hPQ, hext⟩ := mem_ciExt_iff.mp h
+  rw [orderedPair_eq_orderedPair_iff] at hPQ
+  obtain ⟨rfl, rfl⟩ := hPQ
+  exact ⟨hP', hQ', hext.left, hext.right.left⟩
+
+/-- A continuous `uoci` has no extensions -/
+theorem not_mem_ciExt_of_ctp_eq_ct (hct : ctp P = ct) (Q : M) : !(P, Q) ∉ ciExt n :=
+  fun h ↦ ct_ne_dct (hct.symm.trans (mem_ciExt_props h).right.right.left)
+
+/-- The continuity type of a `uoci` is `ct` or `dct` -/
+theorem ctp_eq_ct_or_dct (hn : n ∈ (ω : M)) (hP : P ∈ uoci n) : ctp P = ct ∨ ctp P = dct := by
+  rw [mem_uoci_iff_of_mem_omega hn] at hP
+  exact hP.right.right.right.right.left
+
+/-- Continuous `uoci`'s are triples -/
+theorem dom_eq_three_of_ctp_eq_ct (hn : n ∈ (ω : M)) (hP : P ∈ uoci n) (hct : ctp P = ct) :
+    dom P = ((3 : ℕ) : M) := by
+  rw [mem_uoci_iff_of_mem_omega hn] at hP
+  obtain ⟨-, -, -, -, -, -, hdom3, -⟩ := hP
+  exact hdom3.mpr (.inr hct)
+
+omit [Extensional M] in
+/-- Children are not roots -/
+theorem not_mem_rtOf_of_mem_chdOf (hX : IsSLOT X) (hd : d ∈ chdOf X q) : d ∉ rtOf X := by
+  have hT := (show (SLOTreeStructure.ofM X).IsSLOTreeStructure from hX).isTreeStructure
+  have hq := hT.mem_nd_of_mem_chd_val hd
+  intro hrt
+  have h := hT.dep_of_mem_chd q hq d hd
+  rw [(TreeStructure.mem_rt_iff.mp hrt).right] at h
+  exact succ_ne_empty _ h.symm
+
+/-- The parent of a child -/
+theorem prtOf_eq_of_mem_chdOf (hX : IsSLOT X) (hd : d ∈ chdOf X q) : prtOf X d = q := by
+  have hT := (show (SLOTreeStructure.ofM X).IsSLOTreeStructure from hX).isTreeStructure
+  exact hT.isFunction_prt.val_eq_of_rel
+    ((hT.rel_prt_iff_mem_chd (hT.mem_nd_of_mem_chd_val hd)).mpr hd)
+
+/-- The nodes of the trees in an array of `aotci_n` -/
+theorem mem_ndOf_of_sigCond (hn : n ∈ (ω : M)) (hA : aoc P ∈ aotci n) {i : M}
+    (hi : SigCond n P i) : sigdcn P i ∈ ndOf (aoc P ﹫ siglvl P i) := by
+  obtain ⟨-, hlvl, heven, hodd, -⟩ := hi
+  have hT := val_mem_otci_of_mem_aotci hA hlvl
+  have hX := isSLOT_of_mem_otci hT
+  rcases isEven_or_isOdd (mem_omega_of_mem_succ hn hlvl) with he | ho
+  · obtain ⟨r, hr⟩ := exists_mem_rtOf_of_mem_otci hT he
+    rcases heven he r hr with h | ⟨_, -, -, h⟩
+    · exact mem_ndOf_of_mem_chdOf hX h
+    · exact mem_ndOf_of_mem_chdOf hX h
+  · rcases hodd ho with h | ⟨_, -, -, h⟩
+    · exact mem_ndOf_of_mem_rtOf h
+    · exact mem_ndOf_of_mem_chdOf hX h
+
+/-- The signature entries of a `uoci` are not roots at even levels -/
+theorem not_isEven_and_mem_rtOf_of_sigCond (hA : aoc P ∈ aotci n) {i : M}
+    (hi : SigCond n P i) :
+    ¬(IsEven (siglvl P i) ∧ sigdcn P i ∈ rtOf (aoc P ﹫ siglvl P i)) := by
+  rintro ⟨he, hrt⟩
+  obtain ⟨-, hlvl, heven, -, -⟩ := hi
+  have hX := isSLOT_of_mem_otci (val_mem_otci_of_mem_aotci hA hlvl)
+  rcases heven he _ hrt with h | ⟨_, -, -, h⟩
+  · exact not_mem_rtOf_of_mem_chdOf hX h hrt
+  · exact not_mem_rtOf_of_mem_chdOf hX h hrt
+
+/-- The signature of a standard `uoci` lists its discontinuous nodes other than the roots of even
+levels, indexed by their labels: the `i`-th entry of the signature of `P` is the `i`-th entry of
+the signature of any standard `Q` with the same array -/
+theorem sig_val_of_aoc_eq (hn : n ∈ (ω : M)) (hP : P ∈ stduoci n) (hQ : Q ∈ stduoci n)
+    (h : aoc P = aoc Q) {i : M} (hi : i ∈ dom (sig P)) :
+    i ∈ dom (sig Q) ∧ sig Q ﹫ i = sig P ﹫ i := by
+  rw [mem_stduoci_iff] at hP hQ
+  obtain ⟨hPu, hPstd⟩ := hP
+  obtain ⟨-, hQstd⟩ := hQ
+  rw [mem_uoci_iff_of_mem_omega hn] at hPu
+  obtain ⟨-, -, haoc, ⟨hsigf, hinj, -, hsig⟩, -⟩ := hPu
+  have hA := (mem_finaotci_iff.mp haoc).left
+  have hnd := mem_ndOf_of_sigCond hn hA (hsig i hi)
+  have hnot := not_isEven_and_mem_rtOf_of_sigCond hA (hsig i hi)
+  obtain ⟨⟨l, d, hld⟩, hlvl, -, -, hctp⟩ := hsig i hi
+  have hl : siglvl P i = l := by rw [siglvl, hld, lvl_orderedPair]
+  have hd : sigdcn P i = d := by rw [sigdcn, hld, dcn_orderedPair]
+  rw [hl] at hlvl hnd hnot
+  rw [hd] at hnd hnot hctp
+  have hPi := (hPstd l hlvl d hnd).right.left ⟨hctp, hnot⟩
+  rw [h] at hnd hnot
+  have hQi := (hQstd l hlvl d hnd).right.left ⟨hctp, hnot⟩
+  have hpair : !(l, d) ≠ ∅ := orderedPair_ne_empty l d
+  have hlbl : lbl d = i := by
+    have hmem : lbl d ∈ dom (sig P) := by
+      by_contra hne
+      rw [val_eq_empty_of_not_mem_dom hne] at hPi
+      exact hpair hPi
+    exact hinj _ hmem _ hi (hPi.symm.trans hld.symm)
+  rw [hlbl] at hQi
+  refine ⟨?_, by rw [← hQi, hld]⟩
+  by_contra hne
+  rw [val_eq_empty_of_not_mem_dom hne] at hQi
+  exact hpair hQi
+
+/-- The signature of a standard `uoci` is determined by its array -/
+theorem sig_eq_of_aoc_eq (hn : n ∈ (ω : M)) (hP : P ∈ stduoci n) (hQ : Q ∈ stduoci n)
+    (h : aoc P = aoc Q) : sig P = sig Q := by
+  have hsigf (R : M) (hR : R ∈ stduoci n) : IsFunction (sig R) := by
+    have hRu := (mem_stduoci_iff.mp hR).left
+    rw [mem_uoci_iff_of_mem_omega hn] at hRu
+    exact hRu.right.right.right.left.left
+  refine (hsigf P hP).ext (hsigf Q hQ) ?_ fun i hi ↦ (sig_val_of_aoc_eq hn hP hQ h hi).right.symm
+  ext i
+  exact ⟨fun hi ↦ (sig_val_of_aoc_eq hn hP hQ h hi).left,
+    fun hi ↦ (sig_val_of_aoc_eq hn hQ hP h.symm hi).left⟩
+
+/-- A continuous standard `uoci` is determined by its array -/
+theorem eq_of_aoc_eq_of_ctp_eq_ct (hn : n ∈ (ω : M)) (hP : P ∈ stduoci n) (hQ : Q ∈ stduoci n)
+    (hPct : ctp P = ct) (hQct : ctp Q = ct) (h : aoc P = aoc Q) : P = Q := by
+  have hPu := (mem_stduoci_iff.mp hP).left
+  have hQu := (mem_stduoci_iff.mp hQ).left
+  have hPf : IsFunction P := ((mem_uoci_iff_of_mem_omega hn).mp hPu).left
+  have hQf : IsFunction Q := ((mem_uoci_iff_of_mem_omega hn).mp hQu).left
+  calc P = ciTriple (aoc P) (sig P) (ctp P) :=
+        eq_ciTriple hPf (dom_eq_three_of_ctp_eq_ct hn hPu hPct)
+    _ = ciTriple (aoc Q) (sig Q) (ctp Q) := by rw [h, sig_eq_of_aoc_eq hn hP hQ h, hPct, hQct]
+    _ = Q := (eq_ciTriple hQf (dom_eq_three_of_ctp_eq_ct hn hQu hQct)).symm
+
+/-- Continuous nodes have no children -/
+theorem chdOf_eq_empty_of_ctp_eq_ct (hn : n ∈ (ω : M)) (hT : T ∈ otci n) (hp : p ∈ ndOf T)
+    (hct : ctp (uc p) = ct) : chdOf T p = ∅ := by
+  by_cases hn0 : n = ∅
+  · subst hn0
+    rw [mem_otci_empty_iff] at hT
+    obtain ⟨l, -, rfl⟩ := hT
+    exact chdOf_irmrtOf_emptySLOT _ _
+  obtain ⟨-, hmn, -⟩ := sUnion_mem_of_ne_empty hn hn0
+  rw [mem_otci_iff_of_ne_empty hn0] at hT
+  obtain ⟨-, -, -, -, hchd⟩ := hT
+  rw [empty_iff]
+  intro q hq
+  obtain ⟨q', hq', -⟩ := ((hchd p hp).left (aoc (uc q))).mp ⟨q, hq, rfl⟩
+  rw [extL_ciRec_restrict hmn] at hq'
+  exact not_mem_ciExt_of_ctp_eq_ct hct q' hq'
+
+end General
 
 end MemStructure
 

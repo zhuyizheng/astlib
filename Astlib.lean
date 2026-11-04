@@ -79,6 +79,7 @@ import Astlib.Combinatorics.ClassificationIdentifier.HereditarilyFinite
 import Astlib.Combinatorics.ClassificationIdentifier.LevelOne
 import Astlib.Combinatorics.ClassificationIdentifier.LevelTwo
 import Astlib.Combinatorics.ClassificationIdentifier.Trivial
+import Astlib.Combinatorics.ClassificationIdentifier.TrivialExistence
 import Astlib.Combinatorics.SLOTreeStructure
 import Astlib.Combinatorics.TreeStructure
 import Astlib.Mathlib.Fin.Basic

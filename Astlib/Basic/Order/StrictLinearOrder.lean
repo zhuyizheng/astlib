@@ -420,6 +420,11 @@ instance : (losSet : ClassFunction M).DeltaZero Set.univ :=
 instance : (losOdr : ClassFunction M).DeltaZero Set.univ :=
   ClassFunction.deltaZero_of_eq right₀ fun _ ↦ by simp [losOdr]
 
+/-- `B ⊕ C`: the strictly linearly ordered set `B` followed by `C`,
+`!(B_set ∪ C_set, B_odr ∪ C_odr ∪ B_set ×ˢ C_set)` -/
+noncomputable def losConcat (B C : M) : M :=
+  !(losSet B ∪ losSet C, concat (losOdr B) (losSet B) (losOdr C) (losSet C))
+
 /-- `π[B]`: the image `!(π '' A, π ∘ R ∘ π⁻¹)` of the strictly linearly ordered set `B = !(A, R)`
 under `π` -/
 noncomputable def losImg (π B : M) : M := !(π '' losSet B, π !∘ losOdr B !∘ π⁻¹)

@@ -222,17 +222,17 @@ noncomputable def emptySLOT : M := (∅ : SLOTreeStructure M).toM
 noncomputable def ciTriple (a b c : M) : M := cc (cc (cc ∅ a) b) c
 
 /-- The identifier `{(0, ∅), (1, ∅), (2, dct)}` of the roots of the trees in `otci_0`: like a
-trivial `uoci` of an odd level, it has empty array and signature and `ctp = dct` -/
+trivial `uoci`, it has empty array and signature and `ctp = dct` -/
 noncomputable def otci0Uc : M := ciTriple ∅ ∅ dct
 
 /-- `P ∈ otci_0`: `P = ∅_slots_irmrt((otci0Uc, p))` for some `p ∈ V_ω` -/
 def Otci0Cond [ModelsZF M] (P : M) : Prop :=
   ∃ p ∈ 𝕍 (ω : M), P = irmrtOf emptySLOT !(otci0Uc, p)
 
-/-- `P ∈ trvotci_n` given `P ∈ finotci_n` -/
+/-- `P ∈ trvotci_n` given `P ∈ finotci_n`: for even `n`, exactly the roots are discontinuous; for
+odd `n`, `P` is empty -/
 def TrvotciCond (n P : M) : Prop :=
-  (IsEven n → ∀ p ∈ ndOf P, ctp (uc p) = dct ↔ p ∈ rtOf P) ∧
-  (IsOdd n → ∀ p ∈ ndOf P, ctp (uc p) = ct)
+  (IsEven n → ∀ p ∈ ndOf P, ctp (uc p) = dct ↔ p ∈ rtOf P) ∧ (IsOdd n → ndOf P = ∅)
 
 /-- The array `P` of `otci`'s up to level `n` is finite: `P(i) ∈ finotci_i` for `i ≤ n` -/
 def FinArrayCond (n P : M) : Prop := ∀ i ∈ succ n, MemStructure.Finite (ndOf (P ﹫ i))
@@ -245,10 +245,8 @@ def TrvArrayCond (n P : M) : Prop :=
 def OtciCond [ModelsZF M] (s n P : M) : Prop :=
   IsSLOT P ∧
   (∀ p ∈ ndOf P, uc p ∈ stduociL s (⋃₀ n) ∧ lbl p ∈ 𝕍 (ω : M)) ∧
-  (IsEven n → (∃ r, rtOf P = {r}) ∧ ∀ p ∈ rtOf P, uc p ∈ trvuociL s (⋃₀ n)) ∧
-  (IsOdd n → (∃ q ∈ rtOf P, uc q ∈ trvuociL s (⋃₀ n)) ∧
-    ∀ r ∈ rtOf P, aoc (uc r) ∈ trvaotciL s (⋃₀ n) ∧
-      (IsLeastLos (rtlosOf P ﹫ aoc (uc r)) r ↔ ctp (uc r) = ct)) ∧
+  (∀ r ∈ rtOf P, uc r ∈ trvuociL s (⋃₀ n)) ∧
+  (IsEven n → ∃ r, rtOf P = {r}) ∧
   ∀ p ∈ ndOf P,
     (∀ D, (∃ q ∈ chdOf P p, aoc (uc q) = D) ↔ ∃ q, !(uc p, q) ∈ extL s (⋃₀ n) ∧ aoc q = D) ∧
     ∀ q, !(uc p, q) ∈ extL s (⋃₀ n) → ∀ r ∈ losSet (chdlosOf P p ﹫ aoc q),
@@ -297,9 +295,9 @@ def StduociCond (n P : M) : Prop :=
     (ctp (uc p) = ct →
       (p ∈ rtOf (aoc P ﹫ i) → lbl p = ∅) ∧ (p ∉ rtOf (aoc P ﹫ i) → lbl p = prtOf (aoc P ﹫ i) p))
 
-/-- `P ∈ trvuoci_n` given `P ∈ stduoci_n` and `X = trvaotci_n` -/
-def TrvuociCond (n X P : M) : Prop :=
-  aoc P ∈ X ∧ (IsEven n → ctp P = ct) ∧ (IsOdd n → ctp P = dct)
+/-- `P ∈ trvuoci_n` given `P ∈ stduoci_n` and `X = trvaotci_n`: the array is trivial and `P` is
+discontinuous -/
+def TrvuociCond (X P : M) : Prop := aoc P ∈ X ∧ ctp P = dct
 
 /-- Clause (c) of `ext_n`: a new root at level `n` -/
 def ExtRtCond (s n P Q : M) : Prop :=
@@ -391,8 +389,7 @@ set_option synthInstance.maxSize 2048 in
 instance : Multiclass.Definable (fun xs : Fin 2 → M ↦ StduociCond (xs 0) (xs 1)) Set.univ := by
   unfold StduociCond; infer_instance
 
-instance : Multiclass.Definable (fun xs : Fin 3 → M ↦ TrvuociCond (xs 0) (xs 1) (xs 2))
-    Set.univ := by
+instance : Multiclass.Definable (fun xs : Fin 2 → M ↦ TrvuociCond (xs 0) (xs 1)) Set.univ := by
   unfold TrvuociCond; infer_instance
 
 set_option synthInstance.maxSize 2048 in
@@ -505,7 +502,7 @@ noncomputable def stduociS : ClassFunction M := fun s ↦ uociS s ∩₀ Stduoci
 
 /-- `trvuoci_n` -/
 noncomputable def trvuociS : ClassFunction M := fun s ↦
-  stduociS s ∩₀ TrvuociCond (dom s) (trvaotciS s)
+  stduociS s ∩₀ TrvuociCond (trvaotciS s)
 
 /-- `ext_n` -/
 noncomputable def extS : ClassFunction M := fun s ↦
@@ -552,8 +549,8 @@ instance : (stduociS : ClassFunction M).Definable Set.univ :=
     simp [stduociS, mem_comprehension_iff]
 
 instance : (trvuociS : ClassFunction M).Definable Set.univ :=
-  .of_mem_iff (R := fun s z ↦ z ∈ stduociS s ∧ ∃ n X, n = dom s ∧ X = trvaotciS s ∧
-    TrvuociCond n X z) fun s z ↦ by
+  .of_mem_iff (R := fun s z ↦ z ∈ stduociS s ∧ ∃ X, X = trvaotciS s ∧ TrvuociCond X z)
+    fun s z ↦ by
     simp [trvuociS, mem_comprehension_iff]
 
 instance : (extS : ClassFunction M).Definable Set.univ :=
@@ -635,52 +632,10 @@ noncomputable def finaotci : ClassFunction M := fun n ↦ aotci n ∩₀ FinArra
 
 section Trivial
 
-/-! ### Trivial `uoci`'s -/
+/-! ### Trees with a single node -/
 
 /-- The tree `∅_slots_irmrt((r, ∅))` with the single node `(r, ∅)` -/
 noncomputable def trvTree : ClassFunction M := fun r ↦ irmrtOf emptySLOT !(r, ∅)
-
-/-- `r` is the identifier of the root of the level-`j` tree of the trivial `uoci`'s -/
-def IsTrvRoot (j r : M) : Prop := (j = ∅ ∧ r = otci0Uc) ∨ (j ≠ ∅ ∧ r ∈ trvuoci (⋃₀ j))
-
-/-- `x = (q, (U, ∅))` for an extension `(U, q) ∈ ext_m` -/
-def IsTrvChd (m U x : M) : Prop := ∃ q, x = !(q, !(U, ∅)) ∧ !(U, q) ∈ ciExt m
-
-/-- The children `(q, (U, ∅))` of the root `(U, ∅)` of the level-`(m + 1)` tree of the trivial
-`uoci`'s, one for each extension `(U, q) ∈ ext_m` -/
-noncomputable def trvChd (m U : M) : M := (stduoci m ×ˢ ({!(U, ∅)} : M)) ∩₀ IsTrvChd m U
-
-noncomputable instance (j : M) : Decidable (IsEven j ∧ j ≠ ∅) := Classical.propDecidable _
-
-/-- For `s = (m, r)`: the root `(r, ∅)` with the children `trvChd m r`, the level-`(m + 1)` tree
-of the trivial `uoci`'s for odd `m` -/
-noncomputable def trvEvenTree : ClassFunction M := fun s ↦
-  asnchdOf (trvTree (right s)) !(right s, ∅) (trvChd (left s) (right s))
-
-/-- The level-`j` tree of the trivial `uoci`'s with root identifier `r`: the root `(r, ∅)`,
-together with its children `trvChd (j - 1) r` if `j > 0` is even -/
-noncomputable def trvTreeAt (j r : M) : M :=
-  if IsEven j ∧ j ≠ ∅ then trvEvenTree !(⋃₀ j, r) else trvTree r
-
-/-- The `j`-th entry of `A` is the level-`j` tree of the trivial `uoci`'s -/
-def IsTrvEntry (A j : M) : Prop := ∃ r, IsTrvRoot j r ∧ A ﹫ j = trvTreeAt j r
-
-/-- `A` is the array of a trivial level-`n` `uoci` -/
-def IsTrvArray (n A : M) : Prop := IsFunction A ∧ dom A = succ n ∧ ∀ j ∈ succ n, IsTrvEntry A j
-
-/-- The standard level-`n` `uoci`'s with trivial arrays have trivial arrays of trees and empty
-signatures -/
-def TrvStd (n : M) : Prop :=
-  ∀ R ∈ stduoci n, aoc R ∈ trvaotci n → IsTrvArray n (aoc R) ∧ sig R = ∅
-
-/-- `U` is the trivial level-`n` `uoci`, with the properties needed to go to level `n + 1` -/
-def IsTrvUoci (n U : M) : Prop :=
-  IsFunction U ∧ dom U = ((3 : ℕ) : M) ∧ sig U = ∅ ∧ IsTrvArray n (aoc U) ∧
-    (IsEven n → ctp U = ct) ∧ (IsOdd n → ctp U = dct) ∧ TrvStd n ∧
-    (IsOdd n → MemStructure.Finite (trvChd n U))
-
-/-- `trvuoci_n` has a unique element `U`, with the properties needed to go to level `n + 1` -/
-def TrvGood (n : M) : Prop := ∃ U, (∀ P, P ∈ trvuoci n ↔ P = U) ∧ IsTrvUoci n U
 
 instance : (otci : ClassFunction M).Definable Set.univ := by
   unfold otci; infer_instance
@@ -705,87 +660,6 @@ instance : (ciExt : ClassFunction M).Definable Set.univ := by
 
 instance : (trvTree : ClassFunction M).Definable Set.univ := by
   unfold trvTree; infer_instance
-
-instance : Multiclass.Definable (fun xs : Fin 2 → M ↦ IsTrvRoot (xs 0) (xs 1)) Set.univ := by
-  have h : (fun xs : Fin 2 → M ↦ IsTrvRoot (xs 0) (xs 1)) = fun xs : Fin 2 → M ↦
-      (xs 0 = ∅ ∧ xs 1 = otci0Uc) ∨ (xs 0 ≠ ∅ ∧ ∃ m : M, m = ⋃₀ xs 0 ∧ xs 1 ∈ trvuoci m) := by
-    funext xs
-    simp [IsTrvRoot]
-  rw [h]
-  infer_instance
-
-instance : Multiclass.Definable (fun xs : Fin 3 → M ↦ IsTrvChd (xs 0) (xs 1) (xs 2))
-    Set.univ := by
-  have h : (fun xs : Fin 3 → M ↦ IsTrvChd (xs 0) (xs 1) (xs 2)) = fun xs : Fin 3 → M ↦
-      ∃ q, (∃ b, b = !(xs 1, ∅) ∧ xs 2 = !(q, b)) ∧ ∃ z, z = !(xs 1, q) ∧ z ∈ ciExt (xs 0) := by
-    funext xs
-    simp [IsTrvChd]
-  rw [h]
-  infer_instance
-
-/-- `trvChd` as a class function of the pair `(m, U)` -/
-noncomputable def trvChdP : ClassFunction M := fun s ↦ trvChd (left s) (right s)
-
-instance : (trvChdP : ClassFunction M).Definable Set.univ :=
-  .of_mem_iff (R := fun s z ↦ ∃ m U, m = left s ∧ U = right s ∧ ∃ b, b = !(U, ∅) ∧
-    ∃ B, B = ({b} : M) ∧ ∃ X, X = stduoci m ∧ ∃ Y, Y = X ×ˢ B ∧ z ∈ Y ∧ IsTrvChd m U z)
-    fun s z ↦ by simp [trvChdP, trvChd, mem_comprehension_iff]
-
-instance : (trvEvenTree : ClassFunction M).Definable Set.univ :=
-  .of_iff (F := fun xs : Fin 2 → M ↦ ∃ r, r = right (xs 0) ∧ ∃ b, b = !(r, ∅) ∧
-    ∃ T, T = trvTree r ∧ ∃ C, C = trvChdP (xs 0) ∧ xs 1 = asnchdOf T b C) fun u w ↦ by
-    simp [trvEvenTree, trvChdP, eq_comm]
-
-instance : Multiclass.Definable (fun xs : Fin 2 → M ↦ IsTrvEntry (xs 0) (xs 1)) Set.univ := by
-  have h : (fun xs : Fin 2 → M ↦ IsTrvEntry (xs 0) (xs 1)) = fun xs : Fin 2 → M ↦
-      ∃ r, IsTrvRoot (xs 1) r ∧ ∃ t, t = xs 0 ﹫ xs 1 ∧
-        (((IsEven (xs 1) ∧ xs 1 ≠ ∅) ∧ ∃ m, m = ⋃₀ xs 1 ∧ ∃ s, s = !(m, r) ∧ t = trvEvenTree s) ∨
-        (¬(IsEven (xs 1) ∧ xs 1 ≠ ∅) ∧ t = trvTree r)) := by
-    funext xs
-    by_cases hj : IsEven (xs 1) ∧ xs 1 ≠ ∅
-    · simp only [IsTrvEntry, trvTreeAt, if_pos hj]
-      simp [hj]
-    · simp only [IsTrvEntry, trvTreeAt, if_neg hj]
-      simp [hj]
-  rw [h]
-  infer_instance
-
-instance : Multiclass.Definable (fun xs : Fin 2 → M ↦ IsTrvArray (xs 0) (xs 1)) Set.univ := by
-  have h : (fun xs : Fin 2 → M ↦ IsTrvArray (xs 0) (xs 1)) = fun xs : Fin 2 → M ↦
-      IsFunction (xs 1) ∧ ∃ s, s = succ (xs 0) ∧ dom (xs 1) = s ∧ ∀ j ∈ s, IsTrvEntry (xs 1) j := by
-    funext xs
-    simp [IsTrvArray]
-  rw [h]
-  infer_instance
-
-instance : Multiclass.Definable (fun xs : Fin 1 → M ↦ TrvStd (xs 0)) Set.univ := by
-  unfold TrvStd; infer_instance
-
-instance : Multiclass.Definable (fun xs : Fin 2 → M ↦ (IsOdd (xs 0) → ctp (xs 1) = dct) ∧
-    TrvStd (xs 0) ∧ (IsOdd (xs 0) → ∃ s, s = !(xs 0, xs 1) ∧ ∃ C, C = trvChdP s ∧
-      MemStructure.Finite C)) Set.univ := by
-  infer_instance
-
-instance : Multiclass.Definable (fun xs : Fin 2 → M ↦ IsTrvUoci (xs 0) (xs 1)) Set.univ := by
-  have h : (fun xs : Fin 2 → M ↦ IsTrvUoci (xs 0) (xs 1)) = fun xs : Fin 2 → M ↦
-      IsFunction (xs 1) ∧ dom (xs 1) = ((3 : ℕ) : M) ∧ sig (xs 1) = ∅ ∧
-        IsTrvArray (xs 0) (aoc (xs 1)) ∧ (IsEven (xs 0) → ctp (xs 1) = ct) ∧
-        (IsOdd (xs 0) → ctp (xs 1) = dct) ∧ TrvStd (xs 0) ∧
-        (IsOdd (xs 0) → ∃ s, s = !(xs 0, xs 1) ∧ ∃ C, C = trvChdP s ∧ MemStructure.Finite C) := by
-    funext xs
-    simp [IsTrvUoci, trvChdP]
-  rw [h]
-  infer_instance
-
-instance : Multiclass.Definable (fun xs : Fin 1 → M ↦ TrvGood (xs 0)) Set.univ := by
-  unfold TrvGood; infer_instance
-
-/-- The trivial level-`n` `uoci`: the unique element of `trvuoci_n` for `n ∈ ω`
-(`mem_trvuoci_iff_eq_trvU`) -/
-noncomputable def trvU : ClassFunction M := fun n ↦ ⋃₀ trvuoci n
-
-instance : (trvU : ClassFunction M).Definable Set.univ := by
-  unfold trvU; infer_instance
 
 end Trivial
 

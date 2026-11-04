@@ -3,7 +3,7 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
-import Astlib.Combinatorics.ClassificationIdentifier.Trivial
+import Astlib.Combinatorics.ClassificationIdentifier.Basic
 /-!
 # Classification identifiers of level one
 
@@ -11,7 +11,7 @@ import Astlib.Combinatorics.ClassificationIdentifier.Trivial
   their children would come from `ext_0 = ∅` (`ciExt_empty`); hence every node is a root
   (`ndOf_eq_rtOf_of_mem_otci_one`).
 * `Z = trvAZero` is the unique trivial array in `aotci_0` occurring in `stduoci_0`
-  (`aoc_eq_trvAZero_of_mem_stduoci_empty`, `trvAZero_mem_trvaotci`); `dctUZero` is the standard
+  (`aoc_eq_trvAZero_of_mem_stduoci_empty`); `dctUZero` is the standard
   `uoci_0` with array `Z` and `ctp = dct`. The roots of a tree in `otci_1` all have the key `Z`, so
   they form a single linearly ordered set (`losSet_ndlos_of_mem_otci_one`).
 * `tensorProdAZeroAZero P Q` for `P, Q ∈ aotci_0`: the array in `aotci_0` with label `(p, ∅)`,
@@ -92,16 +92,6 @@ theorem aoc_eq_trvAZero_of_mem_stduoci_empty {U : M} (hU : U ∈ stduoci (∅ : 
   rcases mem_or_eq_of_mem_succ hi with hi | rfl
   · simp at hi
   rw [hl, trvAZero, singletonFun_val, trvTree]
-
-/-- The array of the trivial `uoci_0` is `Z` -/
-theorem aoc_trvU_empty : aoc (trvU (∅ : M)) = trvAZero := by
-  have hU := (mem_trvuoci_iff.mp (trvU_mem_trvuoci (empty_mem_omega (M := M)))).left
-  exact aoc_eq_trvAZero_of_mem_stduoci_empty hU
-
-/-- `Z` is a trivial array in `aotci_0` -/
-theorem trvAZero_mem_trvaotci : trvAZero ∈ trvaotci (∅ : M) := by
-  have hU := (mem_trvuoci_iff.mp (trvU_mem_trvuoci (empty_mem_omega (M := M)))).right.left
-  rwa [aoc_trvU_empty] at hU
 
 /-- The nodes of the trees in `otci_1` have the key `Z` -/
 theorem aoc_uc_eq_trvAZero_of_mem_otci_one (hP : P ∈ otci ((1 : ℕ) : M)) (hp : p ∈ ndOf P) :
