@@ -72,6 +72,7 @@ import Astlib.Basic.Transitive.TransitiveClosure
 import Astlib.Basic.VonNeumannHierarchy
 import Astlib.Combinatorics.ClassificationIdentifier.Basic
 import Astlib.Combinatorics.ClassificationIdentifier.Defs
+import Astlib.Combinatorics.ClassificationIdentifier.Embedding
 import Astlib.Combinatorics.SLOTreeStructure
 import Astlib.Combinatorics.TreeStructure
 import Astlib.Mathlib.Fin.Basic

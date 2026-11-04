@@ -19,8 +19,13 @@ In models of `KP`:
   on `{a ∈ X | left a ﹫ ∅ = D}`;
 * the components `S.nd`, `S.dep`, `S.chd`, `S.rt`, `S.prt`, `S.sbl`, `S.sblptn` of `S.ts`, and
   `S.rtlos = F ﹫ S.rt`, `S.chdlos = F !∘ S.chd` (on the nodes with children) and
-  `S.sbllos = F !∘ S.sbl` (on `S.nd`);
-* the empty semi-linearly ordered tree structure `∅ = (∅, ∅)`.
+  `S.sbllos = F !∘ S.sbl` (on `S.nd`), and `S.ndlos a`, the linearly ordered set containing the
+  node `a`;
+* the empty semi-linearly ordered tree structure `∅ = (∅, ∅)`;
+* `S.IsEmbedding S' π`: `π` is an embedding of the tree structures that preserves the split of the
+  siblings into linearly ordered sets and their orders, and `S.IsIsomorphism S' π`: `π` is a
+  surjective embedding;
+* `S.sngIso S'`: the unique isomorphism of structures with a single node.
 -/
 
 open FirstOrder Language MemStructure
@@ -292,6 +297,10 @@ noncomputable def chdlos : M := S.losfn !∘ S.chd
 /-- The linearly ordered sets of the siblings, on the nodes -/
 noncomputable def sbllos : M := S.losfn !∘ S.sbl
 
+/-- The linearly ordered set containing the node `a`: the one of the siblings `c` of `a` with
+`left c ﹫ ∅ = left a ﹫ ∅` -/
+noncomputable def ndlos (a : M) : M := (S.sbllos ﹫ a) ﹫ (left a ﹫ ∅)
+
 noncomputable instance : Decidable (S.rt = ∅) := Classical.propDecidable _
 
 noncomputable instance (D : M) : Decidable (D ∈ dom S.rtlos) := Classical.propDecidable _
@@ -521,6 +530,43 @@ theorem dom_sbllos : dom S.sbllos = S.nd := by
 theorem sbllos_val (ha : a ∈ S.nd) : S.sbllos ﹫ a = S.losfn ﹫ (S.sbl ﹫ a) := by
   rw [← hS.dom_sbllos] at ha
   exact comp_val hS.isFunction_losfn hS.isTreeStructure.isFunction_sbl ha
+
+/-- A node lies in its linearly ordered set -/
+theorem mem_losSet_ndlos (ha : a ∈ S.nd) : a ∈ losSet (S.ndlos a) := by
+  have hT := hS.isTreeStructure
+  have hX := hT.sbl_val_mem_sblptn ha
+  have hD : left a ﹫ ∅ ∈ dom (S.losfn ﹫ (S.sbl ﹫ a)) := by
+    rw [hS.mem_dom_losfn_val_iff hX]
+    exact ⟨a, hT.mem_sbl_val_self ha, rfl⟩
+  rw [ndlos, hS.sbllos_val ha, hS.mem_losSet_iff hX hD]
+  exact ⟨hT.mem_sbl_val_self ha, rfl⟩
+
+/-- Two nodes lie in the same linearly ordered set if and only if they are siblings with the same
+first value `left a ﹫ ∅` -/
+theorem ndlos_eq_iff (ha : a ∈ S.nd) {b : M} (hb : b ∈ S.nd) :
+    S.ndlos a = S.ndlos b ↔ S.sbl ﹫ a = S.sbl ﹫ b ∧ left a ﹫ ∅ = left b ﹫ ∅ := by
+  have hT := hS.isTreeStructure
+  refine ⟨fun h ↦ ?_, fun ⟨hsbl, hkey⟩ ↦ ?_⟩
+  swap
+  · rw [ndlos, ndlos, hS.sbllos_val ha, hS.sbllos_val hb, hsbl, hkey]
+  have hXb := hT.sbl_val_mem_sblptn hb
+  have hDb : left b ﹫ ∅ ∈ dom (S.losfn ﹫ (S.sbl ﹫ b)) := by
+    rw [hS.mem_dom_losfn_val_iff hXb]
+    exact ⟨b, hT.mem_sbl_val_self hb, rfl⟩
+  have hmem := hS.mem_losSet_ndlos ha
+  rw [h, ndlos, hS.sbllos_val hb, hS.mem_losSet_iff hXb hDb] at hmem
+  exact ⟨hT.sbl_val_of_mem_sblptn hXb hmem.left, hmem.right⟩
+
+/-- The linearly ordered set of a node is strictly linearly ordered -/
+theorem isStrictLinearOrderedSet_ndlos (ha : a ∈ S.nd) :
+    IsStrictLinearOrderedSet (S.ndlos a) := by
+  have hT := hS.isTreeStructure
+  have hX := hT.sbl_val_mem_sblptn ha
+  have hD : left a ﹫ ∅ ∈ dom (S.losfn ﹫ (S.sbl ﹫ a)) := by
+    rw [hS.mem_dom_losfn_val_iff hX]
+    exact ⟨a, hT.mem_sbl_val_self ha, rfl⟩
+  rw [ndlos, hS.sbllos_val ha]
+  exact hS.isStrictLinearOrderedSet hX hD
 
 /-- A semi-linearly ordered tree structure with a single node `b` is `∅_irmrt(b)` -/
 theorem eq_empty_irmrt {b : M} (hnd : S.nd = {b}) : S = (∅ : SLOTreeStructure M).irmrt b := by
@@ -874,6 +920,60 @@ theorem asnchd {C : M} (ha : a ∈ S.nd) (hCa : S.chd ﹫ a = ∅)
 end Insert
 
 end IsSLOTreeStructure
+
+/-- `π` is an embedding of the semi-linearly ordered tree structure `S` into `S'`: an embedding of
+the tree structures such that two nodes lie in the same linearly ordered set if and only if their
+images do, and the order of each linearly ordered set is preserved -/
+structure IsEmbedding (S S' : SLOTreeStructure M) (π : M) : Prop where
+  isEmbedding_ts : S.ts.IsEmbedding S'.ts π
+  ndlos_eq_iff {a b : M} (ha : a ∈ S.nd) (hb : b ∈ S.nd) :
+    S'.ndlos (π ﹫ a) = S'.ndlos (π ﹫ b) ↔ S.ndlos a = S.ndlos b
+  rel_losOdr {a b : M} (ha : a ∈ S.nd) (hb : b ∈ S.nd) (hab : S.ndlos a = S.ndlos b)
+    (hrel : a [losOdr (S.ndlos a)] b) : (π ﹫ a) [losOdr (S'.ndlos (π ﹫ a))] (π ﹫ b)
+
+/-- `π` is an isomorphism of the semi-linearly ordered tree structure `S` onto `S'`: a surjective
+embedding -/
+structure IsIsomorphism (S S' : SLOTreeStructure M) (π : M) : Prop where
+  isEmbedding : S.IsEmbedding S' π
+  ran_eq : ran π = S'.nd
+
+omit [ModelsKP M] in
+/-- An isomorphism of semi-linearly ordered tree structures is one of the tree structures -/
+theorem IsIsomorphism.isIsomorphism_ts {S S' : SLOTreeStructure M} {π : M}
+    (h : S.IsIsomorphism S' π) : S.ts.IsIsomorphism S'.ts π :=
+  ⟨h.isEmbedding.isEmbedding_ts, h.ran_eq⟩
+
+/-- `S.sngIso S' = {(b, c)}` for semi-linearly ordered tree structures `S` and `S'` with single
+nodes `b` and `c`: the unique isomorphism of `S` onto `S'` -/
+noncomputable def sngIso (S S' : SLOTreeStructure M) : M := S.ts.sngIso S'.ts
+
+section SngIso
+
+variable {S S' : SLOTreeStructure M} {b c π : M} (hnd : S.nd = {b}) (hnd' : S'.nd = {c})
+include hnd hnd'
+
+/-- `S.sngIso S'` is an isomorphism of `S` onto `S'` -/
+theorem isIsomorphism_sngIso [HasOmega M] (hS : S.IsSLOTreeStructure)
+    (hS' : S'.IsSLOTreeStructure) : S.IsIsomorphism S' (S.sngIso S') := by
+  have hiso := TreeStructure.isIsomorphism_sngIso hnd hnd' hS.isTreeStructure hS'.isTreeStructure
+  have hb : b ∈ S.nd := by
+    rw [hnd]
+    exact mem_singleton b
+  refine ⟨⟨hiso.isEmbedding, ?_, ?_⟩, hiso.ran_eq⟩
+  · intro a a' ha ha'
+    rw [hnd, mem_singleton_iff] at ha ha'
+    rw [ha, ha']
+    exact iff_of_true rfl rfl
+  · intro a a' ha ha' _ hrel
+    rw [hnd, mem_singleton_iff] at ha ha'
+    rw [ha, ha'] at hrel
+    exact ((hS.isStrictLinearOrderedSet_ndlos hb).isStrictLinearOrder.irrefl b hrel).elim
+
+/-- `S.sngIso S'` is the unique embedding of `S` into `S'` -/
+theorem IsEmbedding.eq_sngIso (he : S.IsEmbedding S' π) : π = S.sngIso S' :=
+  he.isEmbedding_ts.eq_sngIso hnd hnd'
+
+end SngIso
 
 end SLOTreeStructure
 

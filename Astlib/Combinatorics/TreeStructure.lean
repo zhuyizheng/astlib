@@ -18,7 +18,11 @@ In models of `KP`:
 * `T.prt`: the parent function on `A \ T.rt`, `T.prt ﹫ b = a ↔ b ∈ C ﹫ a`;
 * `T.sbl`: the sibling function on `A`, `C ﹫ (T.prt ﹫ a)` for `a ∉ T.rt` and `T.rt` for
   `a ∈ T.rt`;
-* `T.sblptn`: the sibling partition `({T.rt} ∪ ran C) \ {∅}`.
+* `T.sblptn`: the sibling partition `({T.rt} ∪ ran C) \ {∅}`;
+* `T.IsEmbedding T' π`: `π` is an embedding of `T` into `T'`, an injection of the nodes
+  preserving the depth and the parent relation, and `T.IsIsomorphism T' π`: `π` is a surjective
+  embedding;
+* `T.sngIso T'`: the unique isomorphism of tree structures with a single node.
 -/
 
 open FirstOrder Language MemStructure
@@ -583,6 +587,13 @@ theorem sbl_val_of_mem_sblptn {X : M} (hX : X ∈ T.sblptn) (ha : a ∈ X) : T.s
   congr 1
   rwa [hT.prt_val_eq_iff hb hp]
 
+/-- Two nodes are siblings if and only if one lies in the sibling set of the other -/
+theorem sbl_val_eq_iff_mem (ha : a ∈ T.nd) (hb : b ∈ T.nd) :
+    T.sbl ﹫ a = T.sbl ﹫ b ↔ b ∈ T.sbl ﹫ a := by
+  refine ⟨fun h ↦ ?_, fun h ↦ (hT.sbl_val_of_mem_sblptn (hT.sbl_val_mem_sblptn ha) h).symm⟩
+  rw [h]
+  exact hT.mem_sbl_val_self hb
+
 /-- Every node lies in a unique member of the sibling partition -/
 theorem existsUnique_mem_sblptn (ha : a ∈ T.nd) : ∃! X ∈ T.sblptn, a ∈ X := by
   refine ⟨T.sbl ﹫ a, ⟨hT.sbl_val_mem_sblptn ha, hT.mem_sbl_val_self ha⟩, ?_⟩
@@ -962,7 +973,161 @@ theorem mem_sblptn_isbl_iff (ha : a ∈ T.nd) (hb : b ∉ T.nd) {X : M} :
   rw [hT.isbl_eq_ionechd ha' hb, hT.sbl_val_of_not_mem_rt ha',
     hT.mem_sblptn_ionechd_iff (hT.prt_val_mem_nd ha') hb]
 
+/-- The single node of a tree structure is its root -/
+theorem rt_eq_of_nd_eq_singleton (hnd : T.nd = {b}) : T.rt = {b} := by
+  have hne : T ≠ ∅ := by
+    rintro rfl
+    rw [nd_empty] at hnd
+    have hb : b ∈ (∅ : M) := by
+      rw [hnd]
+      exact mem_singleton b
+    simp at hb
+  have hrt := hT.rt_ne_empty hne
+  rw [ne_empty_iff] at hrt
+  obtain ⟨r, hr⟩ := hrt
+  ext a
+  grind [mem_rt_iff]
+
+/-- The single node of a tree structure has depth `∅` -/
+theorem dep_val_of_nd_eq_singleton (hnd : T.nd = {b}) : T.dep ﹫ b = ∅ := by
+  have hb : b ∈ T.rt := by
+    rw [hT.rt_eq_of_nd_eq_singleton hnd]
+    exact mem_singleton b
+  exact (mem_rt_iff.mp hb).right
+
+/-- A tree structure with a single node has no parent pairs -/
+theorem not_rel_prt_of_nd_eq_singleton (hnd : T.nd = {b}) (a a' : M) : ¬a [T.prt] a' := by
+  intro hrel
+  have ha : a ∈ dom T.prt := by
+    rw [mem_dom_iff]
+    exact ⟨a', hrel⟩
+  rw [hT.dom_prt, mem_sdiff_iff, hT.rt_eq_of_nd_eq_singleton hnd, hnd] at ha
+  exact ha.right ha.left
+
 end IsTreeStructure
+
+/-- `π` is an embedding of the tree structure `T` into `T'`: an injection of the nodes that
+preserves the depth and the parent relation -/
+structure IsEmbedding (T T' : TreeStructure M) (π : M) : Prop where
+  isInjectionFromTo : π !: T.nd ↪ T'.nd
+  dep_val {a : M} (ha : a ∈ T.nd) : T'.dep ﹫ (π ﹫ a) = T.dep ﹫ a
+  rel_prt {a b : M} (ha : a ∈ T.nd) (hb : b ∈ T.nd) (hba : b [T.prt] a) :
+    (π ﹫ b) [T'.prt] (π ﹫ a)
+
+/-- `π` is an isomorphism of the tree structure `T` onto `T'`: a surjective embedding -/
+structure IsIsomorphism (T T' : TreeStructure M) (π : M) : Prop where
+  isEmbedding : T.IsEmbedding T' π
+  ran_eq : ran π = T'.nd
+
+namespace IsEmbedding
+
+variable [HasOmega M] {T T' : TreeStructure M} {π : M} (hT : T.IsTreeStructure)
+  (hT' : T'.IsTreeStructure) (he : T.IsEmbedding T' π)
+include hT hT' he
+
+omit hT hT' in
+/-- An embedding sends roots exactly to roots -/
+theorem mem_rt_iff (ha : a ∈ T.nd) : π ﹫ a ∈ T'.rt ↔ a ∈ T.rt := by
+  rw [TreeStructure.mem_rt_iff, TreeStructure.mem_rt_iff, he.dep_val ha]
+  exact ⟨fun h ↦ ⟨ha, h.right⟩, fun h ↦ ⟨he.isInjectionFromTo.left.val_mem ha, h.right⟩⟩
+
+/-- An embedding commutes with the parent function -/
+theorem prt_val (ha : a ∈ T.nd \ T.rt) : T'.prt ﹫ (π ﹫ a) = π ﹫ (T.prt ﹫ a) := by
+  have hp := hT.prt_val_mem_nd ha
+  have hrel : a [T.prt] (T.prt ﹫ a) := by
+    rw [hT.rel_prt_iff_mem_chd hp]
+    exact hT.mem_chd_prt_val ha
+  have ha' : a ∈ T.nd := by
+    rw [mem_sdiff_iff] at ha
+    exact ha.left
+  exact hT'.isFunction_prt.val_eq_of_rel (he.rel_prt hp ha' hrel)
+
+/-- An embedding sends siblings exactly to siblings -/
+theorem sbl_val_eq_iff (ha : a ∈ T.nd) (hb : b ∈ T.nd) :
+    T'.sbl ﹫ (π ﹫ a) = T'.sbl ﹫ (π ﹫ b) ↔ T.sbl ﹫ a = T.sbl ﹫ b := by
+  have hf := he.isInjectionFromTo.left
+  rw [hT'.sbl_val_eq_iff_mem (hf.val_mem ha) (hf.val_mem hb), hT.sbl_val_eq_iff_mem ha hb]
+  by_cases hart : a ∈ T.rt
+  · rw [hT.sbl_val_of_mem_rt hart, hT'.sbl_val_of_mem_rt ((he.mem_rt_iff ha).mpr hart),
+      he.mem_rt_iff hb]
+  have ha' : a ∈ T.nd \ T.rt := by
+    rw [mem_sdiff_iff]
+    exact ⟨ha, hart⟩
+  have hπa : π ﹫ a ∈ T'.nd \ T'.rt := by
+    rw [mem_sdiff_iff]
+    exact ⟨hf.val_mem ha, fun h ↦ hart ((he.mem_rt_iff ha).mp h)⟩
+  have hp := hT.prt_val_mem_nd ha'
+  rw [hT.sbl_val_of_not_mem_rt ha', hT'.sbl_val_of_not_mem_rt hπa, prt_val hT hT' he ha',
+    ← hT'.rel_prt_iff_mem_chd (hf.val_mem hp), ← hT.rel_prt_iff_mem_chd hp]
+  refine ⟨fun h ↦ ?_, he.rel_prt hp hb⟩
+  have hb' : b ∈ T.nd \ T.rt := by
+    rw [mem_sdiff_iff]
+    refine ⟨hb, fun hbr ↦ ?_⟩
+    have hdom : π ﹫ b ∈ dom T'.prt := by
+      rw [mem_dom_iff]
+      exact ⟨_, h⟩
+    rw [hT'.dom_prt, mem_sdiff_iff, he.mem_rt_iff hb] at hdom
+    exact hdom.right hbr
+  have hq := hT.prt_val_mem_nd hb'
+  have hrel : b [T.prt] (T.prt ﹫ b) := by
+    rw [hT.rel_prt_iff_mem_chd hq]
+    exact hT.mem_chd_prt_val hb'
+  have heq : π ﹫ (T.prt ﹫ b) = π ﹫ (T.prt ﹫ a) :=
+    (hT'.isFunction_prt.val_eq_of_rel (he.rel_prt hq hb hrel)).symm.trans
+      (hT'.isFunction_prt.val_eq_of_rel h)
+  rwa [← he.isInjectionFromTo.right hq hp heq]
+
+end IsEmbedding
+
+omit [ModelsKP M] in
+/-- An isomorphism is a bijection of the nodes -/
+theorem IsIsomorphism.isBijectionFromTo {T T' : TreeStructure M} {π : M}
+    (h : T.IsIsomorphism T' π) : π !: T.nd ↔ T'.nd :=
+  ⟨h.isEmbedding.isInjectionFromTo, h.isEmbedding.isInjectionFromTo.left, h.ran_eq⟩
+
+/-- `T.sngIso T' = {(b, c)}` for tree structures `T` and `T'` with single nodes `b` and `c`: the
+unique isomorphism of `T` onto `T'` -/
+noncomputable def sngIso (T T' : TreeStructure M) : M := singletonFun (⋃₀ T.nd) (⋃₀ T'.nd)
+
+section SngIso
+
+variable {T T' : TreeStructure M} {b c π : M} (hnd : T.nd = {b}) (hnd' : T'.nd = {c})
+include hnd hnd'
+
+theorem sngIso_eq : T.sngIso T' = singletonFun b c := by
+  rw [sngIso, hnd, hnd', sUnion_singleton, sUnion_singleton]
+
+/-- `T.sngIso T'` is an isomorphism of `T` onto `T'` -/
+theorem isIsomorphism_sngIso [HasOmega M] (hT : T.IsTreeStructure) (hT' : T'.IsTreeStructure) :
+    T.IsIsomorphism T' (T.sngIso T') := by
+  rw [sngIso_eq hnd hnd']
+  refine ⟨⟨⟨?_, ?_⟩, ?_, fun _ _ h ↦ (hT.not_rel_prt_of_nd_eq_singleton hnd _ _ h).elim⟩, ?_⟩
+  · rw [hnd, hnd']
+    exact isFunctionFromTo_singletonFun (mem_singleton c)
+  · intro a a' ha ha' _
+    rw [hnd, mem_singleton_iff] at ha ha'
+    rw [ha, ha']
+  · intro a ha
+    rw [hnd, mem_singleton_iff] at ha
+    rw [ha, singletonFun_val, hT'.dep_val_of_nd_eq_singleton hnd',
+      hT.dep_val_of_nd_eq_singleton hnd]
+  · rw [ran_singletonFun, hnd']
+
+/-- `T.sngIso T'` is the unique embedding of `T` into `T'` -/
+theorem IsEmbedding.eq_sngIso (he : T.IsEmbedding T' π) : π = T.sngIso T' := by
+  have hf := he.isInjectionFromTo.left
+  have hb : b ∈ T.nd := by
+    rw [hnd]
+    exact mem_singleton b
+  have hval := hf.val_mem hb
+  rw [hnd', mem_singleton_iff] at hval
+  rw [sngIso_eq hnd hnd']
+  refine hf.isFunction.ext (isFunction_singletonFun b c) ?_ fun a ha ↦ ?_
+  · rw [hf.dom_eq, hnd, dom_singletonFun]
+  rw [hf.dom_eq, hnd, mem_singleton_iff] at ha
+  rw [ha, hval, singletonFun_val]
+
+end SngIso
 
 end TreeStructure
 
