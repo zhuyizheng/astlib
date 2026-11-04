@@ -12,8 +12,8 @@ import Astlib.Combinatorics.ClassificationIdentifier.Basic
   (`ndOf_eq_rtOf_of_mem_otci_one`).
 * `Z = trvAZero` is the unique trivial array in `aotci_0` occurring in `stduoci_0`
   (`aoc_eq_trvAZero_of_mem_stduoci_empty`); `dctUZero` is the standard
-  `uoci_0` with array `Z` and `ctp = dct`. The roots of a tree in `otci_1` all have the key `Z`, so
-  they form a single linearly ordered set (`losSet_ndlos_of_mem_otci_one`).
+  `uoci_0` with array `Z` and `ctp = dct`. The nodes of a tree in `otci_1` all have the key `Z`
+  (`aoc_uc_eq_trvAZero_of_mem_otci_one`).
 * `tensorProdAZeroAZero P Q` for `P, Q ∈ aotci_0`: the array in `aotci_0` with label `(p, ∅)`,
   where `p` is the label of `P`.
 * `tensorProdOneAZero P Q` for `P ∈ otci_1` and `Q ∈ aotci_0`: the copy of `P` in which every
@@ -101,18 +101,6 @@ theorem aoc_uc_eq_trvAZero_of_mem_otci_one (hP : P ∈ otci ((1 : ℕ) : M)) (hp
   have huc := (hnd p hp).left
   rw [sUnion_natCast_one, stduociL_ciRec_restrict empty_mem_natCast_one] at huc
   exact aoc_eq_trvAZero_of_mem_stduoci_empty huc
-
-/-- The roots of a tree in `otci_1` form a single linearly ordered set -/
-theorem losSet_ndlos_of_mem_otci_one (hP : P ∈ otci ((1 : ℕ) : M)) {r : M} (hr : r ∈ rtOf P) :
-    losSet ((SLOTreeStructure.ofM P).ndlos r) = rtOf P := by
-  have hS : (SLOTreeStructure.ofM P).IsSLOTreeStructure := isSLOT_of_mem_otci hP
-  have hrnd := mem_ndOf_of_mem_rtOf hr
-  have hkey (a : M) (ha : a ∈ ndOf P) : left a ﹫ ∅ = trvAZero :=
-    aoc_uc_eq_trvAZero_of_mem_otci_one hP ha
-  ext b
-  rw [hS.mem_losSet_ndlos_iff hrnd, hS.isTreeStructure.sbl_val_of_mem_rt hr]
-  refine ⟨fun hb ↦ hb.left, fun hb ↦ ⟨hb, ?_⟩⟩
-  rw [hkey b (mem_ndOf_of_mem_rtOf hb), hkey r hrnd]
 
 /-- The label of the single node of the tree of an array in `aotci_0` -/
 noncomputable def aotci0Lbl (P : M) : M := lbl (⋃₀ ndOf (P ﹫ ∅))
