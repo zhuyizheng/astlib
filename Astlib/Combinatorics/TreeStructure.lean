@@ -3,6 +3,9 @@ Copyright (c) 2026 Yizheng Zhu. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
+import Astlib.Basic.Axiom.ZF.Semantics
+import Astlib.Basic.Ordinal.Add
+import Astlib.Basic.Ordinal.Nat
 import Astlib.Basic.Ordinal.Omega
 /-!
 # Tree structures
@@ -1016,9 +1019,14 @@ noncomputable def map (T : TreeStructure M) (π : M) : TreeStructure M :=
 /-- `T_iprt(a, m)`: the `m`-th iterated parent of `a` -/
 noncomputable def iprt (T : TreeStructure M) (a m : M) : M := natRec a (fun b ↦ T.prt ﹫ b) m
 
+/-- `b` is an ancestor of `a` (or `a` itself): `b` lies in every set of nodes containing `a` and
+closed under parents -/
+def IsAnc (T : TreeStructure M) (a b : M) : Prop :=
+  ∀ X, X ⊆ T.nd → a ∈ X → (∀ c ∈ X, c ∈ T.nd \ T.rt → T.prt ﹫ c ∈ X) → b ∈ X
+
 /-- `T_anc(a, k)`: the ancestor of `a` of depth `k` -/
-noncomputable def anc [HasOmega M] (T : TreeStructure M) (a k : M) : M :=
-  ⋃₀ (T.nd ∩₀ fun b ↦ T.dep ﹫ b = k ∧ ∃ m ∈ (ω : M), T.iprt a m = b)
+noncomputable def anc (T : TreeStructure M) (a k : M) : M :=
+  ⋃₀ (T.nd ∩₀ fun b ↦ T.dep ﹫ b = k ∧ T.IsAnc a b)
 
 /-- `ofRt(A)`: the tree structure whose nodes `A` are all roots -/
 noncomputable def ofRt (A : M) : TreeStructure M := mk A (constFun A ∅) (constFun A ∅)
@@ -1145,6 +1153,314 @@ theorem IsEmbedding.eq_sngIso (he : T.IsEmbedding T' π) : π = T.sngIso T' := b
   rw [ha, hval, singletonFun_val]
 
 end SngIso
+
+section OfRt
+
+variable {A a : M}
+
+@[simp]
+theorem nd_ofRt : (ofRt A).nd = A := nd_mk _ _ _
+
+@[simp]
+theorem dep_ofRt : (ofRt A).dep = constFun A ∅ := dep_mk _ _ _
+
+@[simp]
+theorem chd_ofRt : (ofRt A).chd = constFun A ∅ := chd_mk _ _ _
+
+theorem chd_ofRt_val : (ofRt A).chd ﹫ a = ∅ := by
+  by_cases ha : a ∈ A
+  · rw [chd_ofRt, val_constFun ha]
+  · rw [chd_ofRt, val_eq_empty_of_not_mem_dom (by rwa [dom_constFun])]
+
+/-- All nodes of `ofRt(A)` are roots -/
+theorem rt_ofRt : (ofRt A).rt = A := by
+  ext a
+  rw [mem_rt_iff, nd_ofRt, dep_ofRt]
+  exact ⟨fun h ↦ h.left, fun h ↦ ⟨h, val_constFun h⟩⟩
+
+/-- `ofRt(A)` is a tree structure -/
+theorem isTreeStructure_ofRt [HasOmega M] : (ofRt A).IsTreeStructure where
+  isOrderedPair := isOrderedPair_mk _ _ _
+  isOrderedPair_right := isOrderedPair_right_mk _ _ _
+  dep_fromTo := by
+    rw [dep_ofRt, nd_ofRt]
+    refine ⟨isFunction_constFun _ _, dom_constFun _ _, fun x hx ↦ ?_⟩
+    have h := ran_constFun_subset _ _ hx
+    rw [mem_singleton_iff] at h
+    rw [h]
+    exact empty_mem_omega
+  isFunction_chd := by
+    rw [chd_ofRt]
+    exact isFunction_constFun _ _
+  dom_chd := by rw [chd_ofRt, dom_constFun, nd_ofRt]
+  chd_subset := fun a _ ↦ by
+    rw [chd_ofRt_val]
+    exact empty_subset _
+  dep_of_mem_chd := fun a _ b hb ↦ by
+    rw [chd_ofRt_val] at hb
+    simp at hb
+  existsUnique_prt := fun b hb h ↦ by
+    rw [nd_ofRt] at hb
+    rw [dep_ofRt, val_constFun hb] at h
+    simp at h
+
+end OfRt
+
+section Anc
+
+/-! ### Iterated parents and ancestors -/
+
+variable [HasOmega M] {T : TreeStructure M} {a k m n : M}
+
+instance (T : TreeStructure M) (a : M) :
+    ClassFunction.Sigma (fun m : M ↦ T.iprt a m) 1 Set.univ := by
+  unfold iprt; infer_instance
+
+instance [ModelsZF M] (T : TreeStructure M) (a : M) :
+    Class.Definable (fun b : M ↦ T.IsAnc a b) Set.univ := by
+  unfold IsAnc; infer_instance
+
+omit [HasOmega M] in
+theorem iprt_empty : T.iprt a ∅ = a := natRec_empty _ _
+
+omit [HasOmega M] in
+theorem iprt_succ (hm : Ordinal m) : T.iprt a (succ m) = T.prt ﹫ T.iprt a m :=
+  natRec_succ _ _ hm
+
+omit [HasOmega M] in
+/-- `succ` is injective on ordinals -/
+theorem eq_of_succ_eq_succ [Foundational M] (hm : Ordinal m) (h : succ m = succ n) : m = n := by
+  have hm' : m ∈ succ n := h ▸ mem_succ_self m
+  have hn' : n ∈ succ m := h.symm ▸ mem_succ_self n
+  rcases mem_or_eq_of_mem_succ hm' with h₁ | h₁
+  · rcases mem_or_eq_of_mem_succ hn' with h₂ | h₂
+    · exact (notMem_self _ (hm.transitive _ h₂ h₁)).elim
+    · exact h₂.symm
+  · exact h₁
+
+/-- For `k ≤ n` in `ω`, `k +ₒ m = n` for some `m ∈ ω` -/
+theorem exists_oadd_eq (hn : n ∈ (ω : M)) (hk : k ∈ succ n) : ∃ m ∈ (ω : M), k +ₒ m = n := by
+  refine omega_induction (A := fun n ↦ ∀ k ∈ succ n, ∃ m ∈ (ω : M), k +ₒ m = n)
+    (fun k hk ↦ ?_) (fun n hn ih k hk ↦ ?_) hn k hk
+  · rcases mem_or_eq_of_mem_succ hk with h | rfl
+    · simp at h
+    · exact ⟨∅, empty_mem_omega, oadd_empty ordinal_empty⟩
+  · have hnω := succ_mem_omega hn
+    rcases mem_or_eq_of_mem_succ hk with h | rfl
+    · obtain ⟨m, hm, hkm⟩ := ih k h
+      have hko : Ordinal k := ordinal_of_mem (ordinal_of_mem ordinal_omega hnω) h
+      refine ⟨succ m, succ_mem_omega hm, ?_⟩
+      rw [oadd_succ hko (ordinal_of_mem ordinal_omega hm), hkm]
+    · exact ⟨∅, empty_mem_omega, oadd_empty (ordinal_of_mem ordinal_omega hnω)⟩
+
+variable (hT : T.IsTreeStructure)
+include hT
+
+namespace IsTreeStructure
+
+/-- The `m`-th iterated parent of a node of depth `e +ₒ m` is a node of depth `e` -/
+theorem iprt_mem_nd (ha : a ∈ T.nd) (hm : m ∈ (ω : M)) {e : M} (he : e ∈ (ω : M))
+    (hd : T.dep ﹫ a = e +ₒ m) : T.iprt a m ∈ T.nd ∧ T.dep ﹫ T.iprt a m = e := by
+  refine omega_induction (A := fun m ↦ ∀ e ∈ (ω : M), T.dep ﹫ a = e +ₒ m →
+    T.iprt a m ∈ T.nd ∧ T.dep ﹫ T.iprt a m = e) (fun e he hd ↦ ?_)
+    (fun m hm ih e he hd ↦ ?_) hm e he hd
+  · rw [oadd_empty (ordinal_of_mem ordinal_omega he)] at hd
+    rw [iprt_empty]
+    exact ⟨ha, hd⟩
+  · have heo := ordinal_of_mem ordinal_omega he
+    have hmo := ordinal_of_mem ordinal_omega hm
+    have hd' : T.dep ﹫ a = succ e +ₒ m := by
+      rw [hd, oadd_succ heo hmo, oadd_comm_of_mem_omega (succ_mem_omega he) hm,
+        oadd_succ hmo heo, oadd_comm_of_mem_omega hm he]
+    obtain ⟨hb, hdb⟩ := ih (succ e) (succ_mem_omega he) hd'
+    have hbr : T.iprt a m ∈ T.nd \ T.rt := by
+      rw [mem_sdiff_iff, mem_rt_iff, hdb]
+      exact ⟨hb, fun h ↦ succ_ne_empty _ h.right⟩
+    have hc := hT.prt_val_mem_nd hbr
+    have hdc := hT.dep_of_mem_chd _ hc _ (hT.mem_chd_prt_val hbr)
+    rw [hdb] at hdc
+    rw [iprt_succ hmo]
+    exact ⟨hc, (eq_of_succ_eq_succ heo hdc).symm⟩
+
+/-- Beyond the depth of a node, the iterated parents are `∅` if `∅` is not a node -/
+theorem iprt_eq_empty (h0 : ∅ ∉ T.nd) (ha : a ∈ T.nd) (hm : m ∈ (ω : M))
+    (hlt : T.dep ﹫ a ∈ m) : T.iprt a m = ∅ := by
+  have hdω := hT.dep_mem_omega ha
+  have hprt (b : M) (hb : b ∉ T.nd \ T.rt) : T.prt ﹫ b = ∅ :=
+    val_eq_empty_of_not_mem_dom (by rwa [hT.dom_prt])
+  refine omega_induction (A := fun m ↦ T.dep ﹫ a ∈ m → T.iprt a m = ∅) (fun h ↦ by simp at h)
+    (fun m hm ih h ↦ ?_) hm hlt
+  rw [iprt_succ (ordinal_of_mem ordinal_omega hm)]
+  refine hprt _ fun hb ↦ ?_
+  rw [mem_sdiff_iff] at hb
+  rcases mem_or_eq_of_mem_succ h with h | h
+  · rw [ih h] at hb
+    exact h0 hb.left
+  · obtain ⟨-, hdb⟩ := hT.iprt_mem_nd ha hm empty_mem_omega
+      (by rw [h, empty_oadd (ordinal_of_mem ordinal_omega hm)])
+    exact hb.right (mem_rt_iff.mpr ⟨hb.left, hdb⟩)
+
+omit hT in
+/-- `m ≤ k +ₒ m` -/
+theorem mem_succ_of_oadd_eq (hk : k ∈ (ω : M)) (hm : m ∈ (ω : M)) (h : k +ₒ m = n) :
+    m ∈ succ n := by
+  obtain ⟨-, -, h'⟩ := ole_oadd_left (ordinal_of_mem ordinal_omega hk)
+    (ordinal_of_mem ordinal_omega hm)
+  rw [h] at h'
+  rcases h' with h' | h'
+  · exact mem_succ_of_mem h'
+  · rw [h']
+    exact mem_succ_self n
+
+/-- The iterated parents of `a` up to its depth -/
+theorem exists_iprt_mem_nd (ha : a ∈ T.nd) (hj : m ∈ succ (T.dep ﹫ a)) :
+    ∃ e ∈ (ω : M), e +ₒ m = T.dep ﹫ a ∧ T.iprt a m ∈ T.nd ∧ T.dep ﹫ T.iprt a m = e := by
+  have hdω := hT.dep_mem_omega ha
+  have hmω : m ∈ (ω : M) := ordinal_omega.transitive _ (succ_mem_omega hdω) hj
+  obtain ⟨e, he, hme⟩ := exists_oadd_eq hdω hj
+  rw [oadd_comm_of_mem_omega hmω he] at hme
+  exact ⟨e, he, hme, hT.iprt_mem_nd ha hmω he hme.symm⟩
+
+/-- The ancestor of depth `k` of `a` is the `m`-th iterated parent for `k +ₒ m = T.dep ﹫ a` -/
+theorem anc_eq_iprt [ModelsZF M] (ha : a ∈ T.nd) (hk : k ∈ (ω : M)) (hm : m ∈ (ω : M))
+    (hkm : k +ₒ m = T.dep ﹫ a) : T.anc a k = T.iprt a m := by
+  have hdω := hT.dep_mem_omega ha
+  have hko := ordinal_of_mem ordinal_omega hk
+  have hmo := ordinal_of_mem ordinal_omega hm
+  obtain ⟨hb, hdb⟩ := hT.iprt_mem_nd ha hm hk hkm.symm
+  have hsU (X : M) (hX : ∀ b, b ∈ X ↔ b = T.iprt a m) : ⋃₀ X = T.iprt a m := by
+    rw [show X = {T.iprt a m} by ext b; rw [hX, mem_singleton_iff], sUnion_singleton]
+  have hrt {c : M} (hc : c ∈ T.nd) : c ∈ T.rt ↔ T.dep ﹫ c = ∅ := by
+    rw [mem_rt_iff]
+    exact ⟨fun h ↦ h.right, fun h ↦ ⟨hc, h⟩⟩
+  rw [anc]
+  refine hsU _ fun b ↦ ?_
+  rw [mem_comprehension_iff]
+  constructor
+  · rintro ⟨-, hbd, hcl⟩
+    -- the iterated parents up to the depth of `a` form a closed set
+    have hres : IsSetRestrictedTo (fun j ↦ T.iprt a j) (succ (T.dep ﹫ a)) :=
+      isSetRestrictedTo_of_definable _
+    have hA (c : M) : c ∈ ran ((fun j ↦ T.iprt a j) ↾₀ succ (T.dep ﹫ a)) ↔
+        ∃ j ∈ succ (T.dep ﹫ a), T.iprt a j = c :=
+      mem_ran_toSetRestrictedTo_iff hres
+    have hbA := hcl _ (fun c hc ↦ by
+        obtain ⟨j, hj, rfl⟩ := (hA c).mp hc
+        exact (hT.exists_iprt_mem_nd ha hj).choose_spec.right.right.left)
+      ((hA a).mpr ⟨∅, by
+        by_cases h : T.dep ﹫ a = ∅
+        · rw [h]
+          exact mem_succ_self ∅
+        · exact mem_succ_of_mem (empty_mem_of_ordinal_of_ne_empty
+            (ordinal_of_mem ordinal_omega hdω) h), iprt_empty⟩)
+      fun c hc hcr ↦ by
+        obtain ⟨j, hj, rfl⟩ := (hA c).mp hc
+        obtain ⟨e, he, hje, -, hde⟩ := hT.exists_iprt_mem_nd ha hj
+        have hjω : j ∈ (ω : M) := ordinal_omega.transitive _ (succ_mem_omega hdω) hj
+        have he0 : e ≠ ∅ := fun h ↦ by
+          have h' := hcr
+          rw [mem_sdiff_iff] at h'
+          exact h'.right ((hrt h'.left).mpr (hde.trans h))
+        obtain ⟨he'ω, -, hee⟩ := sUnion_mem_of_ne_empty he he0
+        have hsj : ⋃₀ e +ₒ succ j = T.dep ﹫ a := by
+          refine Eq.trans ?_ hje
+          rw [oadd_succ (ordinal_of_mem ordinal_omega he'ω) (ordinal_of_mem ordinal_omega hjω),
+            oadd_comm_of_mem_omega he'ω hjω,
+            ← oadd_succ (ordinal_of_mem ordinal_omega hjω) (ordinal_of_mem ordinal_omega he'ω),
+            ← hee, oadd_comm_of_mem_omega hjω he]
+        refine (hA _).mpr ⟨succ j, mem_succ_of_oadd_eq he'ω (succ_mem_omega hjω) hsj, ?_⟩
+        rw [iprt_succ (ordinal_of_mem ordinal_omega hjω)]
+    obtain ⟨j, hj, rfl⟩ := (hA b).mp hbA
+    obtain ⟨e, he, hje, -, hde⟩ := hT.exists_iprt_mem_nd ha hj
+    have hjω : j ∈ (ω : M) := ordinal_omega.transitive _ (succ_mem_omega hdω) hj
+    rw [hbd] at hde
+    subst hde
+    rw [(oadd_left_cancel hko hmo (ordinal_of_mem ordinal_omega hjω)).mp (hkm.trans hje.symm)]
+  · rintro rfl
+    refine ⟨hb, hdb, fun X hX haX hcl ↦ ?_⟩
+    have hmd : m ∈ succ (T.dep ﹫ a) := mem_succ_of_oadd_eq hk hm hkm
+    refine omega_induction (A := fun j ↦ j ∈ succ m → T.iprt a j ∈ X)
+      (fun _ ↦ by rw [iprt_empty]; exact haX) (fun j hjω ih hj ↦ ?_) hm (mem_succ_self m)
+    have hjm : j ∈ m := by
+      rcases mem_or_eq_of_mem_succ hj with h | h
+      · exact hmo.transitive _ h (mem_succ_self j)
+      · rw [← h]
+        exact mem_succ_self j
+    have hjd : j ∈ succ (T.dep ﹫ a) :=
+      (ordinal_of_mem ordinal_omega (succ_mem_omega hdω)).transitive _ hmd
+        ((ordinal_of_mem ordinal_omega (succ_mem_omega hm)).transitive _ (mem_succ_self m)
+          hjm |> fun _ ↦ hmo.transitive _ hjm |> fun _ ↦ hjm)
+    obtain ⟨e, he, hje, hcn, hde⟩ := hT.exists_iprt_mem_nd ha hjd
+    have he0 : e ≠ ∅ := fun h ↦ by
+      rw [h, empty_oadd (ordinal_of_mem ordinal_omega hjω)] at hje
+      have h' := ole_oadd_left hko hmo
+      rw [hkm, ← hje] at h'
+      rcases h'.right.right with h'' | h''
+      · exact notMem_self _ ((ordinal_of_mem ordinal_omega hjω).transitive _ h'' hjm)
+      · rw [h''] at hjm
+        exact notMem_self _ hjm
+    have hcr : T.iprt a j ∈ T.nd \ T.rt := by
+      rw [mem_sdiff_iff, hrt hcn, hde]
+      exact ⟨hcn, he0⟩
+    rw [iprt_succ (ordinal_of_mem ordinal_omega hjω)]
+    exact hcl _ (ih (mem_succ_of_mem hjm)) hcr
+
+/-- The ancestor of depth `k ≤ T.dep ﹫ a` is a node of depth `k` -/
+theorem anc_mem_nd [ModelsZF M] (ha : a ∈ T.nd) (hk : k ∈ succ (T.dep ﹫ a)) :
+    T.anc a k ∈ T.nd ∧ T.dep ﹫ T.anc a k = k := by
+  have hdω := hT.dep_mem_omega ha
+  obtain ⟨m, hm, hkm⟩ := exists_oadd_eq hdω hk
+  have hkω : k ∈ (ω : M) := (succ_mem_omega hdω |> fun h ↦ ordinal_omega.transitive _ h hk)
+  rw [hT.anc_eq_iprt ha hkω hm hkm]
+  exact hT.iprt_mem_nd ha hm hkω hkm.symm
+
+/-- The ancestor of depth `T.dep ﹫ a` of `a` is `a` -/
+theorem anc_dep [ModelsZF M] (ha : a ∈ T.nd) : T.anc a (T.dep ﹫ a) = a := by
+  have hdω := hT.dep_mem_omega ha
+  rw [hT.anc_eq_iprt ha hdω empty_mem_omega (oadd_empty (ordinal_of_mem ordinal_omega hdω)),
+    iprt_empty]
+
+/-- The ancestor of depth `succ k` is a child of the ancestor of depth `k` -/
+theorem anc_succ_mem_chd [ModelsZF M] (ha : a ∈ T.nd) (hk : k ∈ T.dep ﹫ a) :
+    T.anc a (succ k) ∈ T.chd ﹫ T.anc a k := by
+  have hdω := hT.dep_mem_omega ha
+  have hkω : k ∈ (ω : M) := ordinal_omega.transitive _ hdω hk
+  have hko := ordinal_of_mem ordinal_omega hkω
+  obtain ⟨m, hm, hkm⟩ := exists_oadd_eq hdω (show succ k ∈ succ (T.dep ﹫ a) from by
+    rcases olt_trichotomy (ordinal_of_mem ordinal_omega (succ_mem_omega hkω))
+      (ordinal_of_mem ordinal_omega hdω) with h | h | h
+    · exact mem_succ_of_mem h.right.right
+    · rw [h]
+      exact mem_succ_self _
+    · exfalso
+      rcases mem_or_eq_of_mem_succ h.right.right with h' | h'
+      · exact notMem_self _ ((ordinal_of_mem ordinal_omega hkω).transitive _ h' hk)
+      · exact notMem_self _ (h' ▸ hk))
+  have hmo := ordinal_of_mem ordinal_omega hm
+  have hkm' : k +ₒ succ m = T.dep ﹫ a := by
+    rw [oadd_succ hko hmo, ← hkm, oadd_comm_of_mem_omega (succ_mem_omega hkω) hm,
+      oadd_succ hmo hko, oadd_comm_of_mem_omega hm hkω]
+  rw [hT.anc_eq_iprt ha (succ_mem_omega hkω) hm hkm, hT.anc_eq_iprt ha hkω
+    (succ_mem_omega hm) hkm', iprt_succ hmo]
+  obtain ⟨hb, hdb⟩ := hT.iprt_mem_nd ha hm (succ_mem_omega hkω) hkm.symm
+  refine hT.mem_chd_prt_val ?_
+  rw [mem_sdiff_iff, mem_rt_iff, hdb]
+  exact ⟨hb, fun h ↦ succ_ne_empty _ h.right⟩
+
+/-- The ancestor of depth `∅` is a root -/
+theorem anc_empty_mem_rt [ModelsZF M] (ha : a ∈ T.nd) : T.anc a ∅ ∈ T.rt := by
+  have hdω := hT.dep_mem_omega ha
+  have h := hT.anc_mem_nd ha (show (∅ : M) ∈ succ (T.dep ﹫ a) from by
+    by_cases h : T.dep ﹫ a = ∅
+    · rw [h]
+      exact mem_succ_self ∅
+    · exact mem_succ_of_mem (empty_mem_of_ordinal_of_ne_empty
+        (ordinal_of_mem ordinal_omega hdω) h))
+  exact mem_rt_iff.mpr h
+
+end IsTreeStructure
+
+end Anc
 
 end TreeStructure
 

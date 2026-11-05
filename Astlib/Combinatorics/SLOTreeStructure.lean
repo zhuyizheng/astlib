@@ -348,16 +348,19 @@ its own singleton linearly ordered set -/
 noncomputable def asnchd (a C : M) : SLOTreeStructure M :=
   if C = ∅ then S else mk (S.ts.ichd a C) (update S.losfn C (sngLosFn C))
 
-/-- `ofRtLos(D, B)`: the semi-linearly ordered tree structure whose nodes `B_set` are all roots,
-forming the single linearly ordered set `B` with key `D` -/
-noncomputable def ofRtLos (D B : M) : SLOTreeStructure M :=
-  mk (TreeStructure.ofRt (losSet B)) (singletonFun (losSet B) (singletonFun D B))
-
 /-- The empty semi-linearly ordered tree structure `(∅, ∅)` -/
 noncomputable instance : EmptyCollection (SLOTreeStructure M) := ⟨mk ∅ ∅⟩
 
 omit [L.ExtraConstantsUnaryRelationsOnly] [ModelsKP M] in
 theorem empty_eq_mk : (∅ : SLOTreeStructure M) = mk ∅ ∅ := rfl
+
+noncomputable instance (B : M) : Decidable (losSet B = ∅) := Classical.propDecidable _
+
+/-- `ofRtLos(D, B)`: the semi-linearly ordered tree structure whose nodes `B_set` are all roots,
+forming the single linearly ordered set `B` with key `D` (the empty structure if `B_set = ∅`) -/
+noncomputable def ofRtLos (D B : M) : SLOTreeStructure M :=
+  if losSet B = ∅ then ∅
+  else mk (TreeStructure.ofRt (losSet B)) (singletonFun (losSet B) (singletonFun D B))
 
 @[simp]
 theorem ts_empty : (∅ : SLOTreeStructure M).ts = ∅ := ts_mk ∅ ∅
@@ -841,9 +844,9 @@ theorem mk_of_sblptn {T' : TreeStructure M} {X₀ X₁ F : M} (hT' : T'.IsTreeSt
   refine
     { isOrderedPair_toM := hS'
       isTreeStructure := hT'
-      isOrderedPair := fun ha ↦ ?_
-      isFunction_left := fun ha ↦ ?_
-      dom_left_mem := fun ha ↦ ?_
+      isOrderedPair := fun {a} ha ↦ ?_
+      isFunction_left := fun {a} ha ↦ ?_
+      dom_left_mem := fun {a} ha ↦ ?_
       isFunction_losfn := hF
       dom_losfn := hdom
       isFunction_losfn_val := fun {_} hX' ↦ (hX hX').isFunction
@@ -1198,6 +1201,133 @@ theorem IsEmbedding.eq_sngIso (he : S.IsEmbedding S' π) : π = S.sngIso S' :=
   he.isEmbedding_ts.eq_sngIso hnd hnd'
 
 end SngIso
+
+section OfRtLos
+
+variable {D B a : M}
+
+theorem nd_ofRtLos : (ofRtLos D B).nd = losSet B := by
+  unfold ofRtLos
+  split_ifs with h
+  · rw [nd_empty, h]
+  · change (mk _ _).ts.nd = _
+    rw [ts_mk, TreeStructure.nd_ofRt]
+
+theorem rt_ofRtLos : (ofRtLos D B).rt = losSet B := by
+  unfold ofRtLos
+  split_ifs with h
+  · rw [h]
+    exact rt_empty
+  · change (mk _ _).ts.rt = _
+    rw [ts_mk, TreeStructure.rt_ofRt]
+
+theorem chd_ofRtLos_val : (ofRtLos D B).chd ﹫ a = ∅ := by
+  unfold ofRtLos
+  split_ifs with h
+  · change (∅ : SLOTreeStructure M).ts.chd ﹫ a = ∅
+    rw [ts_empty, TreeStructure.chd_empty]
+    exact val_eq_empty_of_not_mem_dom (by simp)
+  · change (mk _ _).ts.chd ﹫ a = ∅
+    rw [ts_mk, TreeStructure.chd_ofRt_val]
+
+theorem rtlos_ofRtLos (hB : losSet B ≠ ∅) : (ofRtLos D B).rtlos = singletonFun D B := by
+  rw [rtlos, rt_ofRtLos]
+  unfold ofRtLos
+  rw [if_neg hB, losfn_mk, singletonFun_val]
+
+/-- `ofRtLos(D, B)` is a semi-linearly ordered tree structure if `B` is a linearly ordered set of
+nodes with key `D` -/
+theorem isSLOTreeStructure_ofRtLos [HasOmega M]
+    (hB : losSet B ≠ ∅ → IsStrictLinearOrderedSet B)
+    (hA : ∀ a ∈ losSet B, IsOrderedPair a ∧ IsFunction (left a) ∧
+      dom (left a) ∈ (ω : M) \ {∅} ∧ left a ﹫ ∅ = D) :
+    (ofRtLos D B).IsSLOTreeStructure := by
+  by_cases he : losSet B = ∅
+  · unfold ofRtLos
+    rw [if_pos he]
+    exact isSLOTreeStructure_empty
+  have hB := hB he
+  have hT := TreeStructure.isTreeStructure_ofRt (A := losSet B)
+  have hS : ofRtLos D B = mk (TreeStructure.ofRt (losSet B))
+      (singletonFun (losSet B) (singletonFun D B)) := by
+    unfold ofRtLos
+    rw [if_neg he]
+  have hsbl (X : M) : X ∈ (TreeStructure.ofRt (losSet B)).sblptn ↔ X = losSet B := by
+    rw [TreeStructure.mem_sblptn_iff, TreeStructure.rt_ofRt]
+    constructor
+    · rintro ⟨h | h, hne⟩
+      · exact h
+      · rw [hT.isFunction_chd.mem_ran_iff] at h
+        obtain ⟨a, -, rfl⟩ := h
+        exact (hne TreeStructure.chd_ofRt_val).elim
+    · rintro rfl
+      exact ⟨.inl rfl, he⟩
+  have hD : ∃ a ∈ losSet B, left a ﹫ ∅ = D := by
+    have he' : losSet B ≠ ∅ := he
+    rw [ne_empty_iff] at he'
+    obtain ⟨a, ha⟩ := he'
+    exact ⟨a, ha, (hA a ha).right.right.right⟩
+  rw [hS]
+  refine
+    { isOrderedPair_toM := isOrderedPair_mk _ _
+      isTreeStructure := by rw [ts_mk]; exact hT
+      isOrderedPair := fun {a} ha ↦ ?_
+      isFunction_left := fun {a} ha ↦ ?_
+      dom_left_mem := fun {a} ha ↦ ?_
+      isFunction_losfn := by rw [losfn_mk]; exact isFunction_singletonFun _ _
+      dom_losfn := ?_
+      isFunction_losfn_val := fun {X} hX ↦ ?_
+      mem_dom_losfn_val_iff := fun {X} hX D' ↦ ?_
+      isStrictLinearOrderedSet := fun {X} hX {D'} hD' ↦ ?_
+      mem_losSet_iff := fun {X} hX {D'} hD' a ↦ ?_ }
+  · exact (hA _ (by simpa [nd, ts_mk] using ha)).left
+  · exact (hA _ (by simpa [nd, ts_mk] using ha)).right.left
+  · exact (hA _ (by simpa [nd, ts_mk] using ha)).right.right.left
+  · ext X
+    rw [losfn_mk, dom_singletonFun, mem_singleton_iff, sblptn, ts_mk, hsbl]
+  · rw [sblptn, ts_mk, hsbl] at hX
+    rw [losfn_mk, hX, singletonFun_val]
+    exact isFunction_singletonFun _ _
+  · rw [sblptn, ts_mk, hsbl] at hX
+    rw [losfn_mk, hX, singletonFun_val, dom_singletonFun, mem_singleton_iff]
+    constructor
+    · rintro rfl
+      exact hD
+    · rintro ⟨a, ha, rfl⟩
+      exact (hA a ha).right.right.right
+  · rw [sblptn, ts_mk, hsbl] at hX
+    rw [losfn_mk, hX, singletonFun_val, dom_singletonFun, mem_singleton_iff] at hD'
+    rw [losfn_mk, hX, singletonFun_val, hD', singletonFun_val]
+    exact hB
+  · rw [sblptn, ts_mk, hsbl] at hX
+    rw [losfn_mk, hX, singletonFun_val, dom_singletonFun, mem_singleton_iff] at hD'
+    rw [losfn_mk, hX, singletonFun_val, hD', singletonFun_val]
+    exact ⟨fun h ↦ ⟨h, (hA a h).right.right.right⟩, fun h ↦ h.left⟩
+
+/-- The linearly ordered set of a node of `ofRtLos(D, B)` is `B` -/
+theorem ndlos_ofRtLos [HasOmega M] (hB : IsStrictLinearOrderedSet B)
+    (hA : ∀ a ∈ losSet B, IsOrderedPair a ∧ IsFunction (left a) ∧
+      dom (left a) ∈ (ω : M) \ {∅} ∧ left a ﹫ ∅ = D) (ha : a ∈ losSet B) :
+    (ofRtLos D B).ndlos a = B := by
+  have hS := isSLOTreeStructure_ofRtLos (fun _ ↦ hB) hA
+  have hne : losSet B ≠ ∅ := by
+    rw [ne_empty_iff]
+    exact ⟨a, ha⟩
+  have hrt : a ∈ (ofRtLos D B).ts.rt := by
+    change a ∈ (ofRtLos D B).rt
+    rw [rt_ofRtLos]
+    exact ha
+  have hlosfn : (ofRtLos D B).losfn = singletonFun (losSet B) (singletonFun D B) := by
+    unfold ofRtLos
+    rw [if_neg hne, losfn_mk]
+  have hnd : a ∈ (ofRtLos D B).nd := by
+    rw [nd_ofRtLos]
+    exact ha
+  rw [ndlos, hS.sbllos_val hnd, hS.isTreeStructure.sbl_val_of_mem_rt hrt]
+  change (((ofRtLos D B).losfn ﹫ (ofRtLos D B).rt) ﹫ (left a ﹫ ∅)) = B
+  rw [rt_ofRtLos, hlosfn, singletonFun_val, (hA a ha).right.right.right, singletonFun_val]
+
+end OfRtLos
 
 end SLOTreeStructure
 
@@ -1578,6 +1708,10 @@ open SLOTreeStructure in
 noncomputable def ancOf [HasOmega M] (P p k : M) : M := (ofM P).ts.anc p k
 
 open SLOTreeStructure in
+/-- `b` is an ancestor of `p` (or `p` itself) in `P` -/
+def IsAncOf (P p b : M) : Prop := (ofM P).ts.IsAnc p b
+
+open SLOTreeStructure in
 /-- `P_ndlos(p)` -/
 noncomputable def ndlosOf (P p : M) : M := (ofM P).ndlos p
 
@@ -1629,6 +1763,15 @@ instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ prtOf (ys 0) (
   MulticlassFunction.deltaZero_of_eq₂ ((ᵣ0 : L.RudimentaryTerm 2).slTs.tsPrt ﹫ ᵣ1) fun _ _ ↦ by
     simp [prtOf]
 
+instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ depOf (ys 0) (ys 1)) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂ ((ᵣ0 : L.RudimentaryTerm 2).slTs.tsDep ﹫ ᵣ1) fun _ _ ↦ by
+    simp [depOf]
+
+instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ ndlosOf (ys 0) (ys 1)) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq₂
+    ((slSbllos₀.substBoundRud ![ᵣ0] ﹫ ᵣ1) ﹫ ((ᵣ1 : L.RudimentaryTerm 2).left ﹫ ∅)) fun _ _ ↦ by
+    simp [ndlosOf, ndlos]
+
 instance : MulticlassFunction.DeltaZero (fun ys : Fin 2 → M ↦ chdlosOf (ys 0) (ys 1)) Set.univ :=
   MulticlassFunction.deltaZero_of_eq₂ (slChdlos₀.substBoundRud ![ᵣ0] ﹫ ᵣ1) fun _ _ ↦ by
     simp [chdlosOf]
@@ -1647,6 +1790,35 @@ instance : MulticlassFunction.DeltaZero
 instance : MulticlassFunction.DeltaZero
     (fun ys : Fin 3 → M ↦ asnchdOf (ys 0) (ys 1) (ys 2)) Set.univ :=
   MulticlassFunction.deltaZero_of_eq slAsnchd₀ fun _ ↦ by simp [asnchdOf]
+
+instance [ModelsZF M] :
+    Multiclass.Definable (fun ys : Fin 3 → M ↦ IsAncOf (ys 0) (ys 1) (ys 2)) Set.univ := by
+  have h : (fun ys : Fin 3 → M ↦ IsAncOf (ys 0) (ys 1) (ys 2)) = fun ys : Fin 3 → M ↦
+      ∀ X, X ⊆ ndOf (ys 0) → ys 1 ∈ X →
+        (∀ c ∈ X, c ∈ ndOf (ys 0) \ rtOf (ys 0) → prtOf (ys 0) c ∈ X) → ys 2 ∈ X := rfl
+  rw [h]
+  infer_instance
+
+section RtLos
+
+variable {D B p : M}
+
+theorem ndOf_rtLosSLOT : ndOf (rtLosSLOT D B) = losSet B := SLOTreeStructure.nd_ofRtLos
+
+theorem rtOf_rtLosSLOT : rtOf (rtLosSLOT D B) = losSet B := SLOTreeStructure.rt_ofRtLos
+
+theorem chdOf_rtLosSLOT : chdOf (rtLosSLOT D B) p = ∅ := SLOTreeStructure.chd_ofRtLos_val
+
+theorem rtlosOf_rtLosSLOT (hB : losSet B ≠ ∅) : rtlosOf (rtLosSLOT D B) = singletonFun D B :=
+  SLOTreeStructure.rtlos_ofRtLos hB
+
+theorem isSLOT_rtLosSLOT [HasOmega M] (hB : losSet B ≠ ∅ → IsStrictLinearOrderedSet B)
+    (hA : ∀ a ∈ losSet B, IsOrderedPair a ∧ IsFunction (left a) ∧
+      dom (left a) ∈ (ω : M) \ {∅} ∧ left a ﹫ ∅ = D) :
+    IsSLOT (rtLosSLOT D B) :=
+  SLOTreeStructure.isSLOTreeStructure_ofRtLos hB hA
+
+end RtLos
 
 end Wrappers
 

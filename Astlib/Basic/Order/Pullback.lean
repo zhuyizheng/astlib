@@ -76,6 +76,15 @@ theorem IsStrictWellOrder.pullback (hR : IsStrictWellOrder R T) (hτ : τ !: S �
   · grind [rel_pullback_iff, hlin.trans]
   · grind [rel_pullback_iff, hlin.trichotomous (hτT hx) (hτT hy), hτ.eq hx hy]
 
+/-- A strict linear order pulled back along an injection is a strict linear order -/
+theorem IsStrictLinearOrder.pullback (hR : IsStrictLinearOrder R T) (hτ : τ !: S ↪ T) :
+    IsStrictLinearOrder (pullback τ R S) S := by
+  have hτT {x : M} (hx : x ∈ S) : τ ﹫ x ∈ T := hτ.isFunctionFromTo.val_mem hx
+  refine ⟨isRelationOn_pullback, fun x hx ↦ ?_, fun x hx y hy z hz hxy hyz ↦ ?_, fun x hx y hy ↦ ?_⟩
+  · grind [rel_pullback_iff, hR.irrefl]
+  · grind [rel_pullback_iff, hR.trans]
+  · grind [rel_pullback_iff, hR.trichotomous (hτT hx) (hτT hy), hτ.eq hx hy]
+
 end Pullback
 
 end FirstOrder.Language.MemStructure

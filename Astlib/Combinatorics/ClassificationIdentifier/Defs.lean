@@ -188,8 +188,9 @@ section Conditions
 /-! ### The conditions defining each level
 
 A level tuple is the function `{(0, otci), (1, aotci), (2, trvaotci), (3, uoci), (4, stduoci),
-(5, trvuoci), (6, ext)}` on `7`, and `s` is a sequence of level tuples (a function on `n`) giving the levels below
-`n`. The sets of level `n` are defined from `s`, `n` and the sets of level `n` defined before them.
+(5, trvuoci), (6, ext)}` on `7`, and `s` is a sequence of level tuples (a function on `n`) giving
+the levels below `n`. The sets of level `n` are defined from `s`, `n` and the sets of level `n`
+defined before them.
 The finite and trivial arrays are read off the arrays by `FinArrayCond` and `TrvArrayCond`. -/
 
 variable [ModelsKP M]

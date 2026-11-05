@@ -120,4 +120,120 @@ theorem IsOtciEmbedding.eq_otciSngIso {b c : M} (hnd : ndOf P = {b}) (hnd' : ndO
     (he : IsOtciEmbedding P Q π) : π = otciSngIso P Q :=
   he.isEmbedding.eq_sngIso hnd hnd'
 
+section Definability
+
+variable [HasOmega M]
+
+omit [HasOmega M] in
+/-- `IsOtciEmbedding` with all quantifiers bounded -/
+theorem isOtciEmbedding_iff : IsOtciEmbedding P Q π ↔
+    π !: ndOf P ↪ ndOf Q ∧
+    (∀ a ∈ ndOf P, depOf Q (π ﹫ a) = depOf P a) ∧
+    (∀ a ∈ ndOf P, ∀ b ∈ ndOf P, b ∈ chdOf P a → π ﹫ b ∈ chdOf Q (π ﹫ a)) ∧
+    (∀ a ∈ ndOf P, ∀ b ∈ ndOf P,
+      ndlosOf Q (π ﹫ a) = ndlosOf Q (π ﹫ b) ↔ ndlosOf P a = ndlosOf P b) ∧
+    (∀ a ∈ ndOf P, ∀ b ∈ ndOf P, ndlosOf P a = ndlosOf P b → a [losOdr (ndlosOf P a)] b →
+      (π ﹫ a) [losOdr (ndlosOf Q (π ﹫ a))] (π ﹫ b)) ∧
+    (∀ a ∈ ndOf P, uc (π ﹫ a) = uc a) := by
+  constructor
+  · rintro ⟨⟨⟨hinj, hdep, hprt⟩, hlos, hodr⟩, huc⟩
+    refine ⟨hinj, fun a ha ↦ hdep ha, fun a ha b hb hc ↦ ?_, fun a ha b hb ↦ hlos ha hb,
+      fun a ha b hb hab hrel ↦ hodr ha hb hab hrel, fun a ha ↦ huc ha⟩
+    have h := hprt ha hb (TreeStructure.rel_prt_iff.mpr ⟨⟨hb, ha⟩, hc⟩)
+    exact (TreeStructure.rel_prt_iff.mp h).right
+  · rintro ⟨hinj, hdep, hprt, hlos, hodr, huc⟩
+    refine ⟨⟨⟨hinj, fun ha ↦ hdep _ ha, fun {a b} ha hb hba ↦ ?_⟩, fun ha hb ↦ hlos _ ha _ hb,
+      fun ha hb hab hrel ↦ hodr _ ha _ hb hab hrel⟩, fun ha ↦ huc _ ha⟩
+    exact TreeStructure.rel_prt_iff.mpr ⟨⟨hinj.isFunctionFromTo.val_mem hb,
+      hinj.isFunctionFromTo.val_mem ha⟩,
+      hprt a ha b hb (TreeStructure.rel_prt_iff.mp hba).right⟩
+
+/-- `xs j` is below `xs k` in the linearly ordered set of `xs j` in the tree `xs i` -/
+instance {n : ℕ} (i j k : Fin n) : Multiclass.Definable (fun xs : Fin n → M ↦
+    (xs j) [losOdr (ndlosOf (xs i) (xs j))] (xs k)) Set.univ := by
+  infer_instance
+
+/-- The images of `xs j` and `xs l` under `xs i` are in the order of the linearly ordered set of the
+first in the tree `xs k` -/
+instance {n : ℕ} (i j k l : Fin n) : Multiclass.Definable (fun xs : Fin n → M ↦
+    (xs i ﹫ xs j) [losOdr (ndlosOf (xs k) (xs i ﹫ xs j))] (xs i ﹫ xs l)) Set.univ := by
+  have h : (fun xs : Fin n → M ↦
+      (xs i ﹫ xs j) [losOdr (ndlosOf (xs k) (xs i ﹫ xs j))] (xs i ﹫ xs l)) =
+      fun xs : Fin n → M ↦
+        ∃ c d : M, c = xs i ﹫ xs j ∧ d = xs i ﹫ xs l ∧ c [losOdr (ndlosOf (xs k) c)] d := by
+    funext xs
+    apply propext
+    constructor
+    · intro h
+      exact ⟨_, _, rfl, rfl, h⟩
+    · rintro ⟨c, d, rfl, rfl, h⟩
+      exact h
+  rw [h]
+  infer_instance
+
+instance : Multiclass.Definable (fun xs : Fin 3 → M ↦ IsOtciEmbedding (xs 0) (xs 1) (xs 2))
+    Set.univ := by
+  have h : (fun xs : Fin 3 → M ↦ IsOtciEmbedding (xs 0) (xs 1) (xs 2)) = fun xs : Fin 3 → M ↦
+      xs 2 !: ndOf (xs 0) ↪ ndOf (xs 1) ∧
+      (∀ a ∈ ndOf (xs 0), depOf (xs 1) (xs 2 ﹫ a) = depOf (xs 0) a) ∧
+      (∀ a ∈ ndOf (xs 0), ∀ b ∈ ndOf (xs 0), b ∈ chdOf (xs 0) a →
+        xs 2 ﹫ b ∈ chdOf (xs 1) (xs 2 ﹫ a)) ∧
+      (∀ a ∈ ndOf (xs 0), ∀ b ∈ ndOf (xs 0),
+        ndlosOf (xs 1) (xs 2 ﹫ a) = ndlosOf (xs 1) (xs 2 ﹫ b) ↔
+          ndlosOf (xs 0) a = ndlosOf (xs 0) b) ∧
+      (∀ a ∈ ndOf (xs 0), ∀ b ∈ ndOf (xs 0), ndlosOf (xs 0) a = ndlosOf (xs 0) b →
+        a [losOdr (ndlosOf (xs 0) a)] b →
+          (xs 2 ﹫ a) [losOdr (ndlosOf (xs 1) (xs 2 ﹫ a))] (xs 2 ﹫ b)) ∧
+      (∀ a ∈ ndOf (xs 0), uc (xs 2 ﹫ a) = uc a) := by
+    funext xs
+    exact propext isOtciEmbedding_iff
+  have : Multiclass.Definable (fun xs : Fin 3 → M ↦
+      ∀ a ∈ ndOf (xs 0), depOf (xs 1) (xs 2 ﹫ a) = depOf (xs 0) a) Set.univ := by infer_instance
+  have : Multiclass.Definable (fun xs : Fin 3 → M ↦
+      ∀ a ∈ ndOf (xs 0), ∀ b ∈ ndOf (xs 0), b ∈ chdOf (xs 0) a →
+        xs 2 ﹫ b ∈ chdOf (xs 1) (xs 2 ﹫ a)) Set.univ := by infer_instance
+  have : Multiclass.Definable (fun xs : Fin 3 → M ↦
+      ∀ a ∈ ndOf (xs 0), ∀ b ∈ ndOf (xs 0),
+        ndlosOf (xs 1) (xs 2 ﹫ a) = ndlosOf (xs 1) (xs 2 ﹫ b) ↔
+          ndlosOf (xs 0) a = ndlosOf (xs 0) b) Set.univ := by infer_instance
+  have : Multiclass.Definable (fun xs : Fin 3 → M ↦
+      ∀ a ∈ ndOf (xs 0), ∀ b ∈ ndOf (xs 0), ndlosOf (xs 0) a = ndlosOf (xs 0) b →
+        a [losOdr (ndlosOf (xs 0) a)] b →
+          (xs 2 ﹫ a) [losOdr (ndlosOf (xs 1) (xs 2 ﹫ a))] (xs 2 ﹫ b)) Set.univ := by
+    infer_instance
+  rw [h]
+  infer_instance
+
+instance {n : ℕ} (i j k : Fin n) :
+    Multiclass.Definable (fun xs : Fin n → M ↦ IsOtciEmbedding (xs i) (xs j) (xs k)) Set.univ := by
+  have h : (fun xs : Fin n → M ↦ IsOtciEmbedding (xs i) (xs j) (xs k)) =
+      Multiclass.remap (fun ys : Fin 3 → M ↦ IsOtciEmbedding (ys 0) (ys 1) (ys 2)) ![i, j, k] := by
+    funext xs
+    simp [Multiclass.remap]
+  rw [h]
+  exact ⟨Multiclass.Definable.isDefinable.remap _⟩
+
+instance : Multiclass.Definable
+    (fun xs : Fin 4 → M ↦ IsAotciEmbedding (xs 0) (xs 1) (xs 2) (xs 3)) Set.univ := by
+  have h : (fun xs : Fin 4 → M ↦ IsAotciEmbedding (xs 0) (xs 1) (xs 2) (xs 3)) =
+      fun xs : Fin 4 → M ↦
+      IsFunction (xs 3) ∧ dom (xs 3) = succ (xs 0) ∧ ∀ i ∈ succ (xs 0), ∃ A B f,
+        A = xs 1 ﹫ i ∧ B = xs 2 ﹫ i ∧ f = xs 3 ﹫ i ∧ IsOtciEmbedding A B f := by
+    funext xs
+    apply propext
+    constructor
+    · rintro ⟨hf, hdom, he⟩
+      exact ⟨hf, hdom, fun i hi ↦ ⟨_, _, _, rfl, rfl, rfl, he hi⟩⟩
+    · rintro ⟨hf, hdom, he⟩
+      refine ⟨hf, hdom, fun {i} hi ↦ ?_⟩
+      obtain ⟨A, B, f, rfl, rfl, rfl, h⟩ := he i hi
+      exact h
+  have : Multiclass.Definable (fun xs : Fin 4 → M ↦ ∀ i ∈ succ (xs 0), ∃ A B f,
+      A = xs 1 ﹫ i ∧ B = xs 2 ﹫ i ∧ f = xs 3 ﹫ i ∧ IsOtciEmbedding A B f) Set.univ := by
+    infer_instance
+  rw [h]
+  infer_instance
+
+end Definability
+
 end FirstOrder.Language.MemStructure
