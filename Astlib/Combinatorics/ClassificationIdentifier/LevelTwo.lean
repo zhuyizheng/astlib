@@ -10,8 +10,8 @@ import Astlib.Combinatorics.ClassificationIdentifier.LevelOne
 # Classification identifiers of level two
 
 `tensorProdTwoAOne P Q` for `P ∈ otci_2` and `Q ∈ aotci_1` is the tree in `otci_1` whose nodes
-`(dctUZero, (p, f))` are all roots, where `p ∈ P_nd` and `f` is an embedding of `W = (p_uc)_aoc`
-into `Q ⊗ Z`. The node `(p, f)` has the sequence
+`(dctUZero, (p, f))` are all roots, where `p` is a non-root node of `P` and `f` is an embedding of
+`W = (p_uc)_aoc` into `Q ⊗ Z`. The node `(p, f)` has the sequence
 `((f(w_0), p_1), …, (f(w_{d-1}), p_d))`, where `d` is the depth of `p`, `w_i` is the node of the
 `i`-th entry of the signature of `p_uc` and `p_k` is the ancestor of `p` of depth `k`. The nodes are
 ordered by the Brouwer–Kleene order of their sequences, the coordinates being compared
@@ -48,11 +48,12 @@ variable {L : Language} {M : Type*} [L.MemStructure M] [Inhabited M]
 /-- The array `Q ⊗ Z` in `aotci_1`, the target of the embeddings labeling `P ⊗ Q` -/
 noncomputable def tensorProdTwoAOneTgt (Q : M) : M := tensorProdAOneAZero Q trvAZero
 
-/-- The labels `(p, f)` of the nodes of `P ⊗ Q`: `p ∈ P_nd` and `f` an embedding of `(p_uc)_aoc`
-into `Q ⊗ Z` -/
+/-- The labels `(p, f)` of the nodes of `P ⊗ Q`: `p` a non-root node of `P` and `f` an embedding
+of `(p_uc)_aoc` into `Q ⊗ Z`. The root is excluded: its label would have the empty sequence, the
+maximum of the Brouwer–Kleene order, so that `A ⊗ W ≇ W` for the trivial `A ∈ aotci_2` -/
 noncomputable def tensorProdTwoAOneLbls (P Q : M) : M :=
   ⋃₀ ran ((fun p ↦ ({p} : M) ×ˢ
-    aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q)) ↾₀ ndOf P)
+    aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q)) ↾₀ (ndOf P \ rtOf P))
 
 /-- The sequence `((f(w_0), p_1), …, (f(w_{d-1}), p_d))` of the label `x = (p, f)` -/
 noncomputable def tensorProdTwoAOneSeq (P x : M) : M :=
@@ -557,22 +558,23 @@ instance (P p : M) : ClassFunction.Definable (fun i ↦ ancOf P p (succ i)) Set.
 
 /-- The labels of `P ⊗ Q` -/
 theorem mem_tensorProdTwoAOneLbls_iff : x ∈ tensorProdTwoAOneLbls P Q ↔
-    ∃ p ∈ ndOf P, ∃ f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q),
-      x = !(p, f) := by
+    ∃ p ∈ ndOf P, p ∉ rtOf P ∧
+      ∃ f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q), x = !(p, f) := by
   have hres : IsSetRestrictedTo
       (fun p ↦ ({p} : M) ×ˢ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q))
-      (ndOf P) := isSetRestrictedTo_of_definable _
+      (ndOf P \ rtOf P) := isSetRestrictedTo_of_definable _
   rw [tensorProdTwoAOneLbls, mem_sUnion_iff]
   simp only [mem_ran_toSetRestrictedTo_iff hres]
   constructor
   · rintro ⟨y, ⟨p, hp, rfl⟩, hx⟩
+    rw [mem_sdiff_iff] at hp
     rw [mem_sprod_iff] at hx
     obtain ⟨p', hp', f, hf, rfl⟩ := hx
     rw [mem_singleton_iff] at hp'
     subst hp'
-    exact ⟨p', hp, f, hf, rfl⟩
-  · rintro ⟨p, hp, f, hf, rfl⟩
-    refine ⟨_, ⟨p, hp, rfl⟩, ?_⟩
+    exact ⟨p', hp.left, hp.right, f, hf, rfl⟩
+  · rintro ⟨p, hp, hpr, f, hf, rfl⟩
+    refine ⟨_, ⟨p, by rw [mem_sdiff_iff]; exact ⟨hp, hpr⟩, rfl⟩, ?_⟩
     rw [mem_sprod_iff]
     exact ⟨p, mem_singleton p, f, hf, rfl⟩
 
@@ -1005,7 +1007,7 @@ theorem tensorProdTwoAOne_mem_otci (hQ : Q ∈ aotci ((1 : ℕ) : M)) :
       IsFunction (tensorProdTwoAOneSeq P x) ∧ Ordinal (dom (tensorProdTwoAOneSeq P x)) ∧
         ∀ k ∈ dom (tensorProdTwoAOneSeq P x), tensorProdTwoAOneSeq P x ﹫ k ∈
           ndOf (tensorProdTwoAOneTgt Q ﹫ ((1 : ℕ) : M)) ×ˢ ndOf P := by
-    obtain ⟨p, hp, f, hf, rfl⟩ := (hLb x).mp hx
+    obtain ⟨p, hp, -, f, hf, rfl⟩ := (hLb x).mp hx
     refine ⟨(tensorProdTwoAOneSeq_spec _).left, ?_, fun k hk ↦ ?_⟩
     · rw [tensorProdTwoAOneSeq_dom]
       exact ordinal_of_mem ordinal_omega (hTS.dep_mem_omega hp)
@@ -1022,8 +1024,8 @@ theorem tensorProdTwoAOne_mem_otci (hQ : Q ∈ aotci ((1 : ℕ) : M)) :
       (hseq y hy).right.right (hseq z hz).right.right hxy hyz
   have htri' (x y : M) (hx : x ∈ tensorProdTwoAOneLbls P Q) (hy : y ∈ tensorProdTwoAOneLbls P Q) :
       TensorProdTwoAOneLt P Q x y ∨ x = y ∨ TensorProdTwoAOneLt P Q y x := by
-    obtain ⟨p, hp, f, hf, rfl⟩ := (hLb x).mp hx
-    obtain ⟨p', hp', f', hf', rfl⟩ := (hLb y).mp hy
+    obtain ⟨p, hp, -, f, hf, rfl⟩ := (hLb x).mp hx
+    obtain ⟨p', hp', -, f', hf', rfl⟩ := (hLb y).mp hy
     rcases bkLt_trichotomous (hseq _ hx).left (hseq _ hy).left (hseq _ hx).right.left
       (hseq _ hy).right.left (fun k hk hk' hres hne ↦ by
         rw [tensorProdTwoAOneSeq_dom] at hk hk'
@@ -1058,7 +1060,7 @@ theorem tensorProdTwoAOne_mem_otci (hQ : Q ∈ aotci ((1 : ℕ) : M)) :
   · rw [losSet_orderedPair] at ha
     obtain ⟨x, hx, rfl⟩ := (hNds a).mp ha
     refine ⟨x, ?_, rfl⟩
-    obtain ⟨p, hp, f, hf, rfl⟩ := (hLb x).mp hx
+    obtain ⟨p, hp, -, f, hf, rfl⟩ := (hLb x).mp hx
     exact orderedPair_mem_vonNeumann_omega (ndOf_subset_of_mem_otci (natCast_mem_omega 2) hP hp)
       (mem_vonNeumann_omega_of_mem_aotciEmbSet (hnodes p hp).left hT hf)
 
@@ -1115,7 +1117,7 @@ theorem tensorProdATwoAOne_mem_aotci (hP : P ∈ aotci ((2 : ℕ) : M))
         (tensorProdTwoAOneLbls (P ﹫ (2 : M)) Q) := isSetRestrictedTo_of_definable _
     rw [tensorProdTwoAOne, ndOf_rtLosSLOT, losSet_orderedPair] at ha2
     obtain ⟨x, hx, rfl⟩ := (mem_ran_toSetRestrictedTo_iff hresN).mp ha2
-    obtain ⟨p, -, f, hf, rfl⟩ := mem_tensorProdTwoAOneLbls_iff.mp hx
+    obtain ⟨p, -, -, f, hf, rfl⟩ := mem_tensorProdTwoAOneLbls_iff.mp hx
     rw [hB1eq, tensorProdOneAZero, ndOf_rtLosSLOT, losSet_orderedPair,
       mem_ran_tensorProdOneAZeroRelabel_iff hPX] at ha1
     obtain ⟨q, -, hq⟩ := ha1
