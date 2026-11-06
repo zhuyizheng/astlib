@@ -591,18 +591,12 @@ theorem asnchdOf_trvTree_mem_trvotci (hn : n ∈ (ω : M)) (hn0 : n ≠ ∅) (he
     rw [extL_ciRec_restrict hmn]
     rcases hnode hp with rfl | ⟨q, rfl, hq⟩
     · rw [uc_orderedPair]
-      refine ⟨fun D ↦ ⟨?_, ?_⟩, fun q hq r hr ↦ ?_⟩
-      · rintro ⟨c, hc, rfl⟩
-        rw [hchdb] at hc
-        obtain ⟨q, rfl, hq⟩ := (hCmem c).mp hc
-        exact ⟨q, hq, by rw [uc_orderedPair]⟩
-      · rintro ⟨q, hq, rfl⟩
-        exact ⟨_, hchild hq, by rw [uc_orderedPair]⟩
-      have hkey : aoc q = left !(q, !(V, ∅)) ﹫ ∅ := by
+      have hkey {q : M} : aoc q = left !(q, !(V, ∅)) ﹫ ∅ := by
         rw [left_orderedPair]
         rfl
-      obtain ⟨-, hqs, -, hqc⟩ := mem_ciExt_props hq
-      have hset (x : M) : x ∈ losSet (chdlosOf T !(V, ∅) ﹫ aoc q) ↔ x = !(q, !(V, ∅)) := by
+      have hset {q : M} (hq : !(V, q) ∈ ciExt m) (x : M) :
+          x ∈ losSet (chdlosOf T !(V, ∅) ﹫ aoc q) ↔ x = !(q, !(V, ∅)) := by
+        obtain ⟨-, hqs, -, hqc⟩ := mem_ciExt_props hq
         rw [hkey, mem_losSet_chdlosOf_iff hTs hbn (hchild hq)]
         constructor
         · rintro ⟨hx, hk⟩
@@ -613,13 +607,24 @@ theorem asnchdOf_trvTree_mem_trvotci (hn : n ∈ (ω : M)) (hn0 : n ≠ ∅) (he
           rw [eq_of_aoc_eq_of_ctp_eq_ct hmω hqs' hqs hqc' hqc hk]
         · rintro rfl
           exact ⟨hchild hq, rfl⟩
-      rw [(hset r).mp hr, uc_orderedPair]
-      refine ⟨rfl, iff_of_true (isLeastLos_of_losSet_eq_singleton ?_ hset) hqc⟩
-      rw [hkey]
-      exact isStrictLinearOrderedSet_chdlosOf hTs hbn (hchild hq)
+      have hleast {q : M} (hq : !(V, q) ∈ ciExt m) :
+          IsLeastLos (chdlosOf T !(V, ∅) ﹫ aoc q) !(q, !(V, ∅)) := by
+        refine isLeastLos_of_losSet_eq_singleton ?_ (hset hq)
+        rw [hkey]
+        exact isStrictLinearOrderedSet_chdlosOf hTs hbn (hchild hq)
+      refine ⟨fun D ↦ ⟨?_, ?_⟩, fun q hq r hr ↦ ?_, fun q hq ↦ ⟨_, (hset hq _).mpr rfl, hleast hq⟩⟩
+      · rintro ⟨c, hc, rfl⟩
+        rw [hchdb] at hc
+        obtain ⟨q, rfl, hq⟩ := (hCmem c).mp hc
+        exact ⟨q, hq, by rw [uc_orderedPair]⟩
+      · rintro ⟨q, hq, rfl⟩
+        exact ⟨_, hchild hq, by rw [uc_orderedPair]⟩
+      rw [(hset hq r).mp hr, uc_orderedPair]
+      exact ⟨rfl, iff_of_true (hleast hq) (mem_ciExt_props hq).right.right.right⟩
     · have hqct := (mem_ciExt_props hq).right.right.right
       rw [uc_orderedPair]
       refine ⟨fun D ↦ iff_of_false ?_ ?_,
+        fun q' hq' ↦ (not_mem_ciExt_of_ctp_eq_ct hqct q' hq').elim,
         fun q' hq' ↦ (not_mem_ciExt_of_ctp_eq_ct hqct q' hq').elim⟩
       · rintro ⟨c, hc, -⟩
         rw [hchdc (hcn hq)] at hc

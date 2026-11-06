@@ -242,7 +242,9 @@ def FinArrayCond (n P : M) : Prop := ∀ i ∈ succ n, MemStructure.Finite (ndOf
 def TrvArrayCond (n P : M) : Prop :=
   ∀ i ∈ succ n, MemStructure.Finite (ndOf (P ﹫ i)) ∧ TrvotciCond i (P ﹫ i)
 
-/-- `P ∈ otci_n` for `n > 0`, given the levels below `n` in `s` -/
+/-- `P ∈ otci_n` for `n > 0`, given the levels below `n` in `s`: the children of a node with the key
+of an extension `q` have the signature of `q`, and the least one exists and is the one of type
+`ct` -/
 def OtciCond [ModelsZF M] (s n P : M) : Prop :=
   IsSLOT P ∧
   (∀ p ∈ ndOf P, uc p ∈ stduociL s (⋃₀ n) ∧ lbl p ∈ 𝕍 (ω : M)) ∧
@@ -250,8 +252,10 @@ def OtciCond [ModelsZF M] (s n P : M) : Prop :=
   (IsEven n → ∃ r, rtOf P = {r}) ∧
   ∀ p ∈ ndOf P,
     (∀ D, (∃ q ∈ chdOf P p, aoc (uc q) = D) ↔ ∃ q, !(uc p, q) ∈ extL s (⋃₀ n) ∧ aoc q = D) ∧
-    ∀ q, !(uc p, q) ∈ extL s (⋃₀ n) → ∀ r ∈ losSet (chdlosOf P p ﹫ aoc q),
-      sig (uc r) = sig q ∧ (IsLeastLos (chdlosOf P p ﹫ aoc q) r ↔ ctp (uc r) = ct)
+    (∀ q, !(uc p, q) ∈ extL s (⋃₀ n) → ∀ r ∈ losSet (chdlosOf P p ﹫ aoc q),
+      sig (uc r) = sig q ∧ (IsLeastLos (chdlosOf P p ﹫ aoc q) r ↔ ctp (uc r) = ct)) ∧
+    ∀ q, !(uc p, q) ∈ extL s (⋃₀ n) →
+      ∃ r ∈ losSet (chdlosOf P p ﹫ aoc q), IsLeastLos (chdlosOf P p ﹫ aoc q) r
 
 
 /-- `P` is an array of `otci`'s of levels up to `n`, from `s` and `X = otci_n`: a function on

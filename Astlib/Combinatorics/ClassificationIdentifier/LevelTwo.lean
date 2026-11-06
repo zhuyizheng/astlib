@@ -324,8 +324,10 @@ theorem otciCond_two (hP : P ∈ otci ((2 : ℕ) : M)) :
     ∀ p ∈ ndOf P,
       (∀ D, (∃ q ∈ chdOf P p, aoc (uc q) = D) ↔
         ∃ q, !(uc p, q) ∈ ciExt ((1 : ℕ) : M) ∧ aoc q = D) ∧
-      ∀ q, !(uc p, q) ∈ ciExt ((1 : ℕ) : M) → ∀ r ∈ losSet (chdlosOf P p ﹫ aoc q),
-        sig (uc r) = sig q ∧ (IsLeastLos (chdlosOf P p ﹫ aoc q) r ↔ ctp (uc r) = ct) := by
+      (∀ q, !(uc p, q) ∈ ciExt ((1 : ℕ) : M) → ∀ r ∈ losSet (chdlosOf P p ﹫ aoc q),
+        sig (uc r) = sig q ∧ (IsLeastLos (chdlosOf P p ﹫ aoc q) r ↔ ctp (uc r) = ct)) ∧
+      ∀ q, !(uc p, q) ∈ ciExt ((1 : ℕ) : M) →
+        ∃ r ∈ losSet (chdlosOf P p ﹫ aoc q), IsLeastLos (chdlosOf P p ﹫ aoc q) r := by
   rw [mem_otci_iff_of_ne_empty natCast_two_ne_empty] at hP
   obtain ⟨h1, h2, h3, h4, h5⟩ := hP
   rw [sUnion_natCast_two, stduociL_ciRec_restrict natCast_one_mem_two] at h2
@@ -356,7 +358,7 @@ theorem dom_sig_uc_eq_depOf (hP : P ∈ otci ((2 : ℕ) : M)) (hp : p ∈ ndOf P
   have hmem : p ∈ losSet (chdlosOf P (prtOf P p) ﹫ aoc q) := by
     rw [hqk]
     exact (mem_losSet_chdlosOf_iff hPs hb hpc p).mpr ⟨hpc, rfl⟩
-  have hsig := ((hchd _ hb).right q hq p hmem).left
+  have hsig := ((hchd _ hb).right.left q hq p hmem).left
   obtain ⟨e, he⟩ := exists_sig_eq_cc_of_mem_ciExt (natCast_mem_omega 1) hq
   rw [hsig, he, dom_cc, ih _ hb hdb]
 

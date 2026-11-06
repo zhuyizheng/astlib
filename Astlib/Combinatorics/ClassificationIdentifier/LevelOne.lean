@@ -269,7 +269,7 @@ theorem rtLosSLOT_mem_otci_one (hB : losSet B ≠ ∅ → IsStrictLinearOrderedS
     rw [uc_orderedPair]
     exact hdU
   · rw [sUnion_natCast_one, extL_ciRec_restrict empty_mem_natCast_one, ciExt_empty]
-    refine ⟨fun D ↦ iff_of_false ?_ ?_, fun q hq ↦ by simp at hq⟩
+    refine ⟨fun D ↦ iff_of_false ?_ ?_, fun q hq ↦ by simp at hq, fun q hq ↦ by simp at hq⟩
     · rintro ⟨c, hc, -⟩
       rw [chdOf_rtLosSLOT] at hc
       simp at hc
