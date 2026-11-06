@@ -15,6 +15,7 @@ lexicographic order in which a proper extension is smaller.
 For functions on ordinals with values in `C`, it is irreflexive if `R` is irreflexive on `C`
 (`not_bkLt_self`), transitive if `R` is transitive on `C` (`BKLt.trans`), and trichotomous if
 the first differing coordinates of any two sequences are comparable (`bkLt_trichotomous`).
+Applying an injective order embedding to the coordinates preserves the order (`bkLt_iff_of_map`).
 -/
 
 open FirstOrder Language MemStructure
@@ -158,5 +159,76 @@ theorem bkLt_trichotomous (hs : IsFunction s) (ht : IsFunction t) (hos : Ordinal
     exact notMem_self _ h.right.right
 
 end Properties
+
+section BKMap
+
+/-! ### The Brouwer–Kleene order under a coordinatewise order embedding -/
+
+variable {R R' s t s' t' C : M}
+
+/-- Applying an injective order embedding `κ` to the coordinates preserves the Brouwer–Kleene
+order -/
+theorem bkLt_iff_of_map (κ : M → M) (hs : IsFunction s) (ht : IsFunction t)
+    (hs' : IsFunction s') (ht' : IsFunction t') (hds : dom s' = dom s) (hdt : dom t' = dom t)
+    (hsv : ∀ i ∈ dom s, s' ﹫ i = κ (s ﹫ i)) (htv : ∀ i ∈ dom t, t' ﹫ i = κ (t ﹫ i))
+    (hsC : ∀ i ∈ dom s, s ﹫ i ∈ C) (htC : ∀ i ∈ dom t, t ﹫ i ∈ C)
+    (hinj : ∀ a ∈ C, ∀ b ∈ C, κ a = κ b → a = b)
+    (hR : ∀ a ∈ C, ∀ b ∈ C, (a [R] b ↔ (κ a) [R'] (κ b)))
+    (hos : Ordinal (dom s)) (hot : Ordinal (dom t)) :
+    BKLt R s t ↔ BKLt R' s' t' := by
+  have hsub : t ⊆ s ↔ t' ⊆ s' := by
+    constructor
+    · intro h
+      have hd := dom_mono h
+      refine subset_of_val_eq ht' hs' (by rw [hds, hdt]; exact hd) fun i hi ↦ ?_
+      rw [hdt] at hi
+      rw [htv i hi, hsv i (hd hi), val_eq_of_subset hs ht h hi]
+    · intro h
+      have hd := dom_mono h
+      rw [hds, hdt] at hd
+      refine subset_of_val_eq ht hs hd fun i hi ↦ ?_
+      have h' := val_eq_of_subset hs' ht' h (by rw [hdt]; exact hi)
+      rw [hsv i (hd hi), htv i hi] at h'
+      exact (hinj _ (hsC i (hd hi)) _ (htC i hi) h').symm
+  have heq : t = s ↔ t' = s' := by
+    constructor
+    · intro h
+      subst h
+      refine ht'.ext hs' (by rw [hds, hdt]) fun i hi ↦ ?_
+      rw [hdt] at hi
+      rw [htv i hi, hsv i hi]
+    · intro h
+      subst h
+      refine ht.ext hs (by rw [← hds, ← hdt]) fun i hi ↦ ?_
+      have h1 := htv i hi
+      rw [hsv i (by rw [← hds, hdt]; exact hi)] at h1
+      exact hinj _ (htC i hi) _ (hsC i (by rw [← hds, hdt]; exact hi)) h1.symm
+  have hres {k : M} (hks : k ⊆ dom s) (hkt : k ⊆ dom t) : s ↾ k = t ↾ k ↔ s' ↾ k = t' ↾ k := by
+    constructor
+    · intro h
+      refine hs'.restrict_eq_restrict ht' (by rw [hds]; exact hks) (by rw [hdt]; exact hkt)
+        fun i hi ↦ ?_
+      rw [hsv i (hks hi), htv i (hkt hi), val_eq_of_restrict_eq hs ht h hi (hks hi) (hkt hi)]
+    · intro h
+      refine hs.restrict_eq_restrict ht hks hkt fun i hi ↦ ?_
+      have h' := val_eq_of_restrict_eq hs' ht' h hi (by rw [hds]; exact hks hi)
+        (by rw [hdt]; exact hkt hi)
+      rw [hsv i (hks hi), htv i (hkt hi)] at h'
+      exact hinj _ (hsC i (hks hi)) _ (htC i (hkt hi)) h'
+  unfold BKLt
+  rw [hds, hdt]
+  constructor
+  · rintro (⟨h1, h2⟩ | ⟨k, hks, hkt, hr, h⟩)
+    · exact .inl ⟨hsub.mp h1, fun h' ↦ h2 (heq.mpr h')⟩
+    · refine .inr ⟨k, hks, hkt, (hres (hos.transitive _ hks) (hot.transitive _ hkt)).mp hr, ?_⟩
+      rw [hsv k hks, htv k hkt]
+      exact (hR _ (hsC k hks) _ (htC k hkt)).mp h
+  · rintro (⟨h1, h2⟩ | ⟨k, hks, hkt, hr, h⟩)
+    · exact .inl ⟨hsub.mpr h1, fun h' ↦ h2 (heq.mp h')⟩
+    · refine .inr ⟨k, hks, hkt, (hres (hos.transitive _ hks) (hot.transitive _ hkt)).mpr hr, ?_⟩
+      rw [hsv k hks, htv k hkt] at h
+      exact (hR _ (hsC k hks) _ (htC k hkt)).mpr h
+
+end BKMap
 
 end FirstOrder.Language.MemStructure

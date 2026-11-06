@@ -47,6 +47,7 @@ import Astlib.Basic.SetOperation.MemStructure.Substructure
 import Astlib.Basic.SetOperation.MemStructure.Syntax
 import Astlib.Basic.SetOperation.Multiclass.Defs
 import Astlib.Basic.SetOperation.Multiclass.Lambda
+import Astlib.Basic.SetOperation.Multiclass.Composition
 import Astlib.Basic.SetOperation.Multiclass.Levy
 import Astlib.Basic.SetOperation.Pair.Basic
 import Astlib.Basic.SetOperation.Pair.Syntax
@@ -78,6 +79,7 @@ import Astlib.Combinatorics.ClassificationIdentifier.Embedding
 import Astlib.Combinatorics.ClassificationIdentifier.HereditarilyFinite
 import Astlib.Combinatorics.ClassificationIdentifier.LevelOne
 import Astlib.Combinatorics.ClassificationIdentifier.LevelTwo
+import Astlib.Combinatorics.ClassificationIdentifier.LevelTwoTwo
 import Astlib.Combinatorics.ClassificationIdentifier.Trivial
 import Astlib.Combinatorics.ClassificationIdentifier.TrivialExistence
 import Astlib.Combinatorics.SLOTreeStructure

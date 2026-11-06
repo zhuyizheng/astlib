@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizheng Zhu
 -/
 import Astlib.Basic.Order.Pullback
+import Astlib.Basic.SetOperation.Multiclass.Composition
 import Astlib.Combinatorics.ClassificationIdentifier.TrivialExistence
 /-!
 # Classification identifiers of level one
@@ -440,5 +441,135 @@ theorem tensorProdAOneAZero_mem_aotci (hP0 : (P ↾ ((1 : ℕ) : M)) ﹫ ∅ ∈
     exact tensorProdOneAZero_mem_otci hP1 Q
 
 end Membership
+
+
+section Definability
+
+/-! ### Definability of the tensor products of level one
+
+The tensor products are definable as functions of the pair `z = (P, Q)` of their arguments; the
+graph of a binary function follows by `Multiclass.definable_graph₂`. -/
+
+/-- The graph of a binary function `H` is definable if `z ↦ H (left z) (right z)` is -/
+theorem Multiclass.definable_graph₂ {H : M → M → M}
+    (hH : ClassFunction.Definable (fun z ↦ H (left z) (right z)) Set.univ) :
+    Multiclass.Definable (fun ys : Fin 3 → M ↦ H (ys 0) (ys 1) = ys 2) Set.univ := by
+  generalize hG : (fun z ↦ H (left z) (right z) : ClassFunction M) = G at hH
+  have h : (fun ys : Fin 3 → M ↦ H (ys 0) (ys 1) = ys 2) = fun ys ↦
+      ∃ p, p = !(ys 0, ys 1) ∧ G p = ys 2 := by
+    funext ys
+    rw [← hG]
+    simp [left_orderedPair, right_orderedPair]
+  rw [h]
+  infer_instance
+
+instance : MulticlassFunction.Sigma (fun ys : Fin 2 → M ↦ tensorProdAZeroAZero (ys 0) (ys 1)) 1
+    Set.univ := by
+  unfold tensorProdAZeroAZero aotci0Lbl singletonFun; infer_instance
+
+theorem mem_pullback_iff {τ R S z : M} :
+    z ∈ pullback τ R S ↔ z ∈ S ×ˢ S ∧ !(τ ﹫ left z, τ ﹫ right z) ∈ R := by
+  rw [pullback, mem_comprehension_iff]
+  rfl
+
+instance : MulticlassFunction.Definable (fun ys : Fin 3 → M ↦ pullback (ys 0) (ys 1) (ys 2))
+    Set.univ := by
+  have h : MulticlassFunction.toMulticlass (M := M) (n := 3)
+      (fun ys ↦ pullback (ys 0) (ys 1) (ys 2)) = fun xs : Fin 4 → M ↦
+        ∀ z, z ∈ xs 3 ↔ z ∈ xs 2 ×ˢ xs 2 ∧ !(xs 0 ﹫ left z, xs 0 ﹫ right z) ∈ xs 1 := by
+    funext xs
+    change (pullback (xs 0) (xs 1) (xs 2) = xs 3) = _
+    apply propext
+    constructor
+    · intro h z
+      rw [← h, mem_pullback_iff]
+    · intro h
+      ext z
+      rw [mem_pullback_iff, h z]
+  have : Multiclass.Definable (MulticlassFunction.toMulticlass (M := M) (n := 3)
+      (fun ys ↦ pullback (ys 0) (ys 1) (ys 2))) Set.univ := by
+    rw [h]
+    infer_instance
+  infer_instance
+
+instance : MulticlassFunction.Definable (fun ys : Fin 2 → M ↦ rtLosSLOT (ys 0) (ys 1))
+    Set.univ := by
+  have h : (fun ys : Fin 2 → M ↦ rtLosSLOT (ys 0) (ys 1)) = fun ys ↦
+      if losSet (ys 1) = ∅ then (∅ : SLOTreeStructure M).toM
+      else (SLOTreeStructure.mk (TreeStructure.ofRt (losSet (ys 1)))
+        (singletonFun (losSet (ys 1)) (singletonFun (ys 0) (ys 1)))).toM := by
+    funext ys
+    rw [rtLosSLOT, SLOTreeStructure.ofRtLos]
+    split_ifs <;> rfl
+  rw [h]
+  refine MulticlassFunction.definable_ite (hF := MulticlassFunction.definable_const _) (hG := ?_)
+  unfold SLOTreeStructure.mk TreeStructure.ofRt TreeStructure.mk SLOTreeStructure.toM
+    TreeStructure.toM singletonFun constFun
+  -- the two components of the pair
+  have : MulticlassFunction.Sigma (fun ys : Fin 2 → M ↦ !(losSet (ys 1),
+      !(losSet (ys 1) ×ˢ ({(∅ : M)} : M), losSet (ys 1) ×ˢ ({(∅ : M)} : M)))) 1 Set.univ := by
+    infer_instance
+  have : MulticlassFunction.Sigma
+      (fun ys : Fin 2 → M ↦ update ∅ (losSet (ys 1)) (update ∅ (ys 0) (ys 1))) 1 Set.univ := by
+    infer_instance
+  infer_instance
+
+instance : ClassFunction.Definable
+    (fun z : M ↦ tensorProdOneAZeroRelabel (left z) (right z)) Set.univ := by
+  unfold tensorProdOneAZeroRelabel
+  exact ClassFunction.Definable.toSetRestrictedTo
+    (G := fun z p ↦ !(uc p, !(lbl p, tensorProdAZeroAZero (aoc (uc p)) (right z))))
+    (D := fun z ↦ ndOf (left z))
+
+instance : ClassFunction.Definable
+    (fun z : M ↦ ran (tensorProdOneAZeroRelabel (left z) (right z))) Set.univ :=
+  ClassFunction.Definable.comp₁ (H := ran)
+
+instance : ClassFunction.Definable
+    (fun z : M ↦ tensorProdOneAZeroUnlabel (left z) (right z)) Set.univ := by
+  unfold tensorProdOneAZeroUnlabel
+  exact ClassFunction.Definable.toSetRestrictedTo
+    (G := fun _ p ↦ !(uc p, left (lbl p)))
+    (D := fun z ↦ ran (tensorProdOneAZeroRelabel (left z) (right z)))
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdOneAZero (left z) (right z))
+    Set.univ := by
+  unfold tensorProdOneAZero
+  have : Multiclass.Definable (fun ys : Fin 4 → M ↦ pullback (ys 0) (ys 1) (ys 2) = ys 3)
+      Set.univ :=
+    (inferInstance : MulticlassFunction.Definable
+      (fun ys : Fin 3 → M ↦ pullback (ys 0) (ys 1) (ys 2)) Set.univ).1
+  have : ClassFunction.Definable (fun z : M ↦
+      pullback (tensorProdOneAZeroUnlabel (left z) (right z))
+      (losOdr (rtlosOf (left z) ﹫ trvAZero)) (ran (tensorProdOneAZeroRelabel (left z) (right z))))
+      Set.univ :=
+    ClassFunction.Definable.comp₃ (H := pullback)
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ !(ys 0, ys 1) = ys 2) Set.univ :=
+    inferInstance
+  have : ClassFunction.Definable (fun z : M ↦ !(ran (tensorProdOneAZeroRelabel (left z) (right z)),
+      pullback (tensorProdOneAZeroUnlabel (left z) (right z))
+        (losOdr (rtlosOf (left z) ﹫ trvAZero))
+        (ran (tensorProdOneAZeroRelabel (left z) (right z))))) Set.univ :=
+    ClassFunction.Definable.comp₂ (H := fun a b ↦ !(a, b))
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ rtLosSLOT (ys 0) (ys 1) = ys 2) Set.univ :=
+    (inferInstance : MulticlassFunction.Definable
+      (fun ys : Fin 2 → M ↦ rtLosSLOT (ys 0) (ys 1)) Set.univ).1
+  exact ClassFunction.Definable.comp₂ (H := rtLosSLOT) (F := fun _ ↦ trvAZero)
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdAOneAZero (left z) (right z))
+    Set.univ := by
+  unfold tensorProdAOneAZero
+  have : ClassFunction.Definable
+      (fun z : M ↦ tensorProdOneAZero (left z ﹫ ((1 : ℕ) : M)) (right z)) Set.univ := by
+    have h := ClassFunction.Definable.comp₁ (H := fun z ↦ tensorProdOneAZero (left z) (right z))
+      (F := fun z : M ↦ !(left z ﹫ ((1 : ℕ) : M), right z))
+    simp only [left_orderedPair, right_orderedPair] at h
+    exact h
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ cc (ys 0) (ys 1) = ys 2) Set.univ :=
+    inferInstance
+  exact ClassFunction.Definable.comp₂ (H := cc)
+    (F := fun z ↦ tensorProdAZeroAZero (left z ↾ ((1 : ℕ) : M)) (right z))
+
+end Definability
 
 end FirstOrder.Language.MemStructure

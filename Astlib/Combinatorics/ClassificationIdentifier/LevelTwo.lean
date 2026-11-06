@@ -27,9 +27,11 @@ Main results: `tensorProdTwoAOne_mem_otci` (`P ⊗ Q ∈ otci_1` for `P ∈ otci
 uses:
 
 * an extension `(U, q) ∈ ext_n` adds one entry to the signature (`exists_sig_eq_cc_of_mem_ciExt`),
-  and at level `1` the array of `q` is determined by `U` (`aoc_eq_of_mem_ciExt_one`); hence in a
-  tree of `otci_2` the signature of a node has the length of its depth (`dom_sig_uc_eq_depOf`) and
-  the children of a node have the same key (`aoc_uc_eq_of_mem_chdOf`);
+  and at level `1` the array of `q` is determined by `U` (`aoc_eq_of_mem_ciExt_one`); a
+  discontinuous `U ∈ stduoci_1` has exactly one extension if its signature is empty or its `ucf`
+  lies at level `1`, and none otherwise (`exists_mem_ciExt_one_iff`, `eq_of_mem_ciExt_one`); hence
+  in a tree of `otci_2` the signature of a node has the length of its depth
+  (`dom_sig_uc_eq_depOf`) and the children of a node have the same key (`aoc_uc_eq_of_mem_chdOf`);
 * the nodes of the level-`1` tree of `U ∈ stduoci_1` are the nodes of its signature
   (`exists_sigdcn_eq`), so an embedding is determined by its values there
   (`eq_of_mem_aotciEmbSet_one`), and the sequences determine the labels
@@ -429,6 +431,425 @@ theorem exists_sigdcn_eq (hU : U ∈ stduoci ((1 : ℕ) : M)) (hw : w ∈ ndOf (
 
 end OtciTwo
 
+section ExtOne
+
+/-! ### Existence and uniqueness of extensions of level one -/
+
+variable {b d q q' U Y : M}
+
+/-- A tree of childless nodes `(dctUZero, l)`, `l ∈ V_ω`, is in `otci_1` -/
+theorem mem_otci_one_of (hY : IsSLOT Y) (hnd : ∀ p ∈ ndOf Y, ∃ l ∈ (𝕍 ω : M), p = !(dctUZero, l))
+    (hchd : ∀ p ∈ ndOf Y, chdOf Y p = ∅) : Y ∈ otci ((1 : ℕ) : M) := by
+  have hdU := dctUZero_mem_trvuoci (M := M)
+  have hdUs := (mem_trvuoci_iff.mp hdU).left
+  rw [mem_otci_iff_of_ne_empty natCast_one_ne_empty]
+  refine ⟨hY, fun p hp ↦ ?_, fun r hr ↦ ?_, fun he ↦ (isOdd_one.not_isEven he).elim,
+    fun p hp ↦ ?_⟩
+  · rw [sUnion_natCast_one, stduociL_ciRec_restrict empty_mem_natCast_one]
+    obtain ⟨l, hl, rfl⟩ := hnd p hp
+    rw [uc_orderedPair, lbl_orderedPair]
+    exact ⟨hdUs, hl⟩
+  · rw [sUnion_natCast_one, trvuociL_ciRec_restrict empty_mem_natCast_one]
+    obtain ⟨l, -, rfl⟩ := hnd r (mem_ndOf_of_mem_rtOf hr)
+    rw [uc_orderedPair]
+    exact hdU
+  · rw [sUnion_natCast_one, extL_ciRec_restrict empty_mem_natCast_one, ciExt_empty, hchd p hp]
+    refine ⟨fun D ↦ iff_of_false ?_ ?_, fun q hq ↦ by simp at hq, fun q hq ↦ by simp at hq⟩
+    · rintro ⟨c, hc, -⟩
+      simp at hc
+    · rintro ⟨q, hq, -⟩
+      simp at hq
+
+/-- The `ucf` of a discontinuous element of `stduoci_1` with nonempty signature: `dom U = 5`,
+direction `lf` -/
+theorem ucf_props_of_mem_stduoci_one (hU : U ∈ stduoci ((1 : ℕ) : M)) (hd : ctp U = dct)
+    (hs : sig U ≠ ∅) : dom U = ((5 : ℕ) : M) ∧ ucfdr U = lf ∧
+      (ucflvl U = ∅ ∨ ucflvl U = ((1 : ℕ) : M)) ∧ ucfdcn U ∈ ndOf (aoc U ﹫ ucflvl U) := by
+  have hUu := (mem_stduoci_iff.mp hU).left
+  rw [mem_uoci_iff_of_mem_omega (natCast_mem_omega 1)] at hUu
+  obtain ⟨-, hdom, -, -, -, -, hdom3, hucf⟩ := hUu
+  have hs' : ¬(sig U = ∅ ∧ IsOdd ((1 : ℕ) : M)) := fun h ↦ hs h.left
+  have hne3 : dom U ≠ ((3 : ℕ) : M) := fun h3 ↦
+    (hdom3.mp h3).elim hs' fun hct ↦ ct_ne_dct (hct.symm.trans hd)
+  have h3 : ((3 : ℕ) : M) ∈ dom U := by
+    rcases hdom with h | h | h
+    · exact (hne3 h).elim
+    · rw [h]
+      exact natCast_mem_natCast_of_lt (by omega)
+    · rw [h]
+      exact natCast_mem_natCast_of_lt (by omega)
+  obtain ⟨-, hlvl, hnd, -, hdr, hdr5, h6⟩ := hucf h3
+  have hl : ucflvl U = ∅ ∨ ucflvl U = ((1 : ℕ) : M) := by
+    rcases mem_or_eq_of_mem_succ hlvl with h | h
+    · rw [natCast_succ, natCast_zero, mem_succ_iff] at h
+      rcases h with h | h
+      · exact .inl h
+      · simp at h
+    · exact .inr h
+  have hdom5 : dom U = ((5 : ℕ) : M) := by
+    rcases hdom with h | h | h
+    · exact (hne3 h).elim
+    · exact h
+    · exfalso
+      obtain ⟨h0, hex⟩ := h6 h
+      rcases hl with hl | hl
+      · rw [hl] at h0
+        simp at h0
+      rw [hl, sUnion_natCast_one, extL_ciRec_restrict empty_mem_natCast_one, ciExt_empty] at hex
+      simp at hex
+  exact ⟨hdom5, hdr5.mp hdom5, hl, hnd⟩
+
+/-- An element of `stduoci_1` with nonempty signature and `ucf` at level `0` has no extension -/
+theorem not_mem_ciExt_one_of_ucflvl_eq_empty (hU : U ∈ stduoci ((1 : ℕ) : M))
+    (hs : sig U ≠ ∅) (hl : ucflvl U = ∅) (q : M) : !(U, q) ∉ ciExt ((1 : ℕ) : M) := by
+  intro h
+  obtain ⟨-, -, hUd, -⟩ := mem_ciExt_props h
+  obtain ⟨hdom5, hlf, -, hnd⟩ := ucf_props_of_mem_stduoci_one hU hUd hs
+  obtain ⟨P', -, Q', -, hPQ, hext⟩ := mem_ciExt_iff.mp h
+  rw [orderedPair_eq_orderedPair_iff] at hPQ
+  obtain ⟨rfl, rfl⟩ := hPQ
+  obtain ⟨-, -, -, hlfrt, -⟩ := hext
+  have hW := val_mem_otci_of_mem_aotci (aoc_mem_aotci_of_mem_stduoci_one hU)
+    (mem_succ_of_mem empty_mem_natCast_one)
+  rw [mem_otci_empty_iff] at hW
+  obtain ⟨l, -, hW⟩ := hW
+  rw [hl, hW, ndOf_irmrtOf_emptySLOT] at hnd
+  have hrt : ucfdcn U ∈ rtOf (aoc U ﹫ ucflvl U) := by
+    rw [hl, hW, rtOf_irmrtOf_emptySLOT]
+    exact hnd
+  have h4 : ((4 : ℕ) : M) ∈ dom U := by
+    rw [hdom5]
+    exact natCast_mem_natCast_of_lt (by omega)
+  have h1 := (hlfrt ⟨h4, hlf, by rw [hl]; exact isEven_empty, hrt⟩).left
+  rw [hl] at h1
+  simp at h1
+
+/-- The extension of an element of `stduoci_1` is unique -/
+theorem eq_of_mem_ciExt_one (h : !(U, q) ∈ ciExt ((1 : ℕ) : M))
+    (h' : !(U, q') ∈ ciExt ((1 : ℕ) : M)) : q = q' := by
+  obtain ⟨-, hq, -, hqc⟩ := mem_ciExt_props h
+  obtain ⟨-, hq', -, hqc'⟩ := mem_ciExt_props h'
+  exact eq_of_aoc_eq_of_ctp_eq_ct (natCast_mem_omega 1) hq hq' hqc hqc'
+    (aoc_eq_of_mem_ciExt_one h h')
+
+
+/-- The continuous `uoci` with array `U_aoc ↾ 1 ⌢ Y` and signature `U_sig ⌢ (1, b)` -/
+noncomputable def extOne (U Y b : M) : M :=
+  ciTriple (cc (aoc U ↾ ((1 : ℕ) : M)) Y) (cc (sig U) !(((1 : ℕ) : M), b)) ct
+
+theorem aoc_extOne_props (hU : U ∈ stduoci ((1 : ℕ) : M)) (Y b : M) :
+    IsFunction (aoc (extOne U Y b)) ∧ dom (aoc (extOne U Y b)) = succ ((1 : ℕ) : M) ∧
+      aoc (extOne U Y b) ﹫ ∅ = aoc U ﹫ ∅ ∧ aoc (extOne U Y b) ﹫ ((1 : ℕ) : M) = Y := by
+  obtain ⟨hf, hdom, -⟩ := mem_aotci_iff.mp (aoc_mem_aotci_of_mem_stduoci_one hU)
+  have hsub : ((1 : ℕ) : M) ⊆ dom (aoc U) := fun x hx ↦ by
+    rw [hdom]
+    exact mem_succ_of_mem hx
+  have hd1 : dom (aoc U ↾ ((1 : ℕ) : M)) = ((1 : ℕ) : M) := dom_restrict_of_subset hf hsub
+  have hrf := hf.restrict ((1 : ℕ) : M)
+  rw [extOne, aoc_ciTriple]
+  refine ⟨hrf.cc _, by rw [dom_cc, hd1], ?_, ?_⟩
+  · rw [cc_val_of_mem hrf _ (by rw [hd1]; exact empty_mem_natCast_one),
+      val_restrict _ hf empty_mem_natCast_one (hsub empty_mem_natCast_one)]
+  · have h := cc_val_self hrf Y
+    rwa [hd1] at h
+
+theorem sig_extOne_props (hU : U ∈ stduoci ((1 : ℕ) : M)) (Y b : M) :
+    IsFunction (sig (extOne U Y b)) ∧ dom (sig (extOne U Y b)) = succ (dom (sig U)) ∧
+      (∀ i ∈ dom (sig U), sig (extOne U Y b) ﹫ i = sig U ﹫ i) ∧
+      sig (extOne U Y b) ﹫ dom (sig U) = !(((1 : ℕ) : M), b) := by
+  have hUu := (mem_stduoci_iff.mp hU).left
+  rw [mem_uoci_iff_of_mem_omega (natCast_mem_omega 1)] at hUu
+  have hsf := hUu.right.right.right.left.left
+  rw [extOne, sig_ciTriple]
+  exact ⟨hsf.cc _, dom_cc _ _, fun i hi ↦ cc_val_of_mem hsf _ hi, cc_val_self hsf _⟩
+
+theorem mem_succ_one_cases {i : M} (hi : i ∈ succ ((1 : ℕ) : M)) : i = ∅ ∨ i = ((1 : ℕ) : M) := by
+  rcases mem_or_eq_of_mem_succ hi with h | h
+  · rw [natCast_succ, natCast_zero, mem_succ_iff] at h
+    rcases h with h | h
+    · exact .inl h
+    · simp at h
+  · exact .inr h
+
+theorem ctp_uc_eq_dct_of_mem_otci_one (hY : Y ∈ otci ((1 : ℕ) : M)) (hd : d ∈ ndOf Y) :
+    ctp (uc d) = dct := by
+  rw [uc_eq_dctUZero_of_mem_otci_one hY hd, dctUZero_eq_lfTrvUoci, ctp_lfTrvUoci]
+
+/-- `extOne U Y b ∈ stduoci_1` when `Y ∈ otci_1` adds the node `b`, labeled by the length of the
+signature of `U`, to the level-`1` tree of `U` -/
+theorem extOne_mem_stduoci (hU : U ∈ stduoci ((1 : ℕ) : M)) (hY : Y ∈ otci ((1 : ℕ) : M))
+    (hnd : ndOf Y = insert b (ndOf (aoc U ﹫ ((1 : ℕ) : M))))
+    (hb : b ∉ ndOf (aoc U ﹫ ((1 : ℕ) : M))) (hbl : lbl b = dom (sig U)) :
+    extOne U Y b ∈ stduoci ((1 : ℕ) : M) := by
+  have h1ω : ((1 : ℕ) : M) ∈ (ω : M) := natCast_mem_omega 1
+  have hUA := aoc_mem_aotci_of_mem_stduoci_one hU
+  obtain ⟨hUu, hUstd⟩ := mem_stduoci_iff.mp hU
+  rw [mem_uoci_iff_of_mem_omega h1ω] at hUu
+  obtain ⟨-, -, hUaoc, ⟨hUsf, hUinj, hUsω, hUsig⟩, -⟩ := hUu
+  obtain ⟨haf, had, ha0, ha1⟩ := aoc_extOne_props hU Y b
+  obtain ⟨hsf, hsd, hsold, hsnew⟩ := sig_extOne_props hU Y b
+  have h0 : (∅ : M) ∈ succ ((1 : ℕ) : M) := mem_succ_of_mem empty_mem_natCast_one
+  -- the array
+  have hA : aoc (extOne U Y b) ∈ aotci ((1 : ℕ) : M) := by
+    refine mem_aotci_iff.mpr ⟨haf, had, fun i hi ↦ ?_, by rw [ha1]; exact hY⟩
+    rw [otciL_ciRec_restrict hi]
+    rcases mem_succ_one_cases (mem_succ_of_mem hi) with rfl | rfl
+    · rw [ha0]
+      exact val_mem_otci_of_mem_aotci hUA h0
+    · exact (notMem_self _ hi).elim
+  have haoc : aoc (extOne U Y b) ∈ finaotci ((1 : ℕ) : M) := by
+    refine mem_finaotci_iff.mpr ⟨hA, fun i hi ↦ mem_finotci_iff.mpr
+      ⟨val_mem_otci_of_mem_aotci hA hi, ?_⟩⟩
+    have hfin (k : M) (hk : k ∈ succ ((1 : ℕ) : M)) :
+        MemStructure.Finite (ndOf (aoc U ﹫ k)) :=
+      (mem_finotci_iff.mp ((mem_finaotci_iff.mp hUaoc).right k hk)).right
+    rcases mem_succ_one_cases hi with rfl | rfl
+    · rw [ha0]
+      exact hfin ∅ h0
+    · rw [ha1, hnd]
+      exact (hfin _ (mem_succ_self _)).insert b
+  -- the signature
+  have hold (i : M) (hi : i ∈ dom (sig U)) : ∃ d ∈ ndOf (aoc U ﹫ ((1 : ℕ) : M)),
+      sig U ﹫ i = !(((1 : ℕ) : M), d) := by
+    obtain ⟨⟨l, d, hld⟩, -⟩ := hUsig i hi
+    obtain ⟨hl, hd⟩ := siglvl_eq_one hU hi
+    rw [siglvl, hld, lvl_orderedPair] at hl
+    rw [sigdcn, hld, dcn_orderedPair] at hd
+    exact ⟨d, hd, by rw [hld, hl]⟩
+  have hent (i : M) (hi : i ∈ dom (sig (extOne U Y b))) :
+      ∃ d ∈ ndOf Y, sig (extOne U Y b) ﹫ i = !(((1 : ℕ) : M), d) := by
+    rw [hsd] at hi
+    rcases mem_or_eq_of_mem_succ hi with hi | rfl
+    · obtain ⟨d, hd, he⟩ := hold i hi
+      exact ⟨d, by rw [hnd, mem_insert_iff]; exact .inr hd, by rw [hsold i hi, he]⟩
+    · exact ⟨b, by rw [hnd]; exact mem_insert _ _, hsnew⟩
+  have hsig (i : M) (hi : i ∈ dom (sig (extOne U Y b))) :
+      SigCond ((1 : ℕ) : M) (extOne U Y b) i := by
+    obtain ⟨d, hd, he⟩ := hent i hi
+    have hl : siglvl (extOne U Y b) i = ((1 : ℕ) : M) := by rw [siglvl, he, lvl_orderedPair]
+    have hdc : sigdcn (extOne U Y b) i = d := by rw [sigdcn, he, dcn_orderedPair]
+    rw [SigCond, hl, hdc, ha1, ← ndOf_eq_rtOf_of_mem_otci_one hY]
+    exact ⟨⟨_, _, he⟩, mem_succ_self _, fun h ↦ (isOdd_one.not_isEven h).elim, fun _ ↦ .inl hd,
+      ctp_uc_eq_dct_of_mem_otci_one hY hd⟩
+  have hne (i : M) (hi : i ∈ dom (sig U)) : sig U ﹫ i ≠ !(((1 : ℕ) : M), b) := by
+    intro h
+    obtain ⟨d, hd, he⟩ := hold i hi
+    rw [he, orderedPair_eq_orderedPair_iff] at h
+    exact hb (h.right ▸ hd)
+  have hinj : ∀ i ∈ dom (sig (extOne U Y b)), ∀ j ∈ dom (sig (extOne U Y b)),
+      sig (extOne U Y b) ﹫ i = sig (extOne U Y b) ﹫ j → i = j := by
+    intro i hi j hj h
+    rw [hsd] at hi hj
+    rcases mem_or_eq_of_mem_succ hi with hi | rfl <;>
+      rcases mem_or_eq_of_mem_succ hj with hj | rfl
+    · rw [hsold i hi, hsold j hj] at h
+      exact hUinj i hi j hj h
+    · rw [hsold i hi, hsnew] at h
+      exact (hne i hi h).elim
+    · rw [hsold j hj, hsnew] at h
+      exact (hne j hj h.symm).elim
+    · rfl
+  have hct : ctp (extOne U Y b) = ct := by rw [extOne, ctp_ciTriple]
+  have hsne : sig (extOne U Y b) ≠ ∅ := fun h ↦ by
+    have h' := hsd
+    rw [h, dom_empty] at h'
+    exact succ_ne_empty _ h'.symm
+  refine mem_stduoci_iff.mpr ⟨(mem_uoci_iff_of_mem_omega h1ω).mpr ⟨isFunction_ciTriple _ _ _,
+    .inl (dom_ciTriple _ _ _), haoc, ⟨hsf, hinj, by rw [hsd]; exact succ_mem_omega hUsω, hsig⟩,
+    .inl hct, fun h ↦ (hsne h.left).elim, iff_of_true (dom_ciTriple _ _ _) (.inr hct),
+    fun h ↦ (notMem_self _ (by rwa [extOne, dom_ciTriple] at h)).elim⟩, ?_⟩
+  -- standardness
+  have htr (l x : M) (hx : x = sig U ﹫ l) (hx0 : x ≠ ∅) : x = sig (extOne U Y b) ﹫ l := by
+    have hl : l ∈ dom (sig U) := by
+      by_contra hl
+      rw [val_eq_empty_of_not_mem_dom hl] at hx
+      exact hx0 hx
+    rw [hsold l hl, hx]
+  intro i hi p hp
+  rcases mem_succ_one_cases hi with rfl | rfl
+  · rw [ha0] at hp ⊢
+    obtain ⟨c1, c2, c3⟩ := hUstd ∅ h0 p hp
+    exact ⟨c1, fun h ↦ htr _ _ (c2 h) (orderedPair_ne_empty _ _), c3⟩
+  rw [ha1] at hp ⊢
+  have hpd := ctp_uc_eq_dct_of_mem_otci_one hY hp
+  refine ⟨fun h ↦ (isOdd_one.not_isEven h.left).elim, fun _ ↦ ?_,
+    fun h ↦ (ct_ne_dct (h.symm.trans hpd)).elim⟩
+  rw [hnd, mem_insert_iff] at hp
+  rcases hp with rfl | hp
+  · rw [hbl, hsnew]
+  · have hpd' : ctp (uc p) = dct := ctp_uc_eq_dct_of_mem_otci_one
+      (val_mem_otci_of_mem_aotci hUA (mem_succ_self _)) hp
+    exact htr _ _ ((hUstd _ (mem_succ_self _) p hp).right.left
+      ⟨hpd', fun h ↦ isOdd_one.not_isEven h.left⟩) (orderedPair_ne_empty _ _)
+
+theorem left_dctUZero_props :
+    IsFunction (dctUZero : M) ∧ dom (dctUZero : M) ∈ (ω : M) \ {∅} := by
+  have hdUs := (mem_trvuoci_iff.mp (dctUZero_mem_trvuoci (M := M))).left
+  rw [dctUZero_eq_lfTrvUoci]
+  exact ⟨isFunction_lfTrvUoci _, dctUZero_eq_lfTrvUoci (M := M) ▸
+    dom_mem_of_mem_uoci empty_mem_omega (mem_stduoci_iff.mp hdUs).left⟩
+
+/-- The labels of the level-`1` nodes of `U ∈ stduoci_1` index its signature -/
+theorem lbl_mem_dom_sig (hU : U ∈ stduoci ((1 : ℕ) : M)) {p : M}
+    (hp : p ∈ ndOf (aoc U ﹫ ((1 : ℕ) : M))) : lbl p ∈ dom (sig U) := by
+  have hpd := ctp_uc_eq_dct_of_mem_otci_one
+    (val_mem_otci_of_mem_aotci (aoc_mem_aotci_of_mem_stduoci_one hU) (mem_succ_self _)) hp
+  have h := ((mem_stduoci_iff.mp hU).right _ (mem_succ_self _) p hp).right.left
+    ⟨hpd, fun h ↦ isOdd_one.not_isEven h.left⟩
+  by_contra hl
+  rw [val_eq_empty_of_not_mem_dom hl] at h
+  exact orderedPair_ne_empty _ _ h
+
+/-- Adding a new root `b = (dctUZero, l)`, `l ∈ ω`, to a tree in `otci_1` by `irt`, as the ts of
+the new tree -/
+theorem mem_otci_one_of_ts_eq_irt {X : M} (hX : X ∈ otci ((1 : ℕ) : M)) (hY : IsSLOT Y)
+    (hts : (SLOTreeStructure.ofM Y).ts = (SLOTreeStructure.ofM X).ts.irt b)
+    {l : M} (hl : l ∈ (ω : M)) (hbl : b = !(dctUZero, l)) (hbX : b ∉ ndOf X) :
+    Y ∈ otci ((1 : ℕ) : M) ∧ ndOf Y = insert b (ndOf X) := by
+  have hXS : (SLOTreeStructure.ofM X).IsSLOTreeStructure := isSLOT_of_mem_otci hX
+  have hnd : ndOf Y = insert b (ndOf X) := by
+    change (SLOTreeStructure.ofM Y).ts.nd = _
+    rw [hts, TreeStructure.nd_irt]
+    rfl
+  refine ⟨mem_otci_one_of hY (fun p hp ↦ ?_) (fun p hp ↦ ?_), hnd⟩
+  · rw [hnd, mem_insert_iff] at hp
+    rcases hp with rfl | hp
+    · exact ⟨l, mem_vonNeumann_omega_of_mem_omega hl, hbl⟩
+    · exact exists_eq_of_mem_otci_one hX hp
+  · change (SLOTreeStructure.ofM Y).ts.chd ﹫ p = ∅
+    rw [hts]
+    rw [hnd, mem_insert_iff] at hp
+    rcases hp with rfl | hp
+    · exact hXS.isTreeStructure.chd_irt_val_self
+    · rw [hXS.isTreeStructure.chd_irt_val_of_mem hbX hp]
+      exact chdOf_eq_empty_of_mem_otci_one hX hp
+
+theorem cc_restrict_dom {f : M} (hf : IsFunction f) (a : M) : cc f a ↾ dom f = f := by
+  have hsub : dom f ⊆ dom (cc f a) := fun x hx ↦ by
+    rw [dom_cc]
+    exact mem_succ_of_mem hx
+  refine ((hf.cc a).restrict _).ext hf (dom_restrict_of_subset (hf.cc a) hsub) fun i hi ↦ ?_
+  rw [dom_restrict_of_subset (hf.cc a) hsub] at hi
+  rw [val_restrict _ (hf.cc a) hi (hsub hi), cc_val_of_mem hf _ hi]
+
+theorem lf_ne_dn : (lf : M) ≠ dn := by
+  rw [lf, dn, Ne, natCast_inj]
+  omega
+
+omit [ModelsZF M] in
+theorem asnchdOf_empty (Y b : M) : asnchdOf Y b ∅ = Y := by
+  change ((SLOTreeStructure.ofM Y).asnchd b ∅).toM = Y
+  rw [SLOTreeStructure.asnchd, if_pos rfl]
+  rfl
+
+/-- An element of `stduoci_1` with `ucf` at level `1` has an extension: a new left sibling of the
+`ucf` -/
+theorem exists_mem_ciExt_one_of_ucflvl (hU : U ∈ stduoci ((1 : ℕ) : M)) (hd : ctp U = dct)
+    (hs : sig U ≠ ∅) (hl : ucflvl U = ((1 : ℕ) : M)) : ∃ q, !(U, q) ∈ ciExt ((1 : ℕ) : M) := by
+  obtain ⟨-, hlf, -, hf⟩ := ucf_props_of_mem_stduoci_one hU hd hs
+  rw [hl] at hf
+  set X := aoc U ﹫ ((1 : ℕ) : M) with hXdef
+  set b := !(uc (ucfdcn U), dom (sig U)) with hbdef
+  have hX := val_mem_otci_of_mem_aotci (aoc_mem_aotci_of_mem_stduoci_one hU) (mem_succ_self _)
+  have hXS : (SLOTreeStructure.ofM X).IsSLOTreeStructure := isSLOT_of_mem_otci hX
+  have hfrt : ucfdcn U ∈ rtOf X := by
+    rw [← ndOf_eq_rtOf_of_mem_otci_one hX]
+    exact hf
+  have huc := uc_eq_dctUZero_of_mem_otci_one hX hf
+  have hbX : b ∉ ndOf X := fun h ↦ by
+    have h' := lbl_mem_dom_sig hU h
+    rw [lbl_orderedPair] at h'
+    exact notMem_self _ h'
+  set Y := ilfsblOf X (ucfdcn U) b
+  have hYS : IsSLOT Y := hXS.ilfsbl ⟨_, _, rfl⟩ hbX
+    (by rw [left_orderedPair]; exact huc ▸ left_dctUZero_props.left)
+    (by rw [left_orderedPair]; exact huc ▸ left_dctUZero_props.right) hf
+    (by rw [left_orderedPair]; rfl)
+  have hts : (SLOTreeStructure.ofM Y).ts = (SLOTreeStructure.ofM X).ts.irt b := by
+    change ((SLOTreeStructure.ofM X).ilfsbl _ _).ts = _
+    rw [SLOTreeStructure.ilfsbl, SLOTreeStructure.ts_mk, TreeStructure.isbl_of_mem_rt hfrt]
+  have hUu := (mem_stduoci_iff.mp hU).left
+  rw [mem_uoci_iff_of_mem_omega (natCast_mem_omega 1)] at hUu
+  obtain ⟨hY, hnd⟩ := mem_otci_one_of_ts_eq_irt hX hYS hts
+    hUu.right.right.right.left.right.right.left
+    (by rw [hbdef, huc]) hbX
+  have hq := extOne_mem_stduoci hU hY hnd hbX lbl_orderedPair
+  obtain ⟨-, -, ha0, ha1⟩ := aoc_extOne_props hU Y b
+  refine ⟨_, mem_ciExt_iff.mpr ⟨U, hU, _, hq, rfl, hd, by rw [extOne, ctp_ciTriple],
+    fun h ↦ (hs h.left).elim, fun h ↦ (isOdd_one.not_isEven (hl ▸ h.right.right.left)).elim,
+    fun _ ↦ ?_, fun h ↦ (lf_ne_dn (hlf.symm.trans h)).elim⟩⟩
+  rw [hl]
+  refine ⟨empty_mem_natCast_one, fun i hi hi1 ↦ ?_, ∅, by rw [ha1, asnchdOf_empty],
+    by rw [extOne, sig_ciTriple]⟩
+  rcases mem_succ_one_cases hi with rfl | rfl
+  · exact ha0.symm
+  · exact (hi1 rfl).elim
+
+/-- An element of `stduoci_1` with empty signature has an extension: a new root -/
+theorem exists_mem_ciExt_one_of_sig_eq_empty (hU : U ∈ stduoci ((1 : ℕ) : M))
+    (hs : sig U = ∅) : ∃ q, !(U, q) ∈ ciExt ((1 : ℕ) : M) := by
+  have hUu := (mem_stduoci_iff.mp hU).left
+  rw [mem_uoci_iff_of_mem_omega (natCast_mem_omega 1)] at hUu
+  obtain ⟨-, -, -, -, -, hdct, hdom3, -⟩ := hUu
+  have hd : ctp U = dct := hdct ⟨hs, isOdd_one⟩
+  have h3 : dom U = ((3 : ℕ) : M) := hdom3.mpr (.inl ⟨hs, isOdd_one⟩)
+  have h4 : ((4 : ℕ) : M) ∉ dom U := by
+    rw [h3, natCast_mem_natCast_iff]
+    omega
+  set X := aoc U ﹫ ((1 : ℕ) : M) with hXdef
+  set b := !((dctUZero : M), (∅ : M)) with hbdef
+  have hX := val_mem_otci_of_mem_aotci (aoc_mem_aotci_of_mem_stduoci_one hU) (mem_succ_self _)
+  have hXS : (SLOTreeStructure.ofM X).IsSLOTreeStructure := isSLOT_of_mem_otci hX
+  have hbX : b ∉ ndOf X := fun h ↦ by
+    have h' := lbl_mem_dom_sig hU h
+    rw [hs, dom_empty] at h'
+    simp at h'
+  set Y := irmrtOf X b
+  have hYS : IsSLOT Y := hXS.irmrt ⟨_, _, rfl⟩ hbX
+    (by rw [left_orderedPair]; exact left_dctUZero_props.left)
+    (by rw [left_orderedPair]; exact left_dctUZero_props.right)
+  have hts : (SLOTreeStructure.ofM Y).ts = (SLOTreeStructure.ofM X).ts.irt b := by
+    change ((SLOTreeStructure.ofM X).irmrt _).ts = _
+    rw [SLOTreeStructure.ts_irmrt]
+  obtain ⟨hY, hnd⟩ := mem_otci_one_of_ts_eq_irt hX hYS hts empty_mem_omega rfl hbX
+  have hq := extOne_mem_stduoci hU hY hnd hbX (by rw [lbl_orderedPair, hs, dom_empty])
+  obtain ⟨-, -, -, ha1⟩ := aoc_extOne_props hU Y b
+  obtain ⟨hAf, -⟩ := mem_aotci_iff.mp (aoc_mem_aotci_of_mem_stduoci_one hU)
+  have hres : aoc U ↾ ((1 : ℕ) : M) = aoc (extOne U Y b) ↾ ((1 : ℕ) : M) := by
+    have hsub : ((1 : ℕ) : M) ⊆ dom (aoc U) := fun x hx ↦ by
+      rw [(mem_aotci_iff.mp (aoc_mem_aotci_of_mem_stduoci_one hU)).right.left]
+      exact mem_succ_of_mem hx
+    have h := cc_restrict_dom (hAf.restrict ((1 : ℕ) : M)) Y
+    rw [dom_restrict_of_subset hAf hsub] at h
+    rw [extOne, aoc_ciTriple, h]
+  have hdU := dctUZero_mem_trvuoci (M := M)
+  refine ⟨_, mem_ciExt_iff.mpr ⟨U, hU, _, hq, rfl, hd, by rw [extOne, ctp_ciTriple],
+    fun _ ↦ ?_, fun h ↦ (h4 h.left).elim, fun h ↦ (h4 h.left).elim, fun h ↦ ?_⟩⟩
+  · rw [sUnion_natCast_one, stduociL_ciRec_restrict empty_mem_natCast_one,
+      trvaotciL_ciRec_restrict empty_mem_natCast_one]
+    exact ⟨hres, dctUZero, (mem_trvuoci_iff.mp hdU).left, ∅, (mem_trvuoci_iff.mp hdU).right.left,
+      by rw [ha1, asnchdOf_empty], by rw [extOne, sig_ciTriple, hs]⟩
+  · exfalso
+    rw [ucfdr, val_eq_empty_of_not_mem_dom h4] at h
+    exact natCast_one_ne_empty h.symm
+
+/-- A discontinuous `U ∈ stduoci_1` has an extension iff its signature is empty or its `ucf` lies
+at level `1` (and then the extension is unique, `eq_of_mem_ciExt_one`); with nonempty signature
+and `ucf` at level `0` it has none -/
+theorem exists_mem_ciExt_one_iff (hU : U ∈ stduoci ((1 : ℕ) : M)) (hd : ctp U = dct) :
+    (∃ q, !(U, q) ∈ ciExt ((1 : ℕ) : M)) ↔ sig U = ∅ ∨ ucflvl U = ((1 : ℕ) : M) := by
+  refine ⟨fun ⟨q, hq⟩ ↦ ?_, fun h ↦ ?_⟩
+  · by_cases hs : sig U = ∅
+    · exact .inl hs
+    rcases (ucf_props_of_mem_stduoci_one hU hd hs).right.right.left with hl | hl
+    · exact (not_mem_ciExt_one_of_ucflvl_eq_empty hU hs hl q hq).elim
+    · exact .inr hl
+  · by_cases hs : sig U = ∅
+    · exact exists_mem_ciExt_one_of_sig_eq_empty hU hs
+    · exact exists_mem_ciExt_one_of_ucflvl hU hd hs (h.resolve_left hs)
+
+end ExtOne
+
 section Labels
 
 /-! ### The labels and their sequences -/
@@ -795,7 +1216,7 @@ section Mem
 
 /-! ### `P ⊗ Q ∈ otci_1` -/
 
-variable {f f' i k p p' x y P Q : M}
+variable {f f' i k p p' x y P Q T : M}
 
 theorem succ_mem_succ_of_mem {n : M} (hn : n ∈ (ω : M)) (hi : i ∈ n) : succ i ∈ succ n := by
   have hiω : i ∈ (ω : M) := ordinal_omega.transitive _ hn hi
@@ -826,10 +1247,10 @@ theorem tensorProdTwoAOneSeq_val (hp : p ∈ ndOf P) (hi : i ∈ depOf P p) :
 
 /-- The coordinates of the sequences lie in `(Q ⊗ Z)(1)_nd × P_nd` -/
 theorem tensorProdTwoAOneSeq_val_mem (hp : p ∈ ndOf P)
-    (hf : f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q))
+    (hf : f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) T)
     (hi : i ∈ depOf P p) :
     tensorProdTwoAOneSeq P !(p, f) ﹫ i ∈
-      ndOf (tensorProdTwoAOneTgt Q ﹫ ((1 : ℕ) : M)) ×ˢ ndOf P := by
+      ndOf (T ﹫ ((1 : ℕ) : M)) ×ˢ ndOf P := by
   have hS : (SLOTreeStructure.ofM P).IsSLOTreeStructure := (otciCond_two hP).left
   have huc := ((otciCond_two hP).right.left p hp).left
   have hw := (siglvl_eq_one huc (by rwa [dom_sig_uc_eq_depOf hP hp])).right
@@ -841,10 +1262,10 @@ theorem tensorProdTwoAOneSeq_val_mem (hp : p ∈ ndOf P)
       (succ_mem_succ_of_mem (hS.isTreeStructure.dep_mem_omega hp) hi)).left⟩
 
 /-- The sequences determine the labels -/
-theorem eq_of_tensorProdTwoAOneSeq_eq (hQ : Q ∈ aotci ((1 : ℕ) : M)) (hp : p ∈ ndOf P)
+theorem eq_of_tensorProdTwoAOneSeq_eq (hT : T ∈ aotci ((1 : ℕ) : M)) (hp : p ∈ ndOf P)
     (hp' : p' ∈ ndOf P)
-    (hf : f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q))
-    (hf' : f' ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p')) (tensorProdTwoAOneTgt Q))
+    (hf : f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) T)
+    (hf' : f' ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p')) T)
     (h : tensorProdTwoAOneSeq P !(p, f) = tensorProdTwoAOneSeq P !(p', f')) :
     !(p, f) = !(p', f') := by
   obtain ⟨hPs, hnodes, -, ⟨r, hr⟩, -⟩ := otciCond_two hP
@@ -874,7 +1295,7 @@ theorem eq_of_tensorProdTwoAOneSeq_eq (hQ : Q ∈ aotci ((1 : ℕ) : M)) (hp : p
     exact h3
   subst hpp
   have huc := (hnodes p hp).left
-  rw [eq_of_mem_aotciEmbSet_one huc (tensorProdTwoAOneTgt_mem hQ) hf hf' fun i hi ↦ ?_]
+  rw [eq_of_mem_aotciEmbSet_one huc hT hf hf' fun i hi ↦ ?_]
   rw [dom_sig_uc_eq_depOf hP hp] at hi
   have h2 : tensorProdTwoAOneSeq P !(p, f) ﹫ i = tensorProdTwoAOneSeq P !(p, f') ﹫ i := by
     rw [h]
@@ -883,22 +1304,24 @@ theorem eq_of_tensorProdTwoAOneSeq_eq (hQ : Q ∈ aotci ((1 : ℕ) : M)) (hp : p
   rw [(siglvl_eq_one huc (by rwa [dom_sig_uc_eq_depOf hP hp])).left]
   exact h2.left
 
-/-- The first differing coordinates of two sequences are comparable -/
-theorem tensorProdTwoAOneSeq_cmp (hQ : Q ∈ aotci ((1 : ℕ) : M)) (hp : p ∈ ndOf P)
+/-- The first differing coordinates of two sequences are comparable, for embeddings into any
+`T ∈ aotci_1` -/
+theorem tensorProdTwoAOneSeq_cmp (hT : T ∈ aotci ((1 : ℕ) : M)) (hp : p ∈ ndOf P)
     (hp' : p' ∈ ndOf P)
-    (hf : f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) (tensorProdTwoAOneTgt Q))
-    (hf' : f' ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p')) (tensorProdTwoAOneTgt Q))
+    (hf : f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) T)
+    (hf' : f' ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p')) T)
     (hk : k ∈ depOf P p) (hk' : k ∈ depOf P p')
     (hres : tensorProdTwoAOneSeq P !(p, f) ↾ k = tensorProdTwoAOneSeq P !(p', f') ↾ k)
     (hne : tensorProdTwoAOneSeq P !(p, f) ﹫ k ≠ tensorProdTwoAOneSeq P !(p', f') ﹫ k) :
-    (tensorProdTwoAOneSeq P !(p, f) ﹫ k) [tensorProdTwoAOneCoordOdr P Q]
-        (tensorProdTwoAOneSeq P !(p', f') ﹫ k) ∨
-      (tensorProdTwoAOneSeq P !(p', f') ﹫ k) [tensorProdTwoAOneCoordOdr P Q]
-        (tensorProdTwoAOneSeq P !(p, f) ﹫ k) := by
+    (tensorProdTwoAOneSeq P !(p, f) ﹫ k) [lexProd (losOdr (rtlosOf (T ﹫ ((1 : ℕ) : M)) ﹫ trvAZero))
+        (ndOf (T ﹫ ((1 : ℕ) : M))) (sblOdrOf P) (ndOf P)] (tensorProdTwoAOneSeq P !(p', f') ﹫ k) ∨
+      (tensorProdTwoAOneSeq P !(p', f') ﹫ k) [lexProd
+        (losOdr (rtlosOf (T ﹫ ((1 : ℕ) : M)) ﹫ trvAZero)) (ndOf (T ﹫ ((1 : ℕ) : M))) (sblOdrOf P)
+        (ndOf P)] (tensorProdTwoAOneSeq P !(p, f) ﹫ k) := by
   obtain ⟨hPs, -, -, ⟨r, hr⟩, -⟩ := otciCond_two hP
   have hS : (SLOTreeStructure.ofM P).IsSLOTreeStructure := hPs
   have hTS := hS.isTreeStructure
-  have hT1 := val_mem_otci_of_mem_aotci (tensorProdTwoAOneTgt_mem hQ) (mem_succ_self _)
+  have hT1 := val_mem_otci_of_mem_aotci hT (mem_succ_self _)
   have hR1 := (rtlosOf_of_mem_otci_one hT1).left
   have hm := tensorProdTwoAOneSeq_val_mem hP hp hf hk
   have hm' := tensorProdTwoAOneSeq_val_mem hP hp' hf' hk'
@@ -1031,9 +1454,9 @@ theorem tensorProdTwoAOne_mem_otci (hQ : Q ∈ aotci ((1 : ℕ) : M)) :
     rcases bkLt_trichotomous (hseq _ hx).left (hseq _ hy).left (hseq _ hx).right.left
       (hseq _ hy).right.left (fun k hk hk' hres hne ↦ by
         rw [tensorProdTwoAOneSeq_dom] at hk hk'
-        exact tensorProdTwoAOneSeq_cmp hP hQ hp hp' hf hf' hk hk' hres hne) with h | h | h
+        exact tensorProdTwoAOneSeq_cmp hP hT hp hp' hf hf' hk hk' hres hne) with h | h | h
     · exact .inl h
-    · exact .inr (.inl (eq_of_tensorProdTwoAOneSeq_eq hP hQ hp hp' hf hf' h))
+    · exact .inr (.inl (eq_of_tensorProdTwoAOneSeq_eq hP hT hp hp' hf hf' h))
     · exact .inr (.inr h)
   -- the order of the nodes
   have hOdr (a b : M) : a [tensorProdTwoAOneOdr P Q] b ↔
@@ -1158,5 +1581,328 @@ theorem tensorProdATwoAOne_mem_aotci (hP : P ∈ aotci ((2 : ℕ) : M))
     exact hX
 
 end Array
+
+
+section Definability
+
+/-! ### Definability of the tensor products of level two
+
+As for level one, the tensor products are definable as functions of the pair `z = (P, Q)`. -/
+
+instance : ClassFunction.Definable (fun Q : M ↦ tensorProdTwoAOneTgt Q) Set.univ := by
+  unfold tensorProdTwoAOneTgt
+  have h := ClassFunction.Definable.comp₁ (H := fun z : M ↦ tensorProdAOneAZero (left z) (right z))
+    (F := fun Q : M ↦ !(Q, trvAZero))
+  simp only [left_orderedPair, right_orderedPair] at h
+  exact h
+
+theorem mem_singleton_sprod_aotciEmbSet_iff {p T w : M} :
+    w ∈ ({p} : M) ×ˢ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) T ↔
+      ∃ f, w = !(p, f) ∧ f ∈ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p)) T := by
+  rw [mem_sprod_iff]
+  constructor
+  · rintro ⟨x, hx, f, hf, rfl⟩
+    rw [mem_singleton_iff] at hx
+    subst hx
+    exact ⟨f, rfl, hf⟩
+  · rintro ⟨f, rfl, hf⟩
+    exact ⟨p, mem_singleton p, f, hf, rfl⟩
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdTwoAOneLbls (left z) (right z))
+    Set.univ := by
+  unfold tensorProdTwoAOneLbls
+  have hG : Multiclass.Definable (fun xs : Fin 3 → M ↦
+      (fun z p ↦ ({p} : M) ×ˢ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p))
+        (tensorProdTwoAOneTgt (right z))) (xs 0) (xs 1) = xs 2) Set.univ := by
+    obtain ⟨G, hG⟩ : ∃ G : ClassFunction M, G = fun z ↦ tensorProdTwoAOneTgt (right z) :=
+      ⟨_, rfl⟩
+    have : G.Definable Set.univ := by
+      rw [hG]
+      exact ClassFunction.Definable.comp₁ (H := fun Q : M ↦ tensorProdTwoAOneTgt Q)
+    have h : (fun xs : Fin 3 → M ↦
+        (fun z p ↦ ({p} : M) ×ˢ aotciEmbSet ((1 : ℕ) : M) (aoc (uc p))
+          (tensorProdTwoAOneTgt (right z))) (xs 0) (xs 1) = xs 2) = fun xs ↦
+        ∃ T, G (xs 0) = T ∧ ∃ n W, n = ((1 : ℕ) : M) ∧ W = aoc (uc (xs 1)) ∧
+          ∀ w, w ∈ xs 2 ↔ ∃ f, w = !(xs 1, f) ∧ f ∈ aotciEmbSet n W T := by
+      funext xs
+      rw [hG]
+      apply propext
+      constructor
+      · intro h
+        refine ⟨_, rfl, _, _, rfl, rfl, fun w ↦ ?_⟩
+        rw [← h]
+        exact mem_singleton_sprod_aotciEmbSet_iff
+      · rintro ⟨T, hT, n, W, rfl, rfl, h⟩
+        subst hT
+        ext w
+        rw [mem_singleton_sprod_aotciEmbSet_iff, h w]
+    rw [h]
+    infer_instance
+  have : ClassFunction.Definable (fun z : M ↦ (fun z p ↦ ({p} : M) ×ˢ aotciEmbSet ((1 : ℕ) : M)
+      (aoc (uc p)) (tensorProdTwoAOneTgt (right z))) z ↾₀ (ndOf (left z) \ rtOf (left z)))
+      Set.univ :=
+    ClassFunction.Definable.toSetRestrictedTo
+  have : ClassFunction.Definable (fun z : M ↦ ran ((fun p ↦ ({p} : M) ×ˢ aotciEmbSet ((1 : ℕ) : M)
+      (aoc (uc p)) (tensorProdTwoAOneTgt (right z))) ↾₀ (ndOf (left z) \ rtOf (left z))))
+      Set.univ :=
+    ClassFunction.Definable.comp₁ (H := ran)
+  exact ClassFunction.Definable.comp₁ (H := fun x : M ↦ ⋃₀ x)
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdTwoAOneNds (left z) (right z))
+    Set.univ := by
+  unfold tensorProdTwoAOneNds
+  have : ClassFunction.Definable (fun z : M ↦ (fun x ↦ !(dctUZero, x)) ↾₀
+      tensorProdTwoAOneLbls (left z) (right z)) Set.univ :=
+    ClassFunction.Definable.toSetRestrictedTo (G := fun _ x ↦ !(dctUZero, x))
+      (D := fun z ↦ tensorProdTwoAOneLbls (left z) (right z))
+  exact ClassFunction.Definable.comp₁ (H := ran)
+
+instance : MulticlassFunction.DeltaZero
+    (fun ys : Fin 4 → M ↦ lexProd (ys 0) (ys 1) (ys 2) (ys 3)) Set.univ :=
+  MulticlassFunction.deltaZero_of_eq (RudimentaryTerm.lexProd₀.substBoundRud ![ᵣ0, ᵣ2, ᵣ1, ᵣ3])
+    fun ys ↦ by
+      simp only [lexProd, RudimentaryTerm.realize_substBoundRud]
+      congr 1
+      ext i
+      fin_cases i <;> simp
+
+instance : ClassFunction.Definable (fun P : M ↦ sblOdrOf P) Set.univ := by
+  have : ClassFunction.Definable (fun P : M ↦ (fun a ↦ losOdr (ndlosOf P a)) ↾₀ ndOf P) Set.univ :=
+    ClassFunction.Definable.toSetRestrictedTo (G := fun P a ↦ losOdr (ndlosOf P a)) (D := ndOf)
+  have : ClassFunction.Definable
+      (fun P : M ↦ ran ((fun a ↦ losOdr (ndlosOf P a)) ↾₀ ndOf P)) Set.univ :=
+    ClassFunction.Definable.comp₁ (H := ran)
+  have h := ClassFunction.Definable.comp₁ (H := fun x : M ↦ ⋃₀ x)
+    (F := fun P : M ↦ ran ((fun a ↦ losOdr (ndlosOf P a)) ↾₀ ndOf P))
+  exact h
+
+instance : Multiclass.Definable (fun xs : Fin 6 → M ↦
+    !((xs 0 ﹫ siglvl (xs 1) (xs 3)) ﹫ sigdcn (xs 1) (xs 3), ancOf (xs 5) (xs 2) (succ (xs 3))) =
+      xs 4) Set.univ := by
+  have h : (fun xs : Fin 6 → M ↦
+      !((xs 0 ﹫ siglvl (xs 1) (xs 3)) ﹫ sigdcn (xs 1) (xs 3), ancOf (xs 5) (xs 2) (succ (xs 3))) =
+        xs 4) = fun xs ↦ ∃ k b, k = succ (xs 3) ∧ ancOf (xs 5) (xs 2) k = b ∧
+        !((xs 0 ﹫ siglvl (xs 1) (xs 3)) ﹫ sigdcn (xs 1) (xs 3), b) = xs 4 := by
+    funext xs
+    apply propext
+    constructor
+    · intro h
+      exact ⟨_, _, rfl, rfl, h⟩
+    · rintro ⟨k, b, rfl, rfl, h⟩
+      exact h
+  rw [h]
+  infer_instance
+
+instance {n : ℕ} (i j k l m q : Fin n) : Multiclass.Definable (fun xs : Fin n → M ↦
+    !((xs i ﹫ siglvl (xs j) (xs l)) ﹫ sigdcn (xs j) (xs l), ancOf (xs q) (xs k) (succ (xs l))) =
+      xs m) Set.univ := by
+  have h : (fun xs : Fin n → M ↦
+      !((xs i ﹫ siglvl (xs j) (xs l)) ﹫ sigdcn (xs j) (xs l), ancOf (xs q) (xs k) (succ (xs l))) =
+        xs m) = Multiclass.remap (fun ys : Fin 6 → M ↦
+      !((ys 0 ﹫ siglvl (ys 1) (ys 3)) ﹫ sigdcn (ys 1) (ys 3), ancOf (ys 5) (ys 2) (succ (ys 3))) =
+        ys 4) ![i, j, k, l, m, q] := by
+    funext xs
+    simp [Multiclass.remap]
+  rw [h]
+  exact ⟨Multiclass.Definable.isDefinable.remap _⟩
+
+instance : Multiclass.Definable (fun xs : Fin 4 → M ↦
+    !((right (xs 1) ﹫ siglvl (uc (left (xs 1))) (xs 2)) ﹫ sigdcn (uc (left (xs 1))) (xs 2),
+      ancOf (xs 0) (left (xs 1)) (succ (xs 2))) = xs 3) Set.univ := by
+  have h : (fun xs : Fin 4 → M ↦
+      !((right (xs 1) ﹫ siglvl (uc (left (xs 1))) (xs 2)) ﹫ sigdcn (uc (left (xs 1))) (xs 2),
+        ancOf (xs 0) (left (xs 1)) (succ (xs 2))) = xs 3) = fun xs ↦ ∃ f U p, f = right (xs 1) ∧
+        U = uc (left (xs 1)) ∧ p = left (xs 1) ∧
+        !((f ﹫ siglvl U (xs 2)) ﹫ sigdcn U (xs 2), ancOf (xs 0) p (succ (xs 2))) = xs 3 := by
+    funext xs
+    apply propext
+    constructor
+    · intro h
+      exact ⟨_, _, _, rfl, rfl, rfl, h⟩
+    · rintro ⟨f, U, p, rfl, rfl, rfl, h⟩
+      exact h
+  rw [h]
+  infer_instance
+
+instance {n : ℕ} (i j k l : Fin n) : Multiclass.Definable (fun xs : Fin n → M ↦
+    !((right (xs j) ﹫ siglvl (uc (left (xs j))) (xs k)) ﹫ sigdcn (uc (left (xs j))) (xs k),
+      ancOf (xs i) (left (xs j)) (succ (xs k))) = xs l) Set.univ := by
+  have h : (fun xs : Fin n → M ↦
+      !((right (xs j) ﹫ siglvl (uc (left (xs j))) (xs k)) ﹫ sigdcn (uc (left (xs j))) (xs k),
+        ancOf (xs i) (left (xs j)) (succ (xs k))) = xs l) = Multiclass.remap (fun ys : Fin 4 → M ↦
+      !((right (ys 1) ﹫ siglvl (uc (left (ys 1))) (ys 2)) ﹫ sigdcn (uc (left (ys 1))) (ys 2),
+        ancOf (ys 0) (left (ys 1)) (succ (ys 2))) = ys 3) ![i, j, k, l] := by
+    funext xs
+    simp [Multiclass.remap]
+  rw [h]
+  exact ⟨Multiclass.Definable.isDefinable.remap _⟩
+
+instance : ClassFunction.Definable (fun w : M ↦ tensorProdTwoAOneSeq (left w) (right w))
+    Set.univ := by
+  unfold tensorProdTwoAOneSeq
+  have hG : Multiclass.Definable (fun xs : Fin 3 → M ↦
+      (fun w i ↦ !((right (right w) ﹫ siglvl (uc (left (right w))) i) ﹫
+        sigdcn (uc (left (right w))) i, ancOf (left w) (left (right w)) (succ i))) (xs 0) (xs 1) =
+          xs 2) Set.univ := by
+    have h : (fun xs : Fin 3 → M ↦
+        (fun w i ↦ !((right (right w) ﹫ siglvl (uc (left (right w))) i) ﹫
+          sigdcn (uc (left (right w))) i, ancOf (left w) (left (right w)) (succ i))) (xs 0) (xs 1) =
+            xs 2) = fun xs ↦ ∃ P x, P = left (xs 0) ∧ x = right (xs 0) ∧
+          !((right x ﹫ siglvl (uc (left x)) (xs 1)) ﹫ sigdcn (uc (left x)) (xs 1),
+            ancOf P (left x) (succ (xs 1))) = xs 2 := by
+      funext xs
+      apply propext
+      constructor
+      · intro h
+        exact ⟨_, _, rfl, rfl, h⟩
+      · rintro ⟨P, x, rfl, rfl, h⟩
+        exact h
+    rw [h]
+    infer_instance
+  exact ClassFunction.Definable.toSetRestrictedTo
+    (D := fun w ↦ depOf (left w) (left (right w)))
+
+instance : ClassFunction.Definable
+    (fun z : M ↦ tensorProdTwoAOneCoordOdr (left z) (right z)) Set.univ := by
+  unfold tensorProdTwoAOneCoordOdr
+  have : ClassFunction.Definable (fun z : M ↦ tensorProdTwoAOneTgt (right z)) Set.univ :=
+    ClassFunction.Definable.comp₁ (H := fun Q : M ↦ tensorProdTwoAOneTgt Q)
+  have : ClassFunction.Definable (fun z : M ↦
+      losOdr (rtlosOf (tensorProdTwoAOneTgt (right z) ﹫ ((1 : ℕ) : M)) ﹫ trvAZero)) Set.univ :=
+    ClassFunction.Definable.comp₁
+      (H := fun T : M ↦ losOdr (rtlosOf (T ﹫ ((1 : ℕ) : M)) ﹫ trvAZero))
+      (F := fun z : M ↦ tensorProdTwoAOneTgt (right z))
+  have : ClassFunction.Definable (fun z : M ↦
+      ndOf (tensorProdTwoAOneTgt (right z) ﹫ ((1 : ℕ) : M))) Set.univ :=
+    ClassFunction.Definable.comp₁ (H := fun T : M ↦ ndOf (T ﹫ ((1 : ℕ) : M)))
+      (F := fun z : M ↦ tensorProdTwoAOneTgt (right z))
+  have : ClassFunction.Definable (fun z : M ↦ sblOdrOf (left z)) Set.univ :=
+    ClassFunction.Definable.comp₁ (H := fun P : M ↦ sblOdrOf P)
+  have : Multiclass.Definable
+      (fun ys : Fin 5 → M ↦ lexProd (ys 0) (ys 1) (ys 2) (ys 3) = ys 4) Set.univ :=
+    (inferInstance : MulticlassFunction.Definable
+      (fun ys : Fin 4 → M ↦ lexProd (ys 0) (ys 1) (ys 2) (ys 3)) Set.univ).1
+  exact ClassFunction.Definable.comp₄ (H := lexProd) (E := fun z : M ↦ ndOf (left z))
+
+instance : Multiclass.Definable
+    (fun xs : Fin 4 → M ↦ TensorProdTwoAOneLt (xs 0) (xs 1) (xs 2) (xs 3)) Set.univ := by
+  obtain ⟨C, hC⟩ : ∃ C : ClassFunction M,
+      C = fun z ↦ tensorProdTwoAOneCoordOdr (left z) (right z) := ⟨_, rfl⟩
+  obtain ⟨S, hS⟩ : ∃ S : ClassFunction M,
+      S = fun w ↦ tensorProdTwoAOneSeq (left w) (right w) := ⟨_, rfl⟩
+  have : C.Definable Set.univ := by
+    rw [hC]
+    infer_instance
+  have : S.Definable Set.univ := by
+    rw [hS]
+    infer_instance
+  have h : (fun xs : Fin 4 → M ↦ TensorProdTwoAOneLt (xs 0) (xs 1) (xs 2) (xs 3)) = fun xs ↦
+      ∃ z w w', z = !(xs 0, xs 1) ∧ w = !(xs 0, xs 2) ∧ w' = !(xs 0, xs 3) ∧
+        ∃ R s t, C z = R ∧ S w = s ∧ S w' = t ∧ BKLt R s t := by
+    funext xs
+    rw [hC, hS]
+    apply propext
+    constructor
+    · intro h
+      exact ⟨_, _, _, rfl, rfl, rfl, _, _, _, rfl, rfl, rfl, by
+        simpa [left_orderedPair, right_orderedPair, TensorProdTwoAOneLt] using h⟩
+    · rintro ⟨z, w, w', rfl, rfl, rfl, R, s, t, rfl, rfl, rfl, h⟩
+      simpa [left_orderedPair, right_orderedPair, TensorProdTwoAOneLt] using h
+  rw [h]
+  infer_instance
+
+theorem mem_tensorProdTwoAOneOdr_iff {P Q e : M} : e ∈ tensorProdTwoAOneOdr P Q ↔
+    e ∈ tensorProdTwoAOneNds P Q ×ˢ tensorProdTwoAOneNds P Q ∧
+      TensorProdTwoAOneLt P Q (lbl (left e)) (lbl (right e)) := by
+  rw [tensorProdTwoAOneOdr, mem_comprehension_iff]
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdTwoAOneOdr (left z) (right z))
+    Set.univ := by
+  obtain ⟨N, hN⟩ : ∃ N : ClassFunction M,
+      N = fun z ↦ tensorProdTwoAOneNds (left z) (right z) := ⟨_, rfl⟩
+  have : N.Definable Set.univ := by
+    rw [hN]
+    infer_instance
+  refine .of_mem_iff (R := fun z e ↦ ∃ X, N z = X ∧ e ∈ X ×ˢ X ∧
+    TensorProdTwoAOneLt (left z) (right z) (lbl (left e)) (lbl (right e))) fun z e ↦ ?_
+  rw [mem_tensorProdTwoAOneOdr_iff]
+  constructor
+  · rintro ⟨he, hlt⟩
+    exact ⟨_, by rw [hN], he, hlt⟩
+  · rintro ⟨X, hX, he, hlt⟩
+    rw [hN] at hX
+    subst hX
+    exact ⟨he, hlt⟩
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdTwoAOne (left z) (right z))
+    Set.univ := by
+  unfold tensorProdTwoAOne
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ !(ys 0, ys 1) = ys 2) Set.univ :=
+    inferInstance
+  have : ClassFunction.Definable (fun z : M ↦ !(tensorProdTwoAOneNds (left z) (right z),
+      tensorProdTwoAOneOdr (left z) (right z))) Set.univ :=
+    ClassFunction.Definable.comp₂ (H := fun a b ↦ !(a, b))
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ rtLosSLOT (ys 0) (ys 1) = ys 2) Set.univ :=
+    (inferInstance : MulticlassFunction.Definable
+      (fun ys : Fin 2 → M ↦ rtLosSLOT (ys 0) (ys 1)) Set.univ).1
+  exact ClassFunction.Definable.comp₂ (H := rtLosSLOT) (F := fun _ ↦ trvAZero)
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdATwoAOneBase (left z) (right z))
+    Set.univ := by
+  unfold tensorProdATwoAOneBase
+  have h := ClassFunction.Definable.comp₁ (H := fun z : M ↦ tensorProdAOneAZero (left z) (right z))
+    (F := fun z : M ↦ !(left z ↾ 2, right z ↾ ((1 : ℕ) : M)))
+  simp only [left_orderedPair, right_orderedPair] at h
+  exact h
+
+instance : ClassFunction.Definable (fun z : M ↦ tensorProdATwoAOne (left z) (right z))
+    Set.univ := by
+  unfold tensorProdATwoAOne
+  have : ClassFunction.Definable
+      (fun z : M ↦ tensorProdATwoAOneBase (left z) (right z) ↾ ((1 : ℕ) : M)) Set.univ :=
+    ClassFunction.Definable.comp₁ (H := fun B : M ↦ B ↾ ((1 : ℕ) : M))
+      (F := fun z : M ↦ tensorProdATwoAOneBase (left z) (right z))
+  have : ClassFunction.Definable (fun z : M ↦
+      rtlosOf (tensorProdATwoAOneBase (left z) (right z) ﹫ ((1 : ℕ) : M)) ﹫ trvAZero) Set.univ :=
+    ClassFunction.Definable.comp₁ (H := fun B : M ↦ rtlosOf (B ﹫ ((1 : ℕ) : M)) ﹫ trvAZero)
+      (F := fun z : M ↦ tensorProdATwoAOneBase (left z) (right z))
+  have : ClassFunction.Definable
+      (fun z : M ↦ tensorProdTwoAOne (left z ﹫ 2) (right z)) Set.univ := by
+    have h := ClassFunction.Definable.comp₁ (H := fun z : M ↦ tensorProdTwoAOne (left z) (right z))
+      (F := fun z : M ↦ !(left z ﹫ 2, right z))
+    simp only [left_orderedPair, right_orderedPair] at h
+    exact h
+  have : ClassFunction.Definable (fun z : M ↦
+      rtlosOf (tensorProdTwoAOne (left z ﹫ 2) (right z)) ﹫ trvAZero) Set.univ :=
+    ClassFunction.Definable.comp₁ (H := fun T : M ↦ rtlosOf T ﹫ trvAZero)
+      (F := fun z : M ↦ tensorProdTwoAOne (left z ﹫ 2) (right z))
+  have : MulticlassFunction.Sigma (fun ys : Fin 2 → M ↦ losConcat (ys 0) (ys 1)) 1 Set.univ := by
+    unfold losConcat concat
+    have : MulticlassFunction.Sigma
+        (fun ys : Fin 2 → M ↦ losSet (ys 0) ∪ losSet (ys 1)) 1 Set.univ := by
+      infer_instance
+    have : MulticlassFunction.Sigma (fun ys : Fin 2 → M ↦
+        losOdr (ys 0) ∪ losOdr (ys 1) ∪ losSet (ys 0) ×ˢ losSet (ys 1)) 1 Set.univ := by
+      infer_instance
+    infer_instance
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ losConcat (ys 0) (ys 1) = ys 2) Set.univ :=
+    (inferInstance : MulticlassFunction.Definable
+      (fun ys : Fin 2 → M ↦ losConcat (ys 0) (ys 1)) Set.univ).1
+  have : ClassFunction.Definable (fun z : M ↦ losConcat
+      (rtlosOf (tensorProdATwoAOneBase (left z) (right z) ﹫ ((1 : ℕ) : M)) ﹫ trvAZero)
+      (rtlosOf (tensorProdTwoAOne (left z ﹫ 2) (right z)) ﹫ trvAZero)) Set.univ :=
+    ClassFunction.Definable.comp₂ (H := losConcat)
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ rtLosSLOT (ys 0) (ys 1) = ys 2) Set.univ :=
+    (inferInstance : MulticlassFunction.Definable
+      (fun ys : Fin 2 → M ↦ rtLosSLOT (ys 0) (ys 1)) Set.univ).1
+  have : ClassFunction.Definable (fun z : M ↦ rtLosSLOT trvAZero (losConcat
+      (rtlosOf (tensorProdATwoAOneBase (left z) (right z) ﹫ ((1 : ℕ) : M)) ﹫ trvAZero)
+      (rtlosOf (tensorProdTwoAOne (left z ﹫ 2) (right z)) ﹫ trvAZero))) Set.univ :=
+    ClassFunction.Definable.comp₂ (H := rtLosSLOT) (F := fun _ ↦ trvAZero)
+  have : Multiclass.Definable (fun ys : Fin 3 → M ↦ cc (ys 0) (ys 1) = ys 2) Set.univ :=
+    inferInstance
+  exact ClassFunction.Definable.comp₂ (H := cc)
+
+end Definability
 
 end FirstOrder.Language.MemStructure
